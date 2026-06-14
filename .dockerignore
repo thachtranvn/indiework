@@ -1,0 +1,13 @@
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+data
+coverage
+*.log
+.DS_Store
+docs
+design-handoff
+tests

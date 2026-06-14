@@ -1,0 +1,89 @@
+/**
+ * Icon facade over lucide-react. The design spec is a 24-grid, ~1.7px rounded
+ * stroke, currentColor set — Lucide matches it closely (per the handoff, an
+ * approved substitute for the prototype's hand-drawn set). One place to keep
+ * stroke width + names consistent with the design vocabulary.
+ */
+import {
+  List,
+  Columns3,
+  Inbox,
+  Plus,
+  X,
+  ChevronDown,
+  ChevronRight,
+  Check,
+  Flag,
+  Calendar,
+  Search,
+  SlidersHorizontal,
+  Copy,
+  Trash2,
+  MoreHorizontal,
+  Settings,
+  Sun,
+  Moon,
+  ArrowRight,
+  Target,
+  Layers,
+  Box,
+  EyeOff,
+  Lock,
+  Sparkles,
+  Globe,
+  Zap,
+  GripVertical,
+  Pin,
+  Tag,
+  Pencil,
+  Table,
+  KeyRound,
+  type LucideProps,
+} from 'lucide-react';
+
+type IconProps = Omit<LucideProps, 'ref'> & { size?: number };
+
+const make =
+  (Cmp: React.ComponentType<LucideProps>) =>
+  ({ size = 18, strokeWidth = 1.7, ...rest }: IconProps) => (
+    <Cmp size={size} strokeWidth={strokeWidth} absoluteStrokeWidth {...rest} />
+  );
+
+export const Ic = {
+  list: make(List),
+  board: make(Columns3),
+  inbox: make(Inbox),
+  plus: make(Plus),
+  close: make(X),
+  chevronDown: make(ChevronDown),
+  chevronRight: make(ChevronRight),
+  check: make(Check),
+  flag: make(Flag),
+  calendar: make(Calendar),
+  search: make(Search),
+  filter: make(SlidersHorizontal),
+  sliders: make(SlidersHorizontal),
+  copy: make(Copy),
+  trash: make(Trash2),
+  dots: make(MoreHorizontal),
+  settings: make(Settings),
+  sun: make(Sun),
+  moon: make(Moon),
+  arrowRight: make(ArrowRight),
+  target: make(Target),
+  layers: make(Layers),
+  cube: make(Box),
+  eyeOff: make(EyeOff),
+  lock: make(Lock),
+  sparkle: make(Sparkles),
+  globe: make(Globe),
+  bolt: make(Zap),
+  grip: make(GripVertical),
+  pin: make(Pin),
+  tag: make(Tag),
+  edit: make(Pencil),
+  table: make(Table),
+  key: make(KeyRound),
+};
+
+export type IconName = keyof typeof Ic;

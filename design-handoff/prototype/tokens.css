@@ -1,0 +1,179 @@
+/* ============================================================
+   Disk Advisor PM — Design tokens
+   Asana-calm: airy, light, soft elevation, hover-reveal.
+   Everything is variable-driven so dark-mode + tweaks swap cleanly.
+   ============================================================ */
+
+:root {
+  /* --- tweakable knobs (overridden inline by React) --- */
+  --font-ui: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  --accent: #3FB984;            /* solo-dev green */
+  --radius-scale: 1;            /* tweak: 0.5 .. 1.6 */
+  --shadow-strength: 1;         /* tweak: 0 .. 1.6 */
+  --row-pad-y: 9px;             /* tweak density */
+  --row-gap: 2px;
+  --ui-scale: 1;
+
+  /* --- derived radii --- */
+  --r-xs: calc(4px * var(--radius-scale));
+  --r-sm: calc(7px * var(--radius-scale));
+  --r-md: calc(10px * var(--radius-scale));
+  --r-lg: calc(14px * var(--radius-scale));
+  --r-xl: calc(20px * var(--radius-scale));
+  --r-pill: 999px;
+
+  /* --- accent derivations --- */
+  --accent-strong: color-mix(in oklch, var(--accent) 82%, black);
+  --accent-soft: color-mix(in oklch, var(--accent) 14%, white);
+  --accent-softer: color-mix(in oklch, var(--accent) 8%, white);
+  --accent-ink: color-mix(in oklch, var(--accent) 70%, black);
+  --accent-ring: color-mix(in oklch, var(--accent) 35%, white);
+}
+
+/* ===================== LIGHT (default) ===================== */
+:root, [data-theme="light"] {
+  --bg-app: oklch(0.984 0.003 95);     /* sidebar / chrome */
+  --bg-canvas: oklch(0.995 0.001 95);  /* main surface */
+  --bg-surface: #ffffff;
+  --bg-sunken: oklch(0.972 0.003 95);
+  --bg-hover: oklch(0.965 0.004 95);
+  --bg-active: oklch(0.95 0.005 95);
+  --bg-overlay: oklch(0.28 0.01 95 / 0.32);
+
+  --border: oklch(0.918 0.004 95);
+  --border-soft: oklch(0.945 0.003 95);
+  --border-strong: oklch(0.86 0.005 95);
+
+  --text-strong: oklch(0.27 0.012 95);
+  --text: oklch(0.40 0.009 95);
+  --text-muted: oklch(0.575 0.007 95);
+  --text-faint: oklch(0.70 0.005 95);
+
+  --shadow-sm: 0 1px 2px oklch(0.3 0.02 95 / calc(0.05 * var(--shadow-strength))),
+               0 1px 1px oklch(0.3 0.02 95 / calc(0.04 * var(--shadow-strength)));
+  --shadow-md: 0 2px 5px oklch(0.3 0.02 95 / calc(0.06 * var(--shadow-strength))),
+               0 4px 12px oklch(0.3 0.02 95 / calc(0.05 * var(--shadow-strength)));
+  --shadow-lg: 0 6px 18px oklch(0.3 0.02 95 / calc(0.08 * var(--shadow-strength))),
+               0 18px 48px oklch(0.3 0.02 95 / calc(0.10 * var(--shadow-strength)));
+  --shadow-panel: -8px 0 24px oklch(0.3 0.02 95 / calc(0.07 * var(--shadow-strength))),
+                  -1px 0 0 var(--border);
+}
+
+/* ===================== DARK ===================== */
+[data-theme="dark"] {
+  --bg-app: oklch(0.205 0.006 260);
+  --bg-canvas: oklch(0.235 0.006 260);
+  --bg-surface: oklch(0.255 0.007 260);
+  --bg-sunken: oklch(0.22 0.006 260);
+  --bg-hover: oklch(0.29 0.008 260);
+  --bg-active: oklch(0.32 0.009 260);
+  --bg-overlay: oklch(0.12 0.01 260 / 0.55);
+
+  --border: oklch(0.33 0.008 260);
+  --border-soft: oklch(0.30 0.007 260);
+  --border-strong: oklch(0.42 0.01 260);
+
+  --text-strong: oklch(0.96 0.004 260);
+  --text: oklch(0.86 0.006 260);
+  --text-muted: oklch(0.66 0.008 260);
+  --text-faint: oklch(0.52 0.008 260);
+
+  --accent-soft: color-mix(in oklch, var(--accent) 22%, oklch(0.255 0.007 260));
+  --accent-softer: color-mix(in oklch, var(--accent) 12%, oklch(0.255 0.007 260));
+  --accent-ink: color-mix(in oklch, var(--accent) 55%, white);
+
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / calc(0.25 * var(--shadow-strength)));
+  --shadow-md: 0 2px 6px oklch(0 0 0 / calc(0.3 * var(--shadow-strength))),
+               0 6px 16px oklch(0 0 0 / calc(0.28 * var(--shadow-strength)));
+  --shadow-lg: 0 8px 24px oklch(0 0 0 / calc(0.4 * var(--shadow-strength)));
+  --shadow-panel: -10px 0 30px oklch(0 0 0 / calc(0.4 * var(--shadow-strength))),
+                  -1px 0 0 var(--border);
+}
+
+/* ===================== STATUS palette ===================== */
+/* calm tints; Blocked stands out; Done/Cancelled cooled down */
+:root {
+  --st-inbox:       oklch(0.55 0.10 290);
+  --st-inbox-bg:    oklch(0.95 0.03 290);
+  --st-backlog:     oklch(0.55 0.012 250);
+  --st-backlog-bg:  oklch(0.95 0.006 250);
+  --st-todo:        oklch(0.55 0.10 245);
+  --st-todo-bg:     oklch(0.95 0.03 245);
+  --st-in_progress: oklch(0.58 0.12 215);
+  --st-in_progress-bg: oklch(0.95 0.035 215);
+  --st-blocked:     oklch(0.58 0.16 32);
+  --st-blocked-bg:  oklch(0.945 0.04 38);
+  --st-done:        oklch(0.60 0.10 158);
+  --st-done-bg:     oklch(0.95 0.035 158);
+  --st-cancelled:   oklch(0.62 0.008 250);
+  --st-cancelled-bg: oklch(0.95 0.004 250);
+}
+[data-theme="dark"] {
+  --st-inbox-bg:    oklch(0.34 0.06 290);
+  --st-inbox:       oklch(0.82 0.08 290);
+  --st-backlog-bg:  oklch(0.34 0.01 250);
+  --st-backlog:     oklch(0.78 0.012 250);
+  --st-todo-bg:     oklch(0.34 0.06 245);
+  --st-todo:        oklch(0.82 0.08 245);
+  --st-in_progress-bg: oklch(0.34 0.07 215);
+  --st-in_progress: oklch(0.83 0.09 215);
+  --st-blocked-bg:  oklch(0.38 0.09 35);
+  --st-blocked:     oklch(0.83 0.11 38);
+  --st-done-bg:     oklch(0.34 0.06 158);
+  --st-done:        oklch(0.82 0.08 158);
+  --st-cancelled-bg: oklch(0.32 0.006 250);
+  --st-cancelled:   oklch(0.70 0.008 250);
+}
+
+/* ===================== PRIORITY palette ===================== */
+/* rising attention; None = neutral */
+:root {
+  --pr-none:   var(--text-faint);
+  --pr-low:    oklch(0.62 0.07 230);
+  --pr-medium: oklch(0.66 0.12 90);
+  --pr-high:   oklch(0.64 0.15 55);
+  --pr-urgent: oklch(0.58 0.18 28);
+}
+
+/* ===================== base ===================== */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: var(--font-ui);
+  background: var(--bg-canvas);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-size: calc(14.5px * var(--ui-scale));
+  line-height: 1.45;
+}
+#root { height: 100%; }
+::selection { background: var(--accent-ring); }
+
+button { font-family: inherit; cursor: pointer; }
+input, textarea, select { font-family: inherit; }
+:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 1px; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--text-faint) 40%, transparent);
+  border-radius: 999px; border: 3px solid transparent; background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: color-mix(in oklch, var(--text-faint) 65%, transparent); background-clip: padding-box; }
+
+/* shared bits */
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 560; line-height: 1;
+  padding: 4px 8px; border-radius: var(--r-pill);
+  white-space: nowrap;
+}
+.dot { width: 8px; height: 8px; border-radius: 999px; flex: none; }
+
+.fade-in { animation: fadeIn .2s ease; }
+@keyframes fadeIn { from { transform: translateY(4px); } to { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}

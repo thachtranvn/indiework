@@ -1,0 +1,190 @@
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { db, schema, allocateSeq } from '@/server/db';
+import {
+  createTaskSchema,
+  updateTaskSchema,
+  listTasksSchema,
+  setStatusNoteSchema,
+} from '@/server/validators/task';
+import { parseRef, TASK_PRIORITY_RANK, type TaskStatus } from '@/lib/domain';
+import { toTaskDto, type TaskDto } from './dto';
+import { badRequest, notFound } from './errors';
+import { definedKeys } from './util';
+
+/** Task row joined with its project key (for building the ref). */
+function selectWithKey() {
+  return db
+    .select({ task: schema.tasks, projectKey: schema.projects.key })
+    .from(schema.tasks)
+    .leftJoin(schema.projects, eq(schema.tasks.projectId, schema.projects.id));
+}
+
+async function readDto(id: string): Promise<TaskDto> {
+  const [r] = await selectWithKey().where(eq(schema.tasks.id, id)).limit(1);
+  if (!r) throw notFound('task');
+  return toTaskDto(r.task, r.projectKey);
+}
+
+/** When status moves to `done`, stamp completed_at; otherwise clear it. */
+function completedAtFor(status: TaskStatus | undefined): { completedAt?: Date | null } {
+  if (status === undefined) return {};
+  return { completedAt: status === 'done' ? new Date() : null };
+}
+
+/** done last → higher priority first → older first (matches the design). */
+function sortTasks(a: TaskDto, b: TaskDto) {
+  return (
+    Number(a.done) - Number(b.done) ||
+    TASK_PRIORITY_RANK[b.priority] - TASK_PRIORITY_RANK[a.priority] ||
+    a.createdAt.getTime() - b.createdAt.getTime()
+  );
+}
+
+export const taskService = {
+  async create(input: unknown): Promise<TaskDto> {
+    const data = createTaskSchema.parse(input);
+    const status: TaskStatus = data.status ?? (data.projectId ? 'todo' : 'inbox');
+
+    const values = {
+      title: data.title,
+      moduleId: data.moduleId ?? null,
+      milestoneId: data.milestoneId ?? null,
+      description: data.description ?? null,
+      statusNote: data.statusNote ?? null,
+      dueDate: data.dueDate ?? null,
+      priority: data.priority,
+      status,
+      ...completedAtFor(status),
+    };
+
+    // Inbox task: no project, no seq.
+    if (!data.projectId) {
+      const [row] = await db
+        .insert(schema.tasks)
+        .values({ ...values, projectId: null, seq: null })
+        .returning({ id: schema.tasks.id });
+      return readDto(row.id);
+    }
+
+    // Assigned task: allocate a per-project seq atomically.
+    const projectId = data.projectId;
+    const id = await db.transaction(async (tx) => {
+      const seq = await allocateSeq(tx, projectId);
+      const [row] = await tx
+        .insert(schema.tasks)
+        .values({ ...values, projectId, seq })
+        .returning({ id: schema.tasks.id });
+      return row.id;
+    });
+    return readDto(id);
+  },
+
+  async update(id: string, input: unknown): Promise<TaskDto> {
+    const data = updateTaskSchema.parse(input);
+    const patch = definedKeys(data);
+    const [row] = await db
+      .update(schema.tasks)
+      .set({ ...patch, ...completedAtFor(data.status), updatedAt: new Date() })
+      .where(eq(schema.tasks.id, id))
+      .returning({ id: schema.tasks.id });
+    if (!row) throw notFound('task');
+    return readDto(row.id);
+  },
+
+  /** Toggle the done circle: done ⇄ todo, keeping completed_at in sync. */
+  async toggleDone(id: string): Promise<TaskDto> {
+    const [cur] = await db
+      .select({ status: schema.tasks.status })
+      .from(schema.tasks)
+      .where(eq(schema.tasks.id, id))
+      .limit(1);
+    if (!cur) throw notFound('task');
+    const next: TaskStatus = cur.status === 'done' ? 'todo' : 'done';
+    return this.update(id, { status: next });
+  },
+
+  /** Triage from the Inbox: attach to a project and allocate its seq. */
+  async assignToProject(id: string, projectId: string): Promise<TaskDto> {
+    const resultId = await db.transaction(async (tx) => {
+      const [cur] = await tx
+        .select({ id: schema.tasks.id, seq: schema.tasks.seq })
+        .from(schema.tasks)
+        .where(eq(schema.tasks.id, id))
+        .limit(1);
+      if (!cur) throw notFound('task');
+      const seq = cur.seq ?? (await allocateSeq(tx, projectId));
+      await tx
+        .update(schema.tasks)
+        .set({ projectId, seq, status: 'backlog', updatedAt: new Date() })
+        .where(eq(schema.tasks.id, id));
+      return id;
+    });
+    return readDto(resultId);
+  },
+
+  async setStatusNote(id: string, input: unknown): Promise<TaskDto> {
+    const { note } = setStatusNoteSchema.parse(input);
+    const [row] = await db
+      .update(schema.tasks)
+      .set({ statusNote: note, updatedAt: new Date() })
+      .where(eq(schema.tasks.id, id))
+      .returning({ id: schema.tasks.id });
+    if (!row) throw notFound('task');
+    return readDto(row.id);
+  },
+
+  async reorder(ids: string[]): Promise<{ ok: true }> {
+    await db.transaction(async (tx) => {
+      for (let i = 0; i < ids.length; i++) {
+        await tx
+          .update(schema.tasks)
+          .set({ position: i, updatedAt: new Date() })
+          .where(eq(schema.tasks.id, ids[i]));
+      }
+    });
+    return { ok: true };
+  },
+
+  async delete(id: string): Promise<{ ok: true }> {
+    const [row] = await db
+      .delete(schema.tasks)
+      .where(eq(schema.tasks.id, id))
+      .returning({ id: schema.tasks.id });
+    if (!row) throw notFound('task');
+    return { ok: true };
+  },
+
+  async getById(id: string): Promise<TaskDto> {
+    return readDto(id);
+  },
+
+  /** Resolve "DISK-3" → the task DTO. */
+  async getByRef(ref: string): Promise<TaskDto> {
+    const parsed = parseRef(ref);
+    if (!parsed) throw badRequest(`invalid ref "${ref}"`);
+    const [r] = await selectWithKey()
+      .where(and(eq(schema.projects.key, parsed.key), eq(schema.tasks.seq, parsed.seq)))
+      .limit(1);
+    if (!r) throw notFound(`task ${ref}`);
+    return toTaskDto(r.task, r.projectKey);
+  },
+
+  async list(input: unknown): Promise<TaskDto[]> {
+    const f = listTasksSchema.parse(input);
+    const conds = [];
+    if (f.inbox) conds.push(isNull(schema.tasks.projectId));
+    if (f.projectId) conds.push(eq(schema.tasks.projectId, f.projectId));
+    if (f.moduleId) conds.push(eq(schema.tasks.moduleId, f.moduleId));
+    if (f.milestoneId) conds.push(eq(schema.tasks.milestoneId, f.milestoneId));
+    if (f.status?.length) conds.push(inArray(schema.tasks.status, f.status));
+    if (f.priority?.length) conds.push(inArray(schema.tasks.priority, f.priority));
+    if (f.hideDone) conds.push(sql`${schema.tasks.status} not in ('done','cancelled')`);
+
+    const rows = await selectWithKey().where(conds.length ? and(...conds) : undefined);
+    return rows.map((r) => toTaskDto(r.task, r.projectKey)).sort(sortTasks);
+  },
+
+  async listInbox(): Promise<TaskDto[]> {
+    return this.list({ inbox: true });
+  },
+};

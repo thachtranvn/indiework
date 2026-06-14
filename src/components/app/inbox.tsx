@@ -1,0 +1,116 @@
+'use client';
+
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import type { TaskDto } from '@/server/services';
+import { createTask, toggleTaskDone, assignTaskToProject } from '@/app/_actions/tasks';
+import { QuickCapture } from './quick-capture';
+import { CircleCheck } from '@/components/ui/interactive';
+import { Popover, OptionList } from '@/components/ui/popover';
+import { Ic } from '@/components/ui/icons';
+
+interface ProjectOpt {
+  id: string;
+  key: string;
+  name: string;
+  emoji: string | null;
+}
+
+export function InboxScreen({ tasks, projects }: { tasks: TaskDto[]; projects: ProjectOpt[] }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const openTaskId = params.get('task');
+
+  const openTask = (id: string) => {
+    const sp = new URLSearchParams(Array.from(params.entries()));
+    sp.set('task', id);
+    router.push(`${pathname}?${sp.toString()}`, { scroll: false });
+  };
+  const add = async (title: string) => {
+    await createTask({ title });
+    router.refresh();
+  };
+  const toggle = async (id: string) => {
+    await toggleTaskDone(id);
+    router.refresh();
+  };
+  const assign = async (id: string, projectId: string) => {
+    await assignTaskToProject(id, projectId);
+    router.refresh();
+  };
+
+  return (
+    <>
+      <div className="topbar">
+        <div className="topbar-title">
+          <span className="topbar-emoji">📥</span>
+          <h1>Inbox</h1>
+        </div>
+      </div>
+      <QuickCapture placeholder="Dump an idea into Inbox…" onAdd={add} />
+
+      <div className="scroll-body">
+        {tasks.length === 0 ? (
+          <div className="empty">
+            <div className="empty-emoji">📥</div>
+            <h3>Inbox zero</h3>
+            <p>Nothing to triage. Type an idea above, or press c anywhere.</p>
+          </div>
+        ) : (
+          tasks.map((t) => (
+            <div
+              key={t.id}
+              className="task-row"
+              data-done={t.done ? '' : undefined}
+              data-selected={openTaskId === t.id ? '' : undefined}
+              onClick={() => openTask(t.id)}
+              style={{ paddingLeft: 12 }}
+            >
+              <CircleCheck done={t.done} status={t.status} onToggle={() => toggle(t.id)} />
+              <div className="task-main">
+                <div className="task-line">
+                  <span className="task-title">{t.title}</span>
+                </div>
+              </div>
+              <div className="task-meta task-reveal" onClick={(e) => e.stopPropagation()}>
+                <Popover
+                  align="right"
+                  width={220}
+                  trigger={
+                    <button className="meta-tag" type="button" style={{ cursor: 'pointer' }}>
+                      <Ic.arrowRight size={13} /> Assign to project
+                    </button>
+                  }
+                >
+                  {(close) => (
+                    <>
+                      <div className="pop-label">Move to project</div>
+                      <OptionList
+                        options={projects.map((p) => ({ id: p.id, label: p.name }))}
+                        onPick={(id) => {
+                          assign(t.id, id);
+                          close();
+                        }}
+                        renderOpt={(o) => {
+                          const p = projects.find((x) => x.id === o.id);
+                          return (
+                            <>
+                              <span className="nav-emoji" style={{ width: 18 }}>
+                                {p?.emoji ?? '•'}
+                              </span>
+                              {o.label}
+                            </>
+                          );
+                        }}
+                      />
+                    </>
+                  )}
+                </Popover>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </>
+  );
+}

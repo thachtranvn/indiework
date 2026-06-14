@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: indiework
+      POSTGRES_PASSWORD: indiework
+      POSTGRES_DB: indiework
+    ports:
+      # Host 5433 to avoid clashing with a local Postgres on 5432.
+      - '5433:5432'
+    volumes:
+      - iw_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U indiework -d indiework']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://indiework:indiework@db:5432/indiework
+      APP_PASSWORD: ${APP_PASSWORD:-change-me}
+      COOKIE_SECRET: ${COOKIE_SECRET:-replace-with-a-long-random-string-at-least-32-chars}
+      API_TOKEN: ${API_TOKEN:-change-me-too}
+      NODE_ENV: production
+    ports:
+      - '3000:3000'
+
+volumes:
+  iw_pgdata:

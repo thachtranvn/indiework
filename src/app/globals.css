@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+
+/* Map the design tokens' font slots onto the next/font CSS variables. */
+:root {
+  --font-ui: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, 'SFMono-Regular', monospace;
+}

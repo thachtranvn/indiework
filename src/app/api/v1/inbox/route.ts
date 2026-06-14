@@ -1,0 +1,14 @@
+import { taskService } from '@/server/services';
+import { requireBearer } from '@/server/auth/token';
+import { ok, unauthorized, handleServiceError } from '@/lib/api-response';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(req: Request) {
+  if (!requireBearer(req)) return unauthorized();
+  try {
+    return ok(await taskService.listInbox());
+  } catch (e) {
+    return handleServiceError(e);
+  }
+}

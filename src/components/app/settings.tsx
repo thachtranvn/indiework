@@ -1,0 +1,230 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import type { ApiKeyPublic } from '@/server/services';
+import { API_KEY_SCOPE, type ApiKeyScope } from '@/lib/domain';
+import { fmtDate } from '@/lib/dates';
+import { updateWorkspace } from '@/app/_actions/workspace';
+import { createApiKey, revokeApiKey } from '@/app/_actions/apikeys';
+import { EmojiPicker } from '@/components/ui/emoji-picker';
+import { Ic } from '@/components/ui/icons';
+
+interface Workspace {
+  id: string;
+  name: string;
+  emoji: string | null;
+  tagline: string | null;
+}
+
+export function SettingsScreen({
+  workspace,
+  apiKeys,
+  initialSection = 'api',
+}: {
+  workspace: Workspace | null;
+  apiKeys: ApiKeyPublic[];
+  initialSection?: 'general' | 'api';
+}) {
+  const [section, setSection] = useState<'general' | 'api'>(initialSection);
+
+  return (
+    <div className="settings">
+      <nav className="settings-nav">
+        <div className="settings-navlabel">App settings</div>
+        <button
+          className="settings-navitem"
+          data-active={section === 'general' ? '' : undefined}
+          onClick={() => setSection('general')}
+          type="button"
+        >
+          <Ic.sun size={16} /> General
+        </button>
+        <button
+          className="settings-navitem"
+          data-active={section === 'api' ? '' : undefined}
+          onClick={() => setSection('api')}
+          type="button"
+        >
+          <Ic.key size={16} /> API keys
+        </button>
+      </nav>
+      <div className="settings-main">
+        {section === 'general' ? (
+          <GeneralPane workspace={workspace} />
+        ) : (
+          <ApiKeysPane apiKeys={apiKeys} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function GeneralPane({ workspace }: { workspace: Workspace | null }) {
+  const router = useRouter();
+  if (!workspace) return <p className="settings-sub">No workspace.</p>;
+  const save = async (patch: Parameters<typeof updateWorkspace>[1]) => {
+    await updateWorkspace(workspace.id, patch);
+    router.refresh();
+  };
+  return (
+    <div className="settings-pane">
+      <h1 className="settings-h">General</h1>
+      <p className="settings-sub">Your workspace identity. It shows at the top of the sidebar.</p>
+      <div className="set-card">
+        <div className="set-field">
+          <label>Icon</label>
+          <EmojiPicker value={workspace.emoji ?? '◈'} onPick={(e) => save({ emoji: e })} triggerClass="emoji-solo" />
+        </div>
+        <div className="set-field">
+          <label>Name</label>
+          <input
+            className="set-input"
+            defaultValue={workspace.name}
+            onBlur={(e) => e.target.value.trim() && e.target.value !== workspace.name && save({ name: e.target.value.trim() })}
+          />
+        </div>
+        <div className="set-field">
+          <label>Tagline</label>
+          <input
+            className="set-input"
+            defaultValue={workspace.tagline ?? ''}
+            onBlur={(e) => e.target.value !== (workspace.tagline ?? '') && save({ tagline: e.target.value || null })}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ApiKeysPane({ apiKeys }: { apiKeys: ApiKeyPublic[] }) {
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState('');
+  const [scope, setScope] = useState<ApiKeyScope>('read-write');
+  const [busy, setBusy] = useState(false);
+  const [freshSecret, setFreshSecret] = useState<{ id: string; secret: string } | null>(null);
+
+  const submit = async () => {
+    if (!name.trim() || busy) return;
+    setBusy(true);
+    try {
+      const { key, secret } = await createApiKey(name.trim(), scope);
+      setFreshSecret({ id: key.id, secret });
+      setName('');
+      setCreating(false);
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="settings-pane">
+      <div className="settings-head-row">
+        <div>
+          <h1 className="settings-h">API keys</h1>
+          <p className="settings-sub">
+            Keys let scripts, the CLI, and webhooks talk to IndieWork. Treat them like passwords.
+          </p>
+        </div>
+        {!creating && (
+          <button className="btn btn-primary" type="button" onClick={() => setCreating(true)}>
+            <Ic.plus size={15} /> Create key
+          </button>
+        )}
+      </div>
+
+      {creating && (
+        <div className="ak-create">
+          <div className="ak-create-grid">
+            <input
+              className="ak-create-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="What's this key for? (e.g. Local CLI)"
+              autoFocus
+            />
+            <div className="ak-scope-pick">
+              {API_KEY_SCOPE.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="ak-scope-btn"
+                  data-on={scope === s ? '' : undefined}
+                  onClick={() => setScope(s)}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="ak-create-foot">
+            <button className="btn" type="button" onClick={() => setCreating(false)}>
+              Cancel
+            </button>
+            <button className="btn btn-primary" type="button" onClick={submit} disabled={!name.trim() || busy}>
+              Create key
+            </button>
+          </div>
+        </div>
+      )}
+
+      {apiKeys.length === 0 && !creating ? (
+        <div className="ak-empty">
+          <Ic.key size={26} />
+          <p>No keys yet. Create one to drive IndieWork from a script, the CLI, or a webhook.</p>
+        </div>
+      ) : (
+        <div className="ak-list">
+          {apiKeys.map((k) => {
+            const isNew = freshSecret?.id === k.id;
+            return (
+              <div className="ak-row" key={k.id} data-new={isNew ? '' : undefined}>
+                <span className="ak-icon">
+                  <Ic.key size={18} />
+                </span>
+                <div className="ak-main">
+                  <div className="ak-line">
+                    <span className="ak-name">{k.name}</span>
+                    <span className="ak-scope" data-scope={k.scope}>
+                      {k.scope}
+                    </span>
+                    {isNew && <span className="ak-new-badge">Copy it now — shown once</span>}
+                  </div>
+                  <span className="ak-secret">{isNew ? freshSecret!.secret : k.masked}</span>
+                  <span className="ak-meta">
+                    Created {fmtDate(k.createdAt, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {k.lastUsedAt ? ` · Last used ${fmtDate(k.lastUsedAt, { month: 'short', day: 'numeric' })}` : ' · Never used'}
+                  </span>
+                </div>
+                <div className="ak-actions">
+                  <button
+                    className="icon-btn"
+                    type="button"
+                    title="Copy"
+                    onClick={() => navigator.clipboard?.writeText(isNew ? freshSecret!.secret : k.masked)}
+                  >
+                    <Ic.copy size={16} />
+                  </button>
+                  <button
+                    className="icon-btn"
+                    data-danger=""
+                    type="button"
+                    title="Revoke"
+                    onClick={async () => {
+                      await revokeApiKey(k.id);
+                      router.refresh();
+                    }}
+                  >
+                    <Ic.trash size={16} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
