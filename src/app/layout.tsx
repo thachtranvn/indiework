@@ -59,8 +59,11 @@ const fontBootScript = `(function(){try{var m=${JSON.stringify(FONT_STACK)},v=lo
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const fontVars = `${beVietnamPro.variable} ${plusJakarta.variable} ${hanken.variable} ${plexMono.variable}`;
+  // fontBootScript sets --font-ui on <html> before hydration, so the element's
+  // style attribute legitimately differs from the server markup — suppress the
+  // one-level hydration diff for <html> only.
   return (
-    <html lang="en" className={fontVars} data-theme="light">
+    <html lang="en" className={fontVars} data-theme="light" suppressHydrationWarning>
       <body>
         <script dangerouslySetInnerHTML={{ __html: fontBootScript }} />
         {children}
