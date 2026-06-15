@@ -14,6 +14,19 @@ RUN pnpm install --frozen-lockfile
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# `next build` collects page data by evaluating server modules, including
+# src/server/env.ts which validates all four env vars at import time. The build
+# stage has no real env, so provide schema-satisfying PLACEHOLDERS (valid URL,
+# 32+ char cookie secret, non-empty). These exist only in this stage — they are
+# NOT copied into the runtime stage and are not baked into the output (env.ts is
+# server-only and re-reads process.env at runtime). Real values are injected at
+# runtime via the compose env_file. No DB connection happens here: the pg pool
+# is lazy and every route is force-dynamic.
+ENV DATABASE_URL="postgres://build:build@127.0.0.1:5432/build" \
+    APP_PASSWORD="build-placeholder" \
+    COOKIE_SECRET="build-placeholder-cookie-secret-at-least-32-chars" \
+    API_TOKEN="build-placeholder" \
+    NODE_ENV="production"
 RUN pnpm build
 
 # ---- runtime ----
