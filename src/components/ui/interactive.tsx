@@ -4,7 +4,10 @@ import { useState } from 'react';
 import type { TaskStatus } from '@/lib/domain';
 import { Ic } from './icons';
 
-/** Circular checkbox: tick = done, pie = in-progress, × = cancelled. */
+/**
+ * Circular checkbox: tick = done, × = cancelled. In-progress shows a pie,
+ * in-review a violet 3/4 pie, pending an amber dash (matches the design).
+ */
 export function CircleCheck({
   done,
   status,
@@ -18,6 +21,8 @@ export function CircleCheck({
 }) {
   const cancelled = status === 'cancelled';
   const inProgress = status === 'in_progress' && !done;
+  const inReview = status === 'in_review' && !done;
+  const pending = status === 'pending' && !done;
   return (
     <button
       className="circle-check"
@@ -35,6 +40,8 @@ export function CircleCheck({
       {done && <Ic.check size={size - 6} strokeWidth={2.6} />}
       {cancelled && !done && <Ic.close size={size - 8} strokeWidth={2.4} />}
       {inProgress && <span className="cc-pie" />}
+      {inReview && <span className="cc-pie cc-review" />}
+      {pending && <span className="cc-pend" />}
     </button>
   );
 }

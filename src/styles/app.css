@@ -224,7 +224,7 @@
   text-overflow: ellipsis; white-space: nowrap; }
 .task-row[data-done] .task-title, .task-row[data-cancelled] .task-title { color: var(--text-faint); text-decoration: line-through; font-weight: 500; }
 .task-ref { font: 500 11.5px/1 var(--font-mono); color: var(--text-faint); flex: none; white-space: nowrap; }
-.task-note-2nd { display: flex; align-items: center; gap: 5px; color: var(--st-blocked);
+.task-note-2nd { display: flex; align-items: center; gap: 5px; color: var(--st-pending);
   font-size: 12px; font-weight: 540; min-width: 0; }
 .task-note-2nd svg { flex: none; }
 .task-note-2nd span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -232,7 +232,7 @@
 .meta-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 530;
   color: var(--text-muted); white-space: nowrap; }
 .milestone-tag { color: var(--text-muted); }
-.due-pill[data-due="overdue"] { color: var(--st-blocked); font-weight: 600; }
+.due-pill[data-due="overdue"] { color: var(--st-danger); font-weight: 600; }
 .due-pill[data-due="soon"] { color: var(--pr-high); font-weight: 580; }
 /* hover-reveal: secondary meta hidden until hover */
 .task-reveal { display: flex; align-items: center; gap: 8px; opacity: 0; transition: opacity .12s; }
@@ -261,8 +261,17 @@
 .circle-check[data-cancelled] { background: var(--bg-active); border-color: var(--border-strong); color: var(--text-faint); }
 .circle-check[data-status="in_progress"] { border-color: var(--st-in_progress); }
 .circle-check[data-status="in_progress"]:hover { border-color: var(--st-in_progress); }
+.circle-check[data-status="in_review"] { border-color: var(--st-in_review); }
+.circle-check[data-status="in_review"]:hover { border-color: var(--st-in_review); }
+.circle-check[data-status="pending"] { border-color: var(--st-pending); }
+.circle-check[data-status="pending"]:hover { border-color: var(--st-pending); }
 .cc-pie { width: 9px; height: 9px; border-radius: 999px;
   background: conic-gradient(var(--st-in_progress) 0 50%, transparent 50% 100%); }
+.cc-pie.cc-review { background: conic-gradient(var(--st-in_review) 0 75%, transparent 75% 100%); }
+.cc-pend { width: 7px; height: 8px;
+  background:
+    linear-gradient(var(--st-pending), var(--st-pending)) left center / 2px 100% no-repeat,
+    linear-gradient(var(--st-pending), var(--st-pending)) right center / 2px 100% no-repeat; }
 
 /* ---------- bulk action bar ---------- */
 .bulkbar { position: fixed; bottom: 22px; left: calc(var(--sidebar-w, 256px) + (100vw - var(--sidebar-w, 256px)) / 2);
@@ -278,7 +287,7 @@
   padding: 7px 10px; border-radius: var(--r-sm); display: inline-flex; align-items: center; gap: 7px;
   transition: .12s; white-space: nowrap; cursor: pointer; }
 .bulkbar-btn:hover { background: var(--bg-hover); color: var(--text-strong); }
-.bulkbar-btn.danger:hover { background: var(--st-blocked-bg); color: var(--st-blocked); }
+.bulkbar-btn.danger:hover { background: var(--st-danger-bg); color: var(--st-danger); }
 .bulkbar-x { border: none; background: none; color: var(--text-faint); display: grid; place-items: center;
   width: 30px; height: 30px; border-radius: var(--r-sm); transition: .12s; cursor: pointer; }
 .bulkbar-x:hover { background: var(--bg-hover); color: var(--text-strong); }
@@ -290,7 +299,8 @@
 .st-chip[data-st="backlog"]     { color: var(--st-backlog); background: var(--st-backlog-bg); }
 .st-chip[data-st="todo"]        { color: var(--st-todo); background: var(--st-todo-bg); }
 .st-chip[data-st="in_progress"] { color: var(--st-in_progress); background: var(--st-in_progress-bg); }
-.st-chip[data-st="blocked"]     { color: var(--st-blocked); background: var(--st-blocked-bg); }
+.st-chip[data-st="in_review"]   { color: var(--st-in_review); background: var(--st-in_review-bg); }
+.st-chip[data-st="pending"]     { color: var(--st-pending); background: var(--st-pending-bg); }
 .st-chip[data-st="done"]        { color: var(--st-done); background: var(--st-done-bg); }
 .st-chip[data-st="cancelled"]   { color: var(--st-cancelled); background: var(--st-cancelled-bg); }
 

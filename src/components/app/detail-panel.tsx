@@ -72,8 +72,7 @@ export function DetailPanel({ taskId, onClose }: { taskId: string; onClose: () =
   }
 
   const { task, comments, modules, milestones } = detail;
-  // NOTE: Phase 1 renames this to `pending` + redesigns the status note.
-  const blocked = task.status === 'pending';
+  const pending = task.status === 'pending';
   const moduleName = modules.find((m) => m.id === task.moduleId)?.name;
   const moduleColor = modules.find((m) => m.id === task.moduleId)?.color;
   const milestoneName = milestones.find((m) => m.id === task.milestoneId)?.name;
@@ -102,7 +101,7 @@ export function DetailPanel({ taskId, onClose }: { taskId: string; onClose: () =
         <StatusNote
           key={`note-${task.id}`}
           value={task.statusNote ?? ''}
-          blocked={blocked}
+          pending={pending}
           onSave={async (note) => {
             const updated = await setTaskStatusNote(taskId, note);
             setDetail((d) => (d ? { ...d, task: updated } : d));
@@ -331,27 +330,47 @@ function TitleEditor({ value, onSave }: { value: string; onSave: (v: string) => 
   );
 }
 
+/**
+ * Status note: one elevated, overwritten line — distinct from the append-only
+ * Activity log. Only surfaces when there's a note or the task is pending;
+ * otherwise it collapses to a quiet "Add status note" affordance.
+ */
 function StatusNote({
   value,
-  blocked,
+  pending,
   onSave,
 }: {
   value: string;
-  blocked: boolean;
+  pending: boolean;
   onSave: (v: string) => void;
 }) {
   const [v, setV] = useState(value);
+  const [open, setOpen] = useState(pending || value.trim() !== '');
+
+  if (!open) {
+    return (
+      <button className="dp-note-add" type="button" onClick={() => setOpen(true)}>
+        <Ic.sparkle size={14} /> Add status note
+      </button>
+    );
+  }
+
   return (
-    <div className="status-note" data-blocked={blocked ? '' : undefined}>
+    <div className="status-note" data-pending={pending ? '' : undefined}>
       <div className="status-note-label">
-        <Ic.bolt size={13} /> Current state · what&apos;s the status?
+        {pending ? <Ic.bolt size={13} /> : <Ic.sparkle size={13} />}
+        {pending ? "What's this waiting on?" : "Current state · what's the status?"}
       </div>
       <textarea
+        autoFocus={!value}
         value={v}
         rows={2}
-        placeholder="What's blocking this, or where is it right now?"
+        placeholder="One line — where this stands right now"
         onChange={(e) => setV(e.target.value)}
-        onBlur={() => v !== value && onSave(v)}
+        onBlur={() => {
+          if (v !== value) onSave(v);
+          if (!v.trim() && !pending) setOpen(false);
+        }}
       />
     </div>
   );

@@ -6,11 +6,11 @@
  */
 import type { TaskDto } from '@/server/services';
 import {
-  TASK_STATUS,
   TASK_PRIORITY,
   TASK_STATUS_LABEL,
   TASK_PRIORITY_LABEL,
   TASK_PRIORITY_RANK,
+  DEFAULT_STATUS_ORDER,
   type TaskStatus,
   type TaskPriority,
 } from '@/lib/domain';
@@ -121,7 +121,8 @@ function groupSpec(dim: GroupDim, modules: GroupModule[], milestones: GroupMiles
     return g;
   }
   if (dim === 'status') {
-    return TASK_STATUS.filter((s) => s !== 'inbox').map((s) => ({
+    // Status groups render in DEFAULT_STATUS_ORDER — active work first.
+    return DEFAULT_STATUS_ORDER.map((s) => ({
       key: s,
       name: TASK_STATUS_LABEL[s],
       color: `var(--st-${s})`,
