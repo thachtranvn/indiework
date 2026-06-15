@@ -23,7 +23,7 @@ Backbone + the heart of the app, on the real design system.
 ## Phase 3 — External access + ergonomics
 
 - **REST** `/api/v1/*` adapters (thin over services).
-- **MCP** `/mcp` server + tools.
+- **MCP** `/mcp` server + tools. Agent task/project management surface — see [adr/0001-mcp-as-agent-surface.md](adr/0001-mcp-as-agent-surface.md) (MCP chosen over REST; "scope" = registered tool roster; project delete = archive).
 - **⌘K global search/command palette**, full keyboard map.
 
 ## Phase 4 — Extensions
