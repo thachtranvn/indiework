@@ -7,7 +7,13 @@ import { Ic } from '@/components/ui/icons';
 
 const initial: LoginState = { error: null };
 
-export function LoginForm({ next }: { next: string }) {
+interface LoginFormProps {
+  next: string;
+  /** When set, this is the public demo: show + prefill the throwaway password. */
+  demoHint?: string;
+}
+
+export function LoginForm({ next, demoHint }: LoginFormProps) {
   const [state, formAction, pending] = useActionState(login, initial);
 
   return (
@@ -19,7 +25,17 @@ export function LoginForm({ next }: { next: string }) {
         <h1 style={{ marginBottom: 8 }}>
           <Wordmark />
         </h1>
-        <p>Just you. Enter your password to open the workspace.</p>
+        <p>
+          {demoHint
+            ? 'Live demo with sample data. Play freely — it resets on a schedule.'
+            : 'Just you. Enter your password to open the workspace.'}
+        </p>
+
+        {demoHint && (
+          <div className="login-demo">
+            <Ic.lock size={13} /> Demo password: <b>{demoHint}</b> (already filled in)
+          </div>
+        )}
 
         <form action={formAction}>
           <input type="hidden" name="next" value={next} />
@@ -28,6 +44,7 @@ export function LoginForm({ next }: { next: string }) {
               type="password"
               name="password"
               placeholder="Password"
+              defaultValue={demoHint}
               autoFocus
               autoComplete="current-password"
               aria-label="Password"

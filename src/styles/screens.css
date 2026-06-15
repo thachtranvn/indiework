@@ -258,6 +258,10 @@
 .login-go:hover { background: var(--accent-strong); }
 .login-err { color: var(--st-danger); font-size: 12.5px; margin-top: 12px; font-weight: 500; }
 .login-hint { margin-top: 18px; font-size: 12px; color: var(--text-faint); }
+.login-demo { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 0 0 18px;
+  padding: 9px 12px; border: 1px dashed var(--accent-ring); border-radius: var(--r-md);
+  background: var(--accent-softer); color: var(--text-muted); font-size: 12.5px; }
+.login-demo b { color: var(--text-strong); font-family: var(--font-mono); font-weight: 600; }
 
 /* ============================================================
    Sidebar — status groups + pin + view all

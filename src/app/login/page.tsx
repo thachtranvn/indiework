@@ -3,11 +3,20 @@ import { LoginForm } from './login-form';
 
 export const metadata: Metadata = { title: 'Unlock — IndieWork' };
 
+// Render at request time so the demo flag is read from the container's env
+// (DEMO_MODE), not baked in at build — one image serves both app and demo.
+export const dynamic = 'force-dynamic';
+
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
-  return <LoginForm next={next ?? '/app'} />;
+  // Read at runtime (not NEXT_PUBLIC_*): the same image runs both the real app
+  // and the demo, so the demo flag must come from the container's env, not the
+  // build. Only the demo container sets DEMO_MODE=true.
+  const demoHint =
+    process.env.DEMO_MODE === 'true' ? (process.env.DEMO_HINT || 'demo') : undefined;
+  return <LoginForm next={next ?? '/app'} demoHint={demoHint} />;
 }

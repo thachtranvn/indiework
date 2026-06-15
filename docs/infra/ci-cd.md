@@ -9,6 +9,12 @@ Phần chuẩn bị host (cài Postgres trên VPS, cho Docker kết nối vào, 
 firewall) **dùng lại nguyên** [Hướng 2 trong deploy-vps.md](./deploy-vps.md#hướng-2--postgres-trên-host).
 File này chỉ bổ sung phần CI/CD.
 
+> Muốn chạy thêm **demo công khai** (`demo.indiework.space`) song song với app thật bằng
+> cùng image này? Xem [demo.md](./demo.md).
+
+> Không muốn quản VPS? Xem [deploy-vercel-supabase.md](./deploy-vercel-supabase.md) —
+> deploy lên Vercel + Supabase, không cần server.
+
 ## File liên quan
 
 - [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml) — pipeline.

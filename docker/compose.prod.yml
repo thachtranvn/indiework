@@ -6,11 +6,17 @@
 #   docker compose -f compose.prod.yml pull
 #   docker compose -f compose.prod.yml up -d
 #
-# Secrets live in a `.env` file next to this one (NOT in git). See
-# docs/infra/deploy-vps.md. Required keys:
-#   DATABASE_URL   postgres://indiework:...@host.docker.internal:5432/indiework
+# Two instances of the SAME image, different only by env file (see docs/infra/demo.md):
+#   app   → app.indiework.space            real data   (.env,      DB: indiework)
+#   demo  → indiework.space + demo.…        sample data (.env.demo,  DB: indiework_demo)
+# Different DATABASE_URL + COOKIE_SECRET means the two are fully isolated — a demo
+# session can never unlock the real app, and demo writes never touch real data.
+#
+# Secrets live in `.env` / `.env.demo` next to this file (NOT in git). See
+# docs/infra/deploy-vps.md. Required keys (each file):
+#   DATABASE_URL   postgres://indiework:...@host.docker.internal:5432/indiework[_demo]
 #   APP_PASSWORD   the web login password
-#   COOKIE_SECRET  >= 32 chars, signs the session cookie
+#   COOKIE_SECRET  >= 32 chars, signs the session cookie (DIFFERENT per instance)
 #   API_TOKEN      Bearer token for REST + MCP
 services:
   app:
@@ -30,3 +36,26 @@ services:
     # terminates TLS and forwards to 127.0.0.1:3000.
     ports:
       - '127.0.0.1:3000:3000'
+
+  # Public, throwaway demo. Same image; differs only by `.env.demo` (its own DB +
+  # secrets) and a start command that seeds sample data instead of an empty
+  # workspace. seed-sample is re-runnable, so every restart re-seeds the demo.
+  demo:
+    image: ${IMAGE:-ghcr.io/tungnguyenson/indiework:latest}
+    restart: unless-stopped
+    env_file: .env.demo
+    environment:
+      NODE_ENV: production
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    # migrate, then seed SAMPLE data (not the empty default workspace), then serve.
+    command:
+      - sh
+      - -c
+      - >-
+        node --import tsx src/server/db/migrate.ts &&
+        node --import tsx src/server/db/seed-sample.ts &&
+        pnpm start --port 3000 --hostname 0.0.0.0
+    # Reverse proxy forwards indiework.space + demo.indiework.space here.
+    ports:
+      - '127.0.0.1:3001:3000'

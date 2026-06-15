@@ -14,7 +14,8 @@
  *   - comments / timeline from every source (web, api, mcp, agent)
  *   - due dates (overdue, today, upcoming) and status notes ("what's blocking me")
  *
- * Your own (non-demo) Inbox tasks are left untouched. NOT used in production.
+ * Your own (non-demo) Inbox tasks are left untouched. Used by the public demo
+ * container on every start (DB `indiework_demo`); never by the real app.
  */
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { db, schema } from '@/server/db';
