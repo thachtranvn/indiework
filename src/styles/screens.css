@@ -330,6 +330,76 @@
 .ov-del:hover { color: var(--st-danger) !important; }
 .add-row-btn.sm { padding: 8px; font-size: 12.5px; margin-top: 2px; }
 
+/* ---------- Overview: vertical Info/Milestones/Modules rail (v3) ---------- */
+.ov-vlayout { display: grid; grid-template-columns: 184px minmax(0,1fr); gap: 30px; align-items: start; }
+.ov-vnav { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 8px;
+  border-right: 1px solid var(--border-soft); padding-right: 14px; }
+.ov-vtab { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+  padding: 9px 11px; border: none; background: none; border-radius: var(--r-sm); cursor: pointer;
+  font-size: 13.5px; font-weight: 560; color: var(--text-muted); transition: .12s; }
+.ov-vtab svg { color: var(--text-faint); flex: none; transition: .12s; }
+.ov-vtab:hover { background: var(--bg-hover); color: var(--text-strong); }
+.ov-vtab[data-active] { background: var(--accent-softer); color: var(--accent-ink); font-weight: 640; }
+.ov-vtab[data-active] svg { color: var(--accent-ink); }
+.ov-vtab-label { flex: 1; }
+.ov-vtab-count { font-size: 11.5px; font-weight: 650; color: var(--text-muted); background: var(--bg-sunken);
+  border: 1px solid var(--border-soft); padding: 1px 7px; border-radius: var(--r-pill); }
+.ov-vtab[data-active] .ov-vtab-count { background: var(--bg-surface); color: var(--accent-ink); border-color: var(--accent-ring); }
+.ov-vpanel { min-width: 0; max-width: 720px; }
+@media (max-width: 760px) {
+  .ov-vlayout { grid-template-columns: 1fr; gap: 18px; }
+  .ov-vnav { flex-direction: row; flex-wrap: wrap; position: static; border-right: none; padding-right: 0;
+    border-bottom: 1px solid var(--border-soft); padding-bottom: 12px; }
+  .ov-vtab { width: auto; }
+}
+/* drag-reorder */
+.ov-grip { display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 18px; height: 22px; color: var(--text-faint); cursor: grab; opacity: 0;
+  border-radius: var(--r-xs); transition: opacity .12s, color .12s; }
+.ov-grip:hover { color: var(--text-muted); }
+.ov-grip:active { cursor: grabbing; }
+.ov-mile:hover .ov-grip, .ov-mod:hover .ov-grip { opacity: 1; }
+.ov-mile[data-dragging], .ov-mod[data-dragging] { opacity: .45; }
+.ov-mile[data-dragover], .ov-mod[data-dragover] { border-color: var(--accent-ring);
+  box-shadow: inset 0 0 0 1px var(--accent-ring); }
+/* module/milestone lifecycle state chip + picker */
+.ov-mstate { display: inline-flex; align-items: center; gap: 6px; flex: none; cursor: pointer; white-space: nowrap;
+  border: 1px solid var(--border-soft); background: var(--bg-surface); border-radius: var(--r-pill);
+  font-size: 11.5px; font-weight: 560; color: var(--text-muted); padding: 4px 10px 4px 8px; transition: .12s; }
+.ov-mstate:hover { border-color: var(--border-strong); color: var(--text); }
+.ov-mstate .dot { width: 7px; height: 7px; }
+/* module card */
+.ov-mod { display: flex; flex-direction: column; gap: 6px; padding: 7px 8px 8px; border: 1px solid var(--border-soft);
+  border-radius: var(--r-sm); background: var(--bg-sunken); transition: border-color .12s, background .12s, box-shadow .12s; }
+.ov-mod:hover { border-color: var(--border); background: var(--bg-surface); box-shadow: var(--shadow-sm); }
+.ov-mod-main { display: flex; align-items: center; gap: 8px; }
+.ov-mod .ov-rowname { flex: 1 1 auto; min-width: 80px; }
+.ov-mod-prog { display: inline-flex; align-items: center; gap: 7px; flex: none; }
+.ov-mod-prog .ov-rowmeta { min-width: 30px; }
+.ov-modicon { width: 28px; height: 28px; flex: none; display: grid; place-items: center; cursor: pointer;
+  border: 1px solid var(--border-soft); background: var(--bg-surface); border-radius: var(--r-sm); transition: .12s; }
+.ov-modicon:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
+.ov-mod-desc { margin-left: 36px; box-sizing: border-box; border: 1px solid transparent; background: none; outline: none;
+  font-family: inherit; font-size: 12.5px; color: var(--text-muted); padding: 3px 5px; border-radius: var(--r-xs);
+  width: calc(100% - 36px); transition: border-color .12s, background .12s, box-shadow .12s; }
+.ov-mod-desc:hover { border-color: var(--border-soft); }
+.ov-mod-desc:focus { background: var(--bg-surface); color: var(--text); border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-softer); }
+.ov-mod-desc::placeholder { color: var(--text-faint); }
+/* icon + colour popover */
+.modicon-pop { padding: 9px; display: flex; flex-direction: column; gap: 9px; }
+.modicon-colors { display: flex; gap: 6px; flex-wrap: wrap; padding-bottom: 9px; border-bottom: 1px solid var(--border-soft); }
+.modicon-colors .color-pick { width: 22px; height: 22px; }
+.modicon-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; }
+.modicon-cell { width: 100%; height: 26px; display: grid; place-items: center; border: 1px solid transparent;
+  background: none; border-radius: var(--r-xs); color: var(--text-muted); transition: .1s; cursor: pointer; }
+.modicon-cell:hover { background: var(--bg-hover); color: var(--text-strong); }
+.modicon-cell[data-on] { background: var(--bg-active); border-color: var(--border); }
+/* compact inline date (milestones): text → native picker on click */
+.ov-mile-dbtn { display: inline-flex; align-items: center; gap: 5px; font-family: inherit; font-size: 11.5px; color: var(--text-muted);
+  background: none; border: 1px solid transparent; border-radius: var(--r-xs); padding: 3px 6px; cursor: pointer; transition: .12s; white-space: nowrap; }
+.ov-mile-dbtn:hover { border-color: var(--border-soft); color: var(--text); }
+.ov-mile-dbtn[data-empty] { color: var(--text-faint); }
+
 /* emoji picker triggers */
 .emoji-trigger, .emoji-solo { border: 1px solid var(--border-soft); background: var(--bg-sunken);
   border-radius: var(--r-sm); display: grid; place-items: center; transition: .12s; }

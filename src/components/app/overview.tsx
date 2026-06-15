@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { TaskDto } from '@/server/services';
 import type { GroupModule, GroupMilestone } from '@/lib/grouping';
@@ -9,10 +9,16 @@ import {
   PROJECT_STATUS_LABEL,
   MILESTONE_STATUS,
   MILESTONE_STATUS_LABEL,
+  MODULE_STATE,
+  MODULE_STATE_LABEL,
+  MODULE_STATE_COLOR_KEY,
+  MODULE_ICONS,
   type ProjectStatus,
   type MilestoneStatus,
+  type ModuleState,
+  type ModuleIcon as ModuleIconName,
 } from '@/lib/domain';
-import { toDateInputValue } from '@/lib/dates';
+import { fmtDate, toDateInputValue } from '@/lib/dates';
 import { mdToHtml } from '@/lib/markdown';
 import { PROJECT_COLORS } from '@/lib/colors';
 import { updateProject } from '@/app/_actions/projects';
@@ -21,22 +27,30 @@ import {
   updateMilestone,
   setMilestoneStatus,
   deleteMilestone,
+  reorderMilestones,
   createModule,
   updateModule,
   archiveModule,
+  reorderModules,
 } from '@/app/_actions/structure';
 import { ProjectHeader } from './project-header';
-import { Progress } from '@/components/ui/bits';
+import { Progress, ModuleIcon } from '@/components/ui/bits';
 import { Popover, OptionList } from '@/components/ui/popover';
-import { Ic } from '@/components/ui/icons';
+import { Ic, iconByName } from '@/components/ui/icons';
 
 const DOT_KEY: Record<ProjectStatus, string> = {
   active: 'in_progress',
   planned: 'todo',
-  paused: 'blocked',
+  paused: 'pending',
   done: 'done',
   backlog: 'backlog',
   cancelled: 'cancelled',
+};
+
+const MILE_COLOR_KEY: Record<MilestoneStatus, string> = {
+  planned: 'backlog',
+  active: 'in_progress',
+  done: 'done',
 };
 
 interface Project {
@@ -51,6 +65,8 @@ interface Project {
   description: string | null;
 }
 
+type OvTab = 'info' | 'milestones' | 'modules';
+
 export function OverviewScreen({
   project,
   modules,
@@ -62,240 +78,508 @@ export function OverviewScreen({
   milestones: GroupMilestone[];
   tasks: TaskDto[];
 }) {
-  const router = useRouter();
-  const save = async (patch: Parameters<typeof updateProject>[1]) => {
-    await updateProject(project.id, patch);
-    router.refresh();
-  };
-
-  const mileProgress = useMemo(() => {
-    const map = new Map<string, { done: number; total: number }>();
-    for (const m of milestones) map.set(m.id, { done: 0, total: 0 });
-    for (const t of tasks) {
-      if (t.milestoneId && map.has(t.milestoneId)) {
-        const e = map.get(t.milestoneId)!;
-        e.total++;
-        if (t.done) e.done++;
-      }
-    }
-    return map;
-  }, [milestones, tasks]);
+  const [tab, setTab] = useState<OvTab>('info');
 
   return (
     <>
       <ProjectHeader project={project} active="overview" />
       <div className="overview">
-        <div className="ov-layout">
-          <div className="ov-main">
-            <div className="ov-grid">
-              <span className="ov-label">Short description</span>
-              <input
-                className="ov-input"
-                defaultValue={project.shortDesc ?? ''}
-                placeholder="One line about this project"
-                onBlur={(e) => e.target.value !== (project.shortDesc ?? '') && save({ shortDesc: e.target.value || null })}
-              />
+        <div className="ov-vlayout">
+          <nav className="ov-vnav" aria-label="Overview sections">
+            <button className="ov-vtab" data-active={tab === 'info' ? '' : undefined} onClick={() => setTab('info')} type="button">
+              <Ic.list size={16} /> <span className="ov-vtab-label">Info</span>
+            </button>
+            <button className="ov-vtab" data-active={tab === 'milestones' ? '' : undefined} onClick={() => setTab('milestones')} type="button">
+              <Ic.target size={16} /> <span className="ov-vtab-label">Milestones</span>
+              <span className="ov-vtab-count">{milestones.length}</span>
+            </button>
+            <button className="ov-vtab" data-active={tab === 'modules' ? '' : undefined} onClick={() => setTab('modules')} type="button">
+              <Ic.cube size={16} /> <span className="ov-vtab-label">Modules</span>
+              <span className="ov-vtab-count">{modules.length}</span>
+            </button>
+          </nav>
 
-              <span className="ov-label">Status</span>
-              <span>
-                <Popover
-                  width={190}
-                  trigger={
-                    <button className="ov-pickbtn" type="button">
-                      <span className="pstatus">
-                        <span className="dot" style={{ background: `var(--st-${DOT_KEY[project.status]})` }} />
-                        {PROJECT_STATUS_LABEL[project.status]}
-                      </span>
-                    </button>
-                  }
-                >
-                  {(close) => (
-                    <OptionList
-                      options={PROJECT_STATUS.map((s) => ({ id: s, label: PROJECT_STATUS_LABEL[s] }))}
-                      value={project.status}
-                      onPick={(id) => {
-                        save({ status: id as ProjectStatus });
-                        close();
-                      }}
-                      renderOpt={(o) => (
-                        <>
-                          <span className="dot" style={{ background: `var(--st-${DOT_KEY[o.id as ProjectStatus]})` }} />
-                          {o.label}
-                        </>
-                      )}
-                    />
-                  )}
-                </Popover>
-              </span>
-
-              <span className="ov-label">Status note</span>
-              <input
-                className="ov-input"
-                defaultValue={project.statusNote ?? ''}
-                placeholder="Where is this project right now?"
-                onBlur={(e) => e.target.value !== (project.statusNote ?? '') && save({ statusNote: e.target.value || null })}
-              />
-
-              <span className="ov-label">Prefix</span>
-              <input className="ov-input ov-key" value={project.key} readOnly />
-
-              <span className="ov-label">Tags</span>
-              <TagEditor tags={project.tags} onChange={(tags) => save({ tags })} />
-            </div>
-
-            <label className="ov-label ov-desc-label">Description</label>
-            <MarkdownField value={project.description ?? ''} onSave={(d) => save({ description: d || null })} />
+          <div className="ov-vpanel">
+            {tab === 'info' && <InfoPanel project={project} />}
+            {tab === 'milestones' && <MilestonesPanel projectId={project.id} milestones={milestones} tasks={tasks} />}
+            {tab === 'modules' && <ModulesPanel projectId={project.id} modules={modules} tasks={tasks} />}
           </div>
-
-          <aside className="ov-side">
-            <div className="ov-list-block">
-              <div className="ov-list-head">
-                <Ic.target size={16} /> Milestones <span className="ov-count">{milestones.length}</span>
-              </div>
-              {milestones.map((m) => {
-                const prog = mileProgress.get(m.id) ?? { done: 0, total: 0 };
-                return (
-                  <div className="ov-mile" key={m.id}>
-                    <div className="ov-mile-top">
-                      <input
-                        className="ov-rowname"
-                        defaultValue={m.name}
-                        onBlur={(e) => e.target.value.trim() && e.target.value !== m.name && updateMile(m.id, { name: e.target.value.trim() }, router)}
-                      />
-                      <button
-                        className="icon-btn ov-del"
-                        type="button"
-                        onClick={async () => {
-                          await deleteMilestone(m.id);
-                          router.refresh();
-                        }}
-                        aria-label="Delete milestone"
-                      >
-                        <Ic.trash size={14} />
-                      </button>
-                    </div>
-                    <div className="ov-mile-bottom">
-                      <input
-                        type="date"
-                        className="ov-date"
-                        defaultValue={toDateInputValue(m.targetDate)}
-                        onChange={(e) =>
-                          updateMile(m.id, { targetDate: e.target.value ? new Date(`${e.target.value}T00:00:00`) : null }, router)
-                        }
-                      />
-                      <select
-                        className="ov-state"
-                        defaultValue={m.status}
-                        onChange={async (e) => {
-                          await setMilestoneStatus(m.id, e.target.value as MilestoneStatus);
-                          router.refresh();
-                        }}
-                      >
-                        {MILESTONE_STATUS.map((s) => (
-                          <option key={s} value={s}>
-                            {MILESTONE_STATUS_LABEL[s]}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="ov-mile-prog">
-                        <Progress value={prog.total ? prog.done / prog.total : 0} width={54} />
-                        <span className="ov-rowmeta">
-                          {prog.done}/{prog.total}
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-              <button
-                className="add-row-btn sm"
-                type="button"
-                onClick={async () => {
-                  await createMilestone({ projectId: project.id, name: 'New milestone' });
-                  router.refresh();
-                }}
-              >
-                <Ic.plus size={15} /> Add milestone
-              </button>
-            </div>
-
-            <div className="ov-list-block">
-              <div className="ov-list-head">
-                <Ic.cube size={16} /> Modules <span className="ov-count">{modules.length}</span>
-              </div>
-              {modules.map((m) => (
-                <div className="ov-row" key={m.id}>
-                  <Popover
-                    width={150}
-                    trigger={<button className="ov-swatch" type="button" style={{ background: m.color ?? '#6E8BFF' }} aria-label="Module color" />}
-                  >
-                    {(close) => (
-                      <div className="color-grid" style={{ padding: 4 }}>
-                        {PROJECT_COLORS.map((c) => (
-                          <button
-                            key={c}
-                            type="button"
-                            className="color-pick"
-                            data-on={c === m.color ? '' : undefined}
-                            style={{ background: c, color: c }}
-                            onClick={async () => {
-                              await updateModule(m.id, { color: c });
-                              router.refresh();
-                              close();
-                            }}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </Popover>
-                  <input
-                    className="ov-rowname"
-                    defaultValue={m.name}
-                    onBlur={async (e) => {
-                      if (e.target.value.trim() && e.target.value !== m.name) {
-                        await updateModule(m.id, { name: e.target.value.trim() });
-                        router.refresh();
-                      }
-                    }}
-                  />
-                  <button
-                    className="icon-btn ov-del"
-                    type="button"
-                    onClick={async () => {
-                      await archiveModule(m.id);
-                      router.refresh();
-                    }}
-                    aria-label="Remove module"
-                  >
-                    <Ic.trash size={14} />
-                  </button>
-                </div>
-              ))}
-              <button
-                className="add-row-btn sm"
-                type="button"
-                onClick={async () => {
-                  await createModule({ projectId: project.id, name: 'New module', color: '#6E8BFF' });
-                  router.refresh();
-                }}
-              >
-                <Ic.plus size={15} /> Add module
-              </button>
-            </div>
-          </aside>
         </div>
       </div>
     </>
   );
 }
 
-async function updateMile(
+// ---------------------------------------------------------------- Info panel
+function InfoPanel({ project }: { project: Project }) {
+  const router = useRouter();
+  const save = async (patch: Parameters<typeof updateProject>[1]) => {
+    await updateProject(project.id, patch);
+    router.refresh();
+  };
+  return (
+    <>
+      <div className="ov-grid">
+        <span className="ov-label">Short description</span>
+        <input
+          className="ov-input"
+          defaultValue={project.shortDesc ?? ''}
+          placeholder="One line about this project"
+          onBlur={(e) => e.target.value !== (project.shortDesc ?? '') && save({ shortDesc: e.target.value || null })}
+        />
+
+        <span className="ov-label">Status</span>
+        <span>
+          <Popover
+            width={190}
+            trigger={
+              <button className="ov-pickbtn" type="button">
+                <span className="pstatus">
+                  <span className="dot" style={{ background: `var(--st-${DOT_KEY[project.status]})` }} />
+                  {PROJECT_STATUS_LABEL[project.status]}
+                </span>
+              </button>
+            }
+          >
+            {(close) => (
+              <OptionList
+                options={PROJECT_STATUS.map((s) => ({ id: s, label: PROJECT_STATUS_LABEL[s] }))}
+                value={project.status}
+                onPick={(id) => {
+                  save({ status: id as ProjectStatus });
+                  close();
+                }}
+                renderOpt={(o) => (
+                  <>
+                    <span className="dot" style={{ background: `var(--st-${DOT_KEY[o.id as ProjectStatus]})` }} />
+                    {o.label}
+                  </>
+                )}
+              />
+            )}
+          </Popover>
+        </span>
+
+        <span className="ov-label">Status note</span>
+        <input
+          className="ov-input"
+          defaultValue={project.statusNote ?? ''}
+          placeholder="Where is this project right now?"
+          onBlur={(e) => e.target.value !== (project.statusNote ?? '') && save({ statusNote: e.target.value || null })}
+        />
+
+        <span className="ov-label">Prefix</span>
+        <input className="ov-input ov-key" value={project.key} readOnly />
+
+        <span className="ov-label">Tags</span>
+        <TagEditor tags={project.tags} onChange={(tags) => save({ tags })} />
+      </div>
+
+      <label className="ov-label ov-desc-label">Description</label>
+      <MarkdownField value={project.description ?? ''} onSave={(d) => save({ description: d || null })} />
+    </>
+  );
+}
+
+// ---------------------------------------------------------- Milestones panel
+function MilestonesPanel({
+  projectId,
+  milestones,
+  tasks,
+}: {
+  projectId: string;
+  milestones: GroupMilestone[];
+  tasks: TaskDto[];
+}) {
+  const router = useRouter();
+  const progress = useProgress(milestones, tasks, (t) => t.milestoneId);
+  const drag = useDragReorder(milestones, (ids) => reorderMilestones(ids));
+
+  return (
+    <div className="ov-list-block">
+      <div className="ov-list-head">
+        <Ic.target size={16} /> Milestones <span className="ov-count">{milestones.length}</span>
+      </div>
+      {drag.ordered.map((m) => {
+        const prog = progress.get(m.id) ?? { done: 0, total: 0 };
+        const st = m.status as MilestoneStatus;
+        return (
+          <div
+            className="ov-mile"
+            key={m.id}
+            data-dragging={drag.dragId === m.id ? '' : undefined}
+            data-dragover={drag.overId === m.id ? '' : undefined}
+            onDragOver={(e) => {
+              e.preventDefault();
+              drag.setOverId(m.id);
+            }}
+            onDrop={() => drag.onDrop(m.id)}
+          >
+            <div className="ov-mile-top">
+              <span
+                className="ov-grip"
+                draggable
+                onDragStart={() => drag.setDragId(m.id)}
+                onDragEnd={drag.reset}
+                aria-label="Drag to reorder"
+              >
+                <Ic.grip size={14} />
+              </span>
+              <input
+                className="ov-rowname"
+                defaultValue={m.name}
+                onBlur={(e) => e.target.value.trim() && e.target.value !== m.name && saveMile(m.id, { name: e.target.value.trim() }, router)}
+              />
+              <button
+                className="icon-btn ov-del"
+                type="button"
+                onClick={async () => {
+                  await deleteMilestone(m.id);
+                  router.refresh();
+                }}
+                aria-label="Delete milestone"
+              >
+                <Ic.trash size={14} />
+              </button>
+            </div>
+            <div className="ov-mile-bottom">
+              <StatePicker
+                value={st}
+                options={MILESTONE_STATUS.map((s) => ({ id: s, label: MILESTONE_STATUS_LABEL[s], colorKey: MILE_COLOR_KEY[s] }))}
+                onPick={async (s) => {
+                  await setMilestoneStatus(m.id, s as MilestoneStatus);
+                  router.refresh();
+                }}
+              />
+              <CompactDate
+                value={m.targetDate}
+                onChange={(d) => saveMile(m.id, { targetDate: d }, router)}
+              />
+              <span className="ov-mile-prog">
+                <Progress value={prog.total ? prog.done / prog.total : 0} width={54} tone={prog.total && prog.done === prog.total ? 'done' : 'accent'} />
+                <span className="ov-rowmeta">
+                  {prog.done}/{prog.total}
+                </span>
+              </span>
+            </div>
+          </div>
+        );
+      })}
+      <button
+        className="add-row-btn sm"
+        type="button"
+        onClick={async () => {
+          await createMilestone({ projectId, name: 'New milestone' });
+          router.refresh();
+        }}
+      >
+        <Ic.plus size={15} /> Add milestone
+      </button>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------- Modules panel
+function ModulesPanel({
+  projectId,
+  modules,
+  tasks,
+}: {
+  projectId: string;
+  modules: GroupModule[];
+  tasks: TaskDto[];
+}) {
+  const router = useRouter();
+  const progress = useProgress(modules, tasks, (t) => t.moduleId);
+  const drag = useDragReorder(modules, (ids) => reorderModules(ids));
+
+  return (
+    <div className="ov-list-block">
+      <div className="ov-list-head">
+        <Ic.cube size={16} /> Modules <span className="ov-count">{modules.length}</span>
+      </div>
+      {drag.ordered.map((m) => {
+        const prog = progress.get(m.id) ?? { done: 0, total: 0 };
+        const state = (m.state ?? 'active') as ModuleState;
+        return (
+          <div
+            className="ov-mod"
+            key={m.id}
+            data-dragging={drag.dragId === m.id ? '' : undefined}
+            data-dragover={drag.overId === m.id ? '' : undefined}
+            onDragOver={(e) => {
+              e.preventDefault();
+              drag.setOverId(m.id);
+            }}
+            onDrop={() => drag.onDrop(m.id)}
+          >
+            <div className="ov-mod-main">
+              <span
+                className="ov-grip"
+                draggable
+                onDragStart={() => drag.setDragId(m.id)}
+                onDragEnd={drag.reset}
+                aria-label="Drag to reorder"
+              >
+                <Ic.grip size={14} />
+              </span>
+              <IconColorPicker
+                icon={m.icon}
+                color={m.color}
+                onPick={async (patch) => {
+                  await updateModule(m.id, patch);
+                  router.refresh();
+                }}
+              />
+              <input
+                className="ov-rowname"
+                defaultValue={m.name}
+                onBlur={async (e) => {
+                  if (e.target.value.trim() && e.target.value !== m.name) {
+                    await updateModule(m.id, { name: e.target.value.trim() });
+                    router.refresh();
+                  }
+                }}
+              />
+              <StatePicker
+                value={state}
+                options={MODULE_STATE.map((s) => ({ id: s, label: MODULE_STATE_LABEL[s], colorKey: MODULE_STATE_COLOR_KEY[s] }))}
+                onPick={async (s) => {
+                  await updateModule(m.id, { state: s as ModuleState });
+                  router.refresh();
+                }}
+              />
+              <span className="ov-mod-prog">
+                <Progress value={prog.total ? prog.done / prog.total : 0} width={48} tone={prog.total && prog.done === prog.total ? 'done' : 'accent'} />
+                <span className="ov-rowmeta">
+                  {prog.done}/{prog.total}
+                </span>
+              </span>
+              <button
+                className="icon-btn ov-del"
+                type="button"
+                onClick={async () => {
+                  await archiveModule(m.id);
+                  router.refresh();
+                }}
+                aria-label="Remove module"
+              >
+                <Ic.trash size={14} />
+              </button>
+            </div>
+            <input
+              className="ov-mod-desc"
+              defaultValue={m.description ?? ''}
+              placeholder="What does this module cover?"
+              onBlur={async (e) => {
+                if (e.target.value !== (m.description ?? '')) {
+                  await updateModule(m.id, { description: e.target.value || null });
+                  router.refresh();
+                }
+              }}
+            />
+          </div>
+        );
+      })}
+      <button
+        className="add-row-btn sm"
+        type="button"
+        onClick={async () => {
+          await createModule({ projectId, name: 'New module', color: '#6E8BFF', icon: 'cube' });
+          router.refresh();
+        }}
+      >
+        <Ic.plus size={15} /> Add module
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------- primitives
+interface StateOpt {
+  id: string;
+  label: string;
+  colorKey: string;
+}
+function StatePicker({ value, options, onPick }: { value: string; options: StateOpt[]; onPick: (id: string) => void }) {
+  const cur = options.find((o) => o.id === value) ?? options[0];
+  return (
+    <Popover
+      width={170}
+      trigger={
+        <button className="ov-mstate" data-state={value} type="button">
+          <span className="dot" style={{ background: `var(--st-${cur.colorKey})` }} />
+          {cur.label}
+        </button>
+      }
+    >
+      {(close) => (
+        <OptionList
+          options={options.map((o) => ({ id: o.id, label: o.label }))}
+          value={value}
+          onPick={(id) => {
+            onPick(id);
+            close();
+          }}
+          renderOpt={(o) => {
+            const opt = options.find((x) => x.id === o.id);
+            return (
+              <>
+                <span className="dot" style={{ background: `var(--st-${opt?.colorKey ?? 'backlog'})` }} />
+                {o.label}
+              </>
+            );
+          }}
+        />
+      )}
+    </Popover>
+  );
+}
+
+function IconColorPicker({
+  icon,
+  color,
+  onPick,
+}: {
+  icon?: string | null;
+  color?: string | null;
+  onPick: (patch: { icon?: ModuleIconName; color?: string }) => void;
+}) {
+  return (
+    <Popover
+      width={250}
+      trigger={
+        <button className="ov-modicon" type="button" aria-label="Module icon and colour">
+          <ModuleIcon icon={icon ?? 'cube'} color={color} size={16} />
+        </button>
+      }
+    >
+      {(close) => (
+        <div className="modicon-pop">
+          <div className="modicon-colors">
+            {PROJECT_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                className="color-pick"
+                data-on={c === color ? '' : undefined}
+                style={{ background: c, color: c }}
+                onClick={() => onPick({ color: c })}
+                aria-label={`Colour ${c}`}
+              />
+            ))}
+          </div>
+          <div className="modicon-grid">
+            {MODULE_ICONS.map((name) => {
+              const IconC = iconByName(name);
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  className="modicon-cell"
+                  data-on={name === icon ? '' : undefined}
+                  style={name === icon ? { color: color ?? undefined } : undefined}
+                  onClick={() => {
+                    onPick({ icon: name });
+                    close();
+                  }}
+                  aria-label={name}
+                >
+                  <IconC size={16} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </Popover>
+  );
+}
+
+function CompactDate({ value, onChange }: { value: Date | string | null; onChange: (d: Date | null) => void }) {
+  const [editing, setEditing] = useState(false);
+  if (editing) {
+    return (
+      <input
+        type="date"
+        className="ov-date"
+        autoFocus
+        defaultValue={toDateInputValue(value)}
+        onBlur={() => setEditing(false)}
+        onChange={(e) => onChange(e.target.value ? new Date(`${e.target.value}T00:00:00`) : null)}
+      />
+    );
+  }
+  return (
+    <button className="ov-mile-dbtn" data-empty={value ? undefined : ''} type="button" onClick={() => setEditing(true)}>
+      <Ic.calendar size={12} /> {value ? fmtDate(value, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Set date'}
+    </button>
+  );
+}
+
+// progress per group (done/total of tasks pointing at each item)
+function useProgress<T extends { id: string }>(
+  items: T[],
+  tasks: TaskDto[],
+  keyOf: (t: TaskDto) => string | null | undefined,
+) {
+  return useMemo(() => {
+    const map = new Map<string, { done: number; total: number }>();
+    for (const i of items) map.set(i.id, { done: 0, total: 0 });
+    for (const t of tasks) {
+      const k = keyOf(t);
+      if (k && map.has(k)) {
+        const e = map.get(k)!;
+        e.total++;
+        if (t.done) e.done++;
+      }
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, tasks]);
+}
+
+// local drag-reorder state; persists the new id order on drop
+function useDragReorder<T extends { id: string }>(items: T[], persist: (ids: string[]) => void) {
+  const idsKey = items.map((i) => i.id).join(',');
+  const [order, setOrder] = useState<string[]>(() => items.map((i) => i.id));
+  useEffect(() => {
+    setOrder(items.map((i) => i.id));
+  }, [idsKey]);
+
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+
+  const byId = new Map(items.map((i) => [i.id, i]));
+  const ordered = order.map((id) => byId.get(id)).filter(Boolean) as T[];
+
+  const reset = () => {
+    setDragId(null);
+    setOverId(null);
+  };
+
+  const onDrop = (targetId: string) => {
+    if (!dragId || dragId === targetId) return reset();
+    const next = order.slice();
+    const from = next.indexOf(dragId);
+    const to = next.indexOf(targetId);
+    if (from < 0 || to < 0) return reset();
+    next.splice(from, 1);
+    next.splice(to, 0, dragId);
+    setOrder(next);
+    reset();
+    persist(next);
+  };
+
+  return { ordered, dragId, overId, setDragId, setOverId, onDrop, reset };
+}
+
+function saveMile(
   id: string,
   patch: Parameters<typeof updateMilestone>[1],
   router: ReturnType<typeof useRouter>,
 ) {
-  await updateMilestone(id, patch);
-  router.refresh();
+  updateMilestone(id, patch).then(() => router.refresh());
 }
 
 function TagEditor({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {

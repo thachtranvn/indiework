@@ -24,6 +24,7 @@ export interface GroupModule {
   color: string | null;
   icon?: string | null;
   state?: string | null;
+  description?: string | null;
 }
 export interface GroupMilestone {
   id: string;
