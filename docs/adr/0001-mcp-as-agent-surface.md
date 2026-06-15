@@ -106,6 +106,7 @@ enforcement. When managed keys land, destructive tools can be gated behind
 
 - [scope.md](../scope.md) §1 (three frontends, one service layer), §4 (external access)
 - [roadmap.md](../roadmap.md) — Phase 3 (MCP), Phase 4 (managed `api_keys`)
-- [src/app/mcp/route.ts](../../src/app/mcp/route.ts) — current 8 tools
+- [src/app/mcp/route.ts](../../src/app/mcp/route.ts) — current 9 tools
+- [mcp.md](../mcp.md) — connecting an MCP client (config snippets + tool reference)
 - `src/server/services/*` — capabilities already implemented
 - [src/server/auth/token.ts](../../src/server/auth/token.ts) — token auth; scope not yet enforced

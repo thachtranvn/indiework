@@ -87,9 +87,11 @@ curl -X POST localhost:3000/api/v1/tasks \
 ## MCP server
 
 `POST /mcp` speaks JSON-RPC 2.0 (stateless streamable-HTTP), Bearer-guarded. Tools:
-`create_task`, `list_tasks`, `get_task`, `update_task`, `add_comment`, `set_status_note`,
-`list_projects`, `list_inbox`. Point any MCP client (Claude Desktop, n8n, …) at the
-endpoint with the `API_TOKEN` as a Bearer header.
+`create_task`, `add_subtask`, `list_tasks`, `get_task`, `update_task`, `add_comment`,
+`set_status_note`, `list_projects`, `list_inbox`. Point any MCP client (Claude Code,
+Claude Desktop, Cursor, n8n, …) at the endpoint with the `API_TOKEN` as a Bearer header.
+
+See **[`docs/mcp.md`](docs/mcp.md)** for client config snippets and the full tool reference.
 
 ## Architecture & design
 
