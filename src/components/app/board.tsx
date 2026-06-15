@@ -6,7 +6,6 @@ import type { TaskDto } from '@/server/services';
 import type { GroupModule, GroupMilestone } from '@/lib/grouping';
 import { BOARD_COLUMNS, TASK_STATUS_LABEL, TASK_PRIORITY_RANK, type TaskStatus } from '@/lib/domain';
 import { createTask, updateTask } from '@/app/_actions/tasks';
-import { ProjectHeader } from './project-header';
 import { PriorityBars, ModuleTag, MilestoneTag } from '@/components/ui/bits';
 import { Ic } from '@/components/ui/icons';
 
@@ -17,7 +16,8 @@ interface Project {
   emoji: string | null;
 }
 
-export function BoardScreen({
+/** Board body only (no header) — rendered inside ProjectView when a view's mode is board. */
+export function BoardView({
   project,
   modules,
   milestones,
@@ -78,10 +78,8 @@ export function BoardScreen({
   };
 
   return (
-    <>
-      <ProjectHeader project={project} active="board" />
-      <div className="board">
-        {BOARD_COLUMNS.map((status) => {
+    <div className="board">
+      {BOARD_COLUMNS.map((status) => {
           const list = byColumn.get(status) ?? [];
           return (
             <div
@@ -139,8 +137,7 @@ export function BoardScreen({
             </div>
           );
         })}
-      </div>
-    </>
+    </div>
   );
 }
 

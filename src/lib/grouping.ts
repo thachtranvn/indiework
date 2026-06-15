@@ -33,11 +33,38 @@ export interface GroupMilestone {
   targetDate: Date | string | null;
 }
 
+/** Per-row field visibility (Show fields). */
+export interface FieldVis {
+  taskId: boolean;
+  priority: boolean;
+  module: boolean;
+  milestone: boolean;
+  status: boolean;
+}
+
+export const DEFAULT_FIELDS: FieldVis = {
+  taskId: true,
+  priority: true,
+  module: true,
+  milestone: true,
+  status: false,
+};
+
 export interface Filters {
   status: TaskStatus[];
   priority: TaskPriority[];
   hideDone: boolean;
+  showSubtasks: boolean;
+  fields: FieldVis;
 }
+
+export const DEFAULT_FILTERS: Filters = {
+  status: [],
+  priority: [],
+  hideDone: false,
+  showSubtasks: false,
+  fields: DEFAULT_FIELDS,
+};
 
 export type NewTaskPatch = Partial<{
   moduleId: string | null;
@@ -81,7 +108,18 @@ export function computeAvailDims(modules: GroupModule[], milestones: GroupMilest
   return dims;
 }
 
-function groupSpec(dim: GroupDim, modules: GroupModule[], milestones: GroupMilestone[]): Bucket[] | null {
+export interface GroupOpts {
+  statusOrder?: TaskStatus[];
+  statusHidden?: TaskStatus[];
+  allowedStatus?: (s: TaskStatus) => boolean;
+}
+
+function groupSpec(
+  dim: GroupDim,
+  modules: GroupModule[],
+  milestones: GroupMilestone[],
+  opts: GroupOpts = {},
+): Bucket[] | null {
   if (dim === 'module') {
     const g: Bucket[] = modules.map((m) => ({
       key: m.id,
@@ -127,16 +165,22 @@ function groupSpec(dim: GroupDim, modules: GroupModule[], milestones: GroupMiles
     return g;
   }
   if (dim === 'status') {
-    // Status groups render in DEFAULT_STATUS_ORDER — active work first.
-    return DEFAULT_STATUS_ORDER.map((s) => ({
-      key: s,
-      name: TASK_STATUS_LABEL[s],
-      color: `var(--st-${s})`,
-      defaultOpen: s !== 'done' && s !== 'cancelled',
-      keep: false,
-      patch: { status: s },
-      match: (t) => t.status === s,
-    }));
+    // Status groups render in statusOrder (falls back to DEFAULT_STATUS_ORDER),
+    // honoring per-view hidden groups + the view's allowed-status scope.
+    const order = (opts.statusOrder?.length ? opts.statusOrder : DEFAULT_STATUS_ORDER) as readonly TaskStatus[];
+    const hidden = new Set(opts.statusHidden ?? []);
+    return order
+      .filter((s) => !hidden.has(s))
+      .filter((s) => (opts.allowedStatus ? opts.allowedStatus(s) : true))
+      .map((s) => ({
+        key: s,
+        name: TASK_STATUS_LABEL[s],
+        color: `var(--st-${s})`,
+        defaultOpen: s !== 'done' && s !== 'cancelled',
+        keep: false,
+        patch: { status: s },
+        match: (t) => t.status === s,
+      }));
   }
   if (dim === 'priority') {
     return [...TASK_PRIORITY].reverse().map((p) => ({
@@ -167,8 +211,10 @@ export function buildSections(
   filters: Filters,
   modules: GroupModule[],
   milestones: GroupMilestone[],
+  opts: GroupOpts = {},
 ): Section[] {
   const pass = (t: TaskDto) => {
+    if (opts.allowedStatus && !opts.allowedStatus(t.status)) return false;
     if (filters.status.length && !filters.status.includes(t.status)) return false;
     if (filters.priority.length && !filters.priority.includes(t.priority)) return false;
     if (filters.hideDone && (t.done || t.status === 'cancelled')) return false;
@@ -176,7 +222,7 @@ export function buildSections(
   };
   const ptasks = tasks.filter(pass);
 
-  const primGroups = groupSpec(primary, modules, milestones);
+  const primGroups = groupSpec(primary, modules, milestones, opts);
   if (!primGroups) {
     return [{ id: '__all', name: '', defaultOpen: true, keep: true, patch: {}, tasks: ptasks.slice().sort(sortTasks) }];
   }
@@ -198,7 +244,7 @@ export function buildSections(
       tasks: groupTasks,
     };
     if (subDim) {
-      const subGroups = groupSpec(subDim, modules, milestones) ?? [];
+      const subGroups = groupSpec(subDim, modules, milestones, opts) ?? [];
       sec.subs = subGroups
         .map((sg) => ({
           id: `${g.key}::${sg.key}`,

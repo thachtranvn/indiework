@@ -1,0 +1,290 @@
+'use client';
+
+import { useState } from 'react';
+import { Popover } from '@/components/ui/popover';
+import { PriorityBars, ModuleIcon } from '@/components/ui/bits';
+import { Ic } from '@/components/ui/icons';
+import {
+  TASK_STATUS,
+  TASK_STATUS_LABEL,
+  TASK_PRIORITY,
+  TASK_PRIORITY_LABEL,
+  DEFAULT_STATUS_ORDER,
+  type TaskStatus,
+  type TaskPriority,
+} from '@/lib/domain';
+import type { GroupDim, Filters, FieldVis } from '@/lib/grouping';
+import type { ViewMode } from '@/lib/views';
+
+const DIM_LABEL: Record<GroupDim, string> = {
+  module: 'Module',
+  milestone: 'Milestone',
+  status: 'Status',
+  priority: 'Priority',
+  none: 'None',
+};
+
+type FieldKey = keyof FieldVis;
+const FIELD_ROWS: { key: FieldKey; label: string }[] = [
+  { key: 'taskId', label: 'Task ID' },
+  { key: 'priority', label: 'Priority' },
+  { key: 'module', label: 'Module' },
+  { key: 'milestone', label: 'Milestone' },
+  { key: 'status', label: 'Status' },
+];
+
+function fieldExample(key: FieldKey) {
+  switch (key) {
+    case 'taskId':
+      return <span className="task-ref">DISK-12</span>;
+    case 'priority':
+      return <PriorityBars priority="high" />;
+    case 'module':
+      return <ModuleIcon icon="cube" color="#4C8DFF" size={13} />;
+    case 'milestone':
+      return <Ic.target size={13} />;
+    case 'status':
+      return <span className="dot" style={{ background: 'var(--st-in_progress)' }} />;
+  }
+}
+
+export interface DisplayProps {
+  mode: ViewMode;
+  setMode: (m: ViewMode) => void;
+  groupBy: GroupDim;
+  setGroupBy: (d: GroupDim) => void;
+  subGroupBy: GroupDim;
+  setSubGroupBy: (d: GroupDim) => void;
+  availDims: GroupDim[];
+  filters: Filters;
+  setFilters: (f: Filters) => void;
+  statusOrder: TaskStatus[];
+  setStatusOrder: (o: TaskStatus[]) => void;
+  statusHidden: TaskStatus[];
+  setStatusHidden: (h: TaskStatus[]) => void;
+}
+
+export function DisplayPopover(props: DisplayProps) {
+  const { groupBy, subGroupBy, availDims, filters, statusHidden } = props;
+  const dirty =
+    groupBy !== (availDims[0] ?? 'status') ||
+    subGroupBy !== 'none' ||
+    filters.hideDone ||
+    filters.showSubtasks ||
+    statusHidden.length > 0 ||
+    !filters.fields.taskId ||
+    filters.fields.status;
+
+  return (
+    <Popover
+      align="right"
+      width={300}
+      trigger={
+        <button className="icon-tool" data-on={dirty ? '' : undefined} type="button" aria-label="Display options">
+          <Ic.sliders size={16} />
+          {dirty && <span className="tool-dot" />}
+        </button>
+      }
+    >
+      <DisplayBody {...props} />
+    </Popover>
+  );
+}
+
+function DisplayBody(props: DisplayProps) {
+  const [screen, setScreen] = useState<'main' | 'order'>('main');
+  const { mode, setMode, groupBy, setGroupBy, subGroupBy, setSubGroupBy, availDims, filters, setFilters } = props;
+
+  if (screen === 'order') {
+    return <GroupOrder {...props} onBack={() => setScreen('main')} />;
+  }
+
+  const setField = (key: FieldKey) =>
+    setFilters({ ...filters, fields: { ...filters.fields, [key]: !filters.fields[key] } });
+
+  return (
+    <div className="display-pop">
+      <div className="dp-row">
+        <span className="dp-row-lbl">View</span>
+        <div className="seg-wrap">
+          <button className="seg-btn" data-active={mode === 'list' ? '' : undefined} onClick={() => setMode('list')} type="button">
+            <Ic.list size={14} /> List
+          </button>
+          <button className="seg-btn" data-active={mode === 'board' ? '' : undefined} onClick={() => setMode('board')} type="button">
+            <Ic.board size={14} /> Board
+          </button>
+        </div>
+      </div>
+
+      {mode === 'list' && (
+        <>
+          <div className="dp-divider" />
+          <div className="dp-row">
+            <span className="dp-row-lbl">Grouping</span>
+            <select className="dp-dd" value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupDim)}>
+              {[...availDims, 'none' as GroupDim].map((d) => (
+                <option key={d} value={d}>
+                  {DIM_LABEL[d]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="dp-row">
+            <span className="dp-row-lbl">Sub-grouping</span>
+            <select className="dp-dd" value={subGroupBy} onChange={(e) => setSubGroupBy(e.target.value as GroupDim)}>
+              {['none' as GroupDim, ...availDims.filter((d) => d !== groupBy)].map((d) => (
+                <option key={d} value={d}>
+                  {DIM_LABEL[d]}
+                </option>
+              ))}
+            </select>
+          </div>
+          {groupBy === 'status' && (
+            <button className="dp-back" style={{ padding: '2px 4px' }} onClick={() => setScreen('order')} type="button">
+              Group ordering <Ic.chevronRight size={14} style={{ marginLeft: 'auto' }} />
+            </button>
+          )}
+
+          <div className="dp-divider" />
+          <button className="dp-toggle" type="button" onClick={() => setFilters({ ...filters, showSubtasks: !filters.showSubtasks })}>
+            <Ic.list size={15} /> Show sub-tasks
+            <span className="dp-switch" data-on={filters.showSubtasks ? '' : undefined} />
+          </button>
+          <button className="dp-toggle" type="button" onClick={() => setFilters({ ...filters, hideDone: !filters.hideDone })}>
+            <Ic.eyeOff size={15} /> Hide done & cancelled
+            <span className="dp-switch" data-on={filters.hideDone ? '' : undefined} />
+          </button>
+
+          <div className="dp-divider" />
+          <div className="dp-label">Show fields</div>
+          {FIELD_ROWS.map((f) => (
+            <button key={f.key} className="dp-field" type="button" onClick={() => setField(f.key)}>
+              {f.label}
+              <span className="dp-field-ex">{fieldExample(f.key)}</span>
+              <span className="dp-switch" data-on={filters.fields[f.key] ? '' : undefined} />
+            </button>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+function GroupOrder({
+  statusOrder,
+  setStatusOrder,
+  statusHidden,
+  setStatusHidden,
+  onBack,
+}: DisplayProps & { onBack: () => void }) {
+  const order: TaskStatus[] = statusOrder.length ? statusOrder : [...DEFAULT_STATUS_ORDER];
+  const [dragId, setDragId] = useState<TaskStatus | null>(null);
+  const [overId, setOverId] = useState<TaskStatus | null>(null);
+
+  const drop = (target: TaskStatus) => {
+    if (!dragId || dragId === target) {
+      setDragId(null);
+      setOverId(null);
+      return;
+    }
+    const next = order.slice();
+    next.splice(next.indexOf(dragId), 1);
+    next.splice(next.indexOf(target), 0, dragId);
+    setStatusOrder(next);
+    setDragId(null);
+    setOverId(null);
+  };
+
+  const toggleHidden = (s: TaskStatus) =>
+    setStatusHidden(statusHidden.includes(s) ? statusHidden.filter((x) => x !== s) : [...statusHidden, s]);
+
+  return (
+    <div className="display-pop">
+      <button className="dp-back" onClick={onBack} type="button">
+        <Ic.arrowLeft size={14} /> Group ordering
+      </button>
+      {order.map((s) => (
+        <div
+          key={s}
+          className="dp-order-row"
+          data-hidden={statusHidden.includes(s) ? '' : undefined}
+          data-dragging={dragId === s ? '' : undefined}
+          data-dragover={overId === s ? '' : undefined}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setOverId(s);
+          }}
+          onDrop={() => drop(s)}
+        >
+          <span className="dp-order-grip" draggable onDragStart={() => setDragId(s)} onDragEnd={() => setDragId(null)}>
+            <Ic.grip size={13} />
+          </span>
+          <span className="dp-order-name">
+            <span className="dot" style={{ background: `var(--st-${s})` }} />
+            {TASK_STATUS_LABEL[s]}
+          </span>
+          <button className="dp-order-eye" type="button" onClick={() => toggleHidden(s)} aria-label={statusHidden.includes(s) ? 'Show group' : 'Hide group'}>
+            {statusHidden.includes(s) ? <Ic.eyeOff size={14} /> : <Ic.eye size={14} />}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function FilterPopover({ filters, setFilters }: { filters: Filters; setFilters: (f: Filters) => void }) {
+  const activeCount = filters.status.length + filters.priority.length;
+  const toggleStatus = (s: TaskStatus) =>
+    setFilters({
+      ...filters,
+      status: filters.status.includes(s) ? filters.status.filter((x) => x !== s) : [...filters.status, s],
+    });
+  const togglePriority = (p: TaskPriority) =>
+    setFilters({
+      ...filters,
+      priority: filters.priority.includes(p) ? filters.priority.filter((x) => x !== p) : [...filters.priority, p],
+    });
+
+  return (
+    <Popover
+      align="right"
+      width={260}
+      trigger={
+        <button className="icon-tool" data-on={activeCount > 0 ? '' : undefined} type="button" aria-label="Filter">
+          <Ic.filterFunnel size={16} />
+          {activeCount > 0 && <span className="tool-dot" />}
+        </button>
+      }
+    >
+      <div className="display-pop">
+        <div className="dp-block">
+          <div className="dp-label">Status</div>
+          <div className="chip-pick">
+            {TASK_STATUS.filter((s) => s !== 'inbox').map((s) => (
+              <button key={s} className="fchip" data-on={filters.status.includes(s) ? '' : undefined} onClick={() => toggleStatus(s)} type="button">
+                <span className="dot" style={{ background: `var(--st-${s})` }} />
+                {TASK_STATUS_LABEL[s]}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="dp-block">
+          <div className="dp-label">Priority</div>
+          <div className="chip-pick">
+            {TASK_PRIORITY.map((p) => (
+              <button key={p} className="fchip" data-on={filters.priority.includes(p) ? '' : undefined} onClick={() => togglePriority(p)} type="button">
+                <PriorityBars priority={p} />
+                {TASK_PRIORITY_LABEL[p]}
+              </button>
+            ))}
+          </div>
+        </div>
+        {activeCount > 0 && (
+          <button className="dp-reset" type="button" onClick={() => setFilters({ ...filters, status: [], priority: [] })}>
+            Clear filters
+          </button>
+        )}
+      </div>
+    </Popover>
+  );
+}

@@ -1,9 +1,9 @@
 'use client';
 
 import type { TaskDto } from '@/server/services';
-import type { GroupModule, GroupMilestone } from '@/lib/grouping';
+import type { GroupModule, GroupMilestone, FieldVis } from '@/lib/grouping';
 import { CircleCheck } from '@/components/ui/interactive';
-import { PriorityBars, ModuleTag, MilestoneTag, DuePill } from '@/components/ui/bits';
+import { PriorityBars, ModuleTag, MilestoneTag, DuePill, StatusChip } from '@/components/ui/bits';
 import { Ic } from '@/components/ui/icons';
 
 export function TaskRow({
@@ -13,6 +13,7 @@ export function TaskRow({
   selected,
   checked,
   selMode,
+  fields,
   onToggleDone,
   onOpen,
   onToggleSelect,
@@ -25,6 +26,7 @@ export function TaskRow({
   selected: boolean;
   checked: boolean;
   selMode: boolean;
+  fields: FieldVis;
   onToggleDone: () => void;
   onOpen: () => void;
   onToggleSelect: (shift: boolean) => void;
@@ -58,7 +60,7 @@ export function TaskRow({
       <div className="task-main">
         <div className="task-line">
           <span className="task-title">{task.title}</span>
-          {task.ref && <span className="task-ref">{task.ref}</span>}
+          {fields.taskId && task.ref && <span className="task-ref">{task.ref}</span>}
         </div>
         {task.status === 'pending' && task.statusNote && (
           <div className="task-note-2nd">
@@ -69,10 +71,11 @@ export function TaskRow({
       </div>
 
       <div className="task-meta task-reveal">
-        <PriorityBars priority={task.priority} />
+        {fields.status && <StatusChip status={task.status} size="sm" />}
+        {fields.priority && <PriorityBars priority={task.priority} />}
         {task.dueDate && <DuePill due={task.dueDate} />}
-        {showModule && module && <ModuleTag name={module.name} color={module.color} icon={module.icon} />}
-        {showMilestone && milestone && <MilestoneTag name={milestone.name} />}
+        {fields.module && showModule && module && <ModuleTag name={module.name} color={module.color} icon={module.icon} />}
+        {fields.milestone && showMilestone && milestone && <MilestoneTag name={milestone.name} />}
       </div>
     </div>
   );

@@ -33,7 +33,8 @@ import {
   archiveModule,
   reorderModules,
 } from '@/app/_actions/structure';
-import { ProjectHeader } from './project-header';
+import { ProjectTabs } from './project-tabs';
+import { useViews } from '@/lib/views';
 import { Progress, ModuleIcon } from '@/components/ui/bits';
 import { Popover, OptionList } from '@/components/ui/popover';
 import { Ic, iconByName } from '@/components/ui/icons';
@@ -79,10 +80,19 @@ export function OverviewScreen({
   tasks: TaskDto[];
 }) {
   const [tab, setTab] = useState<OvTab>('info');
+  const views = useViews(project.key);
 
   return (
     <>
-      <ProjectHeader project={project} active="overview" />
+      <ProjectTabs
+        project={project}
+        activeView="overview"
+        customViews={views.customViews}
+        onAddView={views.addView}
+        onRenameView={views.renameView}
+        onRemoveView={views.removeView}
+        modeFor={views.modeFor}
+      />
       <div className="overview">
         <div className="ov-vlayout">
           <nav className="ov-vnav" aria-label="Overview sections">

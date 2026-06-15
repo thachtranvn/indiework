@@ -6,8 +6,10 @@ import type { TaskDto } from '@/server/services';
 import {
   buildSections,
   computeAvailDims,
+  DEFAULT_FILTERS,
   type GroupDim,
   type Filters,
+  type FieldVis,
   type Section as Sec,
   type GroupModule,
   type GroupMilestone,
@@ -21,9 +23,12 @@ import {
   type TaskStatus,
   type TaskPriority,
 } from '@/lib/domain';
+import { DEFAULT_VIEW, viewAllowsStatus, viewCaptureStatus, useViews, type ViewId } from '@/lib/views';
+import { useLocalStorage } from '@/lib/use-local-storage';
 import { createTask, toggleTaskDone, bulkUpdateTasks, bulkDeleteTasks } from '@/app/_actions/tasks';
-import { ProjectHeader } from './project-header';
-import { DisplayControl } from './display-control';
+import { ProjectTabs } from './project-tabs';
+import { DisplayPopover, FilterPopover } from './display-popover';
+import { BoardView } from './board';
 import { TaskRow } from './task-row';
 import { QuickCapture } from './quick-capture';
 import { Progress, PriorityBars, ModuleIcon } from '@/components/ui/bits';
@@ -37,7 +42,15 @@ interface Project {
   emoji: string | null;
 }
 
-export function IssuesScreen({
+interface DisplayState {
+  groupBy: GroupDim;
+  subGroupBy: GroupDim;
+  filters: Filters;
+  statusOrder: TaskStatus[];
+  statusHidden: TaskStatus[];
+}
+
+export function ProjectView({
   project,
   modules,
   milestones,
@@ -52,22 +65,39 @@ export function IssuesScreen({
   const pathname = usePathname();
   const params = useSearchParams();
   const openTaskId = params.get('task');
+  const activeView = (params.get('view') as ViewId) || DEFAULT_VIEW;
+
+  const views = useViews(project.key);
+  const mode = views.modeFor(activeView);
 
   const availDims = useMemo(() => computeAvailDims(modules, milestones), [modules, milestones]);
-  const [groupBy, setGroupBy] = useState<GroupDim>(availDims[0] ?? 'status');
-  const [subGroupBy, setSubGroupBy] = useState<GroupDim>('none');
-  const [filters, setFilters] = useState<Filters>({ status: [], priority: [], hideDone: false });
+  const [disp, setDisp] = useLocalStorage<DisplayState>(`iw-display-${project.key}`, {
+    groupBy: availDims[0] ?? 'status',
+    subGroupBy: 'none',
+    filters: DEFAULT_FILTERS,
+    statusOrder: [],
+    statusHidden: [],
+  });
+  const filters = disp.filters;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const lastSel = useRef<string | null>(null);
 
-  const effPrimary = availDims.includes(groupBy) || groupBy === 'none' ? groupBy : availDims[0] ?? 'status';
+  const allowedStatus = useCallback((s: TaskStatus) => viewAllowsStatus(activeView, s), [activeView]);
+
+  const effPrimary = availDims.includes(disp.groupBy) || disp.groupBy === 'none' ? disp.groupBy : availDims[0] ?? 'status';
   const effSecondary =
-    subGroupBy !== 'none' && subGroupBy !== effPrimary && availDims.includes(subGroupBy) ? subGroupBy : 'none';
+    disp.subGroupBy !== 'none' && disp.subGroupBy !== effPrimary && availDims.includes(disp.subGroupBy) ? disp.subGroupBy : 'none';
+
+  const scoped = useMemo(() => tasks.filter((t) => allowedStatus(t.status)), [tasks, allowedStatus]);
 
   const sections = useMemo(
-    () => buildSections(tasks, effPrimary, effSecondary, filters, modules, milestones),
-    [tasks, effPrimary, effSecondary, filters, modules, milestones],
+    () => buildSections(tasks, effPrimary, effSecondary, filters, modules, milestones, {
+      statusOrder: disp.statusOrder,
+      statusHidden: disp.statusHidden,
+      allowedStatus,
+    }),
+    [tasks, effPrimary, effSecondary, filters, modules, milestones, disp.statusOrder, disp.statusHidden, allowedStatus],
   );
   const visibleSections = sections.filter((s) => s.tasks.length > 0 || s.keep);
   const anyTasks = sections.some((s) => s.tasks.length > 0);
@@ -76,8 +106,7 @@ export function IssuesScreen({
   const milestoneMap = useMemo(() => new Map(milestones.map((m) => [m.id, m])), [milestones]);
 
   const orderedIds = useMemo(
-    () =>
-      visibleSections.flatMap((s) => (s.subs ? s.subs.flatMap((x) => x.tasks) : s.tasks).map((t) => t.id)),
+    () => visibleSections.flatMap((s) => (s.subs ? s.subs.flatMap((x) => x.tasks) : s.tasks).map((t) => t.id)),
     [visibleSections],
   );
 
@@ -117,7 +146,8 @@ export function IssuesScreen({
     });
 
   const add = async (title: string, patch: Sec['patch'] = {}) => {
-    await createTask({ projectId: project.id, title, ...patch });
+    const captureStatus = viewCaptureStatus(activeView);
+    await createTask({ projectId: project.id, title, ...(captureStatus ? { status: captureStatus } : {}), ...patch });
     router.refresh();
   };
   const onToggleDone = async (id: string) => {
@@ -133,58 +163,77 @@ export function IssuesScreen({
 
   return (
     <>
-      <ProjectHeader
+      <ProjectTabs
         project={project}
-        active="issues"
+        activeView={activeView}
+        customViews={views.customViews}
+        onAddView={views.addView}
+        onRenameView={views.renameView}
+        onRemoveView={views.removeView}
+        modeFor={views.modeFor}
         right={
-          <DisplayControl
-            groupBy={effPrimary}
-            setGroupBy={setGroupBy}
-            subGroupBy={effSecondary}
-            setSubGroupBy={setSubGroupBy}
-            availDims={availDims}
-            filters={filters}
-            setFilters={setFilters}
-          />
+          <>
+            <FilterPopover filters={filters} setFilters={(f) => setDisp((s) => ({ ...s, filters: f }))} />
+            <DisplayPopover
+              mode={mode}
+              setMode={(m) => views.setMode(activeView, m)}
+              groupBy={effPrimary}
+              setGroupBy={(d) => setDisp((s) => ({ ...s, groupBy: d }))}
+              subGroupBy={effSecondary}
+              setSubGroupBy={(d) => setDisp((s) => ({ ...s, subGroupBy: d }))}
+              availDims={availDims}
+              filters={filters}
+              setFilters={(f) => setDisp((s) => ({ ...s, filters: f }))}
+              statusOrder={disp.statusOrder}
+              setStatusOrder={(o) => setDisp((s) => ({ ...s, statusOrder: o }))}
+              statusHidden={disp.statusHidden}
+              setStatusHidden={(h) => setDisp((s) => ({ ...s, statusHidden: h }))}
+            />
+          </>
         }
       />
       <QuickCapture placeholder="Add a task…  (it lands in this project)" onAdd={(t) => add(t)} />
 
-      <div className="scroll-body">
-        {anyTasks ? (
-          visibleSections.map((section) => (
-            <Section
-              key={section.id}
-              section={section}
-              collapsed={collapsed.has(section.id)}
-              onToggleCollapse={() => toggleCollapse(section.id)}
-              moduleMap={moduleMap}
-              milestoneMap={milestoneMap}
-              showModule={effPrimary !== 'module' && effSecondary !== 'module'}
-              showMilestone={effPrimary !== 'milestone' && effSecondary !== 'milestone'}
-              openTaskId={openTaskId}
-              selected={selected}
-              selMode={selMode}
-              onOpen={openTask}
-              onToggleDone={onToggleDone}
-              onToggleSelect={toggleSelect}
-              collapsedSet={collapsed}
-              toggleCollapse={toggleCollapse}
-              onAdd={add}
-            />
-          ))
-        ) : (
-          <div className="empty">
-            <div className="empty-emoji">🍃</div>
-            <h3>Nothing here yet</h3>
-            <p>
-              {filters.status.length || filters.priority.length || filters.hideDone
-                ? 'No tasks match the current filters.'
-                : 'Add your first task in the box above, or press c anywhere.'}
-            </p>
-          </div>
-        )}
-      </div>
+      {mode === 'board' ? (
+        <BoardView project={project} modules={modules} milestones={milestones} tasks={scoped} />
+      ) : (
+        <div className="scroll-body">
+          {anyTasks ? (
+            visibleSections.map((section) => (
+              <Section
+                key={section.id}
+                section={section}
+                collapsed={collapsed.has(section.id)}
+                onToggleCollapse={() => toggleCollapse(section.id)}
+                moduleMap={moduleMap}
+                milestoneMap={milestoneMap}
+                fields={filters.fields}
+                showModule={effPrimary !== 'module' && effSecondary !== 'module'}
+                showMilestone={effPrimary !== 'milestone' && effSecondary !== 'milestone'}
+                openTaskId={openTaskId}
+                selected={selected}
+                selMode={selMode}
+                onOpen={openTask}
+                onToggleDone={onToggleDone}
+                onToggleSelect={toggleSelect}
+                collapsedSet={collapsed}
+                toggleCollapse={toggleCollapse}
+                onAdd={add}
+              />
+            ))
+          ) : (
+            <div className="empty">
+              <div className="empty-emoji">🍃</div>
+              <h3>Nothing here yet</h3>
+              <p>
+                {filters.status.length || filters.priority.length || filters.hideDone
+                  ? 'No tasks match the current filters.'
+                  : 'Add your first task in the box above, or press c anywhere.'}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {selMode && (
         <BulkBar
@@ -230,6 +279,7 @@ function Section({
   onToggleCollapse,
   moduleMap,
   milestoneMap,
+  fields,
   showModule,
   showMilestone,
   openTaskId,
@@ -247,6 +297,7 @@ function Section({
   onToggleCollapse: () => void;
   moduleMap: Map<string, GroupModule>;
   milestoneMap: Map<string, GroupMilestone>;
+  fields: FieldVis;
   showModule: boolean;
   showMilestone: boolean;
   openTaskId: string | null;
@@ -271,6 +322,7 @@ function Section({
       selected={openTaskId === t.id}
       checked={selected.has(t.id)}
       selMode={selMode}
+      fields={fields}
       onToggleDone={() => onToggleDone(t.id)}
       onOpen={() => onOpen(t.id)}
       onToggleSelect={(shift) => onToggleSelect(t.id, shift)}
@@ -312,7 +364,11 @@ function Section({
                     <span className="section-caret" data-collapsed={subCollapsed ? '' : undefined}>
                       <Ic.chevronDown size={13} />
                     </span>
-                    {sub.color ? (
+                    {sub.modIcon ? (
+                      <span className="subsection-icon">
+                        <ModuleIcon icon={sub.modIcon} color={sub.color} size={13} />
+                      </span>
+                    ) : sub.color ? (
                       <span className="section-dot sub" style={{ background: sub.color }} />
                     ) : (
                       <span className="subsection-icon">

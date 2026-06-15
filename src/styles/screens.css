@@ -220,9 +220,24 @@
    Project view tabs
    ============================================================ */
 .tabs { display: flex; align-items: center; gap: 2px; padding: 12px 22px 0; margin-top: 8px;
-  border-bottom: 1px solid var(--border-soft); }
-.tabs-right { margin-left: auto; padding-bottom: 8px; }
+  border-bottom: 1px solid var(--border-soft); overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs:has(.tabs-lead) { padding-top: 15px; margin-top: 0; }
+/* merged header: project identity lives at the start of the tab strip (v3) */
+.tabs-lead { display: flex; align-items: center; gap: 4px; position: sticky; left: 0; z-index: 2; background: var(--bg-canvas); }
+.tabs-lead-emoji { font-size: 19px; line-height: 1; border: none; background: none; padding: 3px;
+  border-radius: var(--r-sm); display: grid; place-items: center; transition: background .12s; }
+.tabs-lead-emoji:hover { background: var(--bg-hover); }
+.tabs-lead-name { border: 1px solid transparent; background: none; outline: none; color: var(--text-strong);
+  font-family: inherit; font-size: 17px; font-weight: 680; letter-spacing: -0.02em; padding: 3px 6px;
+  border-radius: var(--r-sm); min-width: 0; width: auto; field-sizing: content; max-width: 260px; transition: .12s; }
+.tabs-lead-name:hover { background: var(--bg-hover); }
+.tabs-lead-name:focus { background: var(--bg-surface); border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-softer); }
+.tabs-lead-sep { width: 1px; height: 19px; background: var(--border); margin: 0 10px 0 6px; align-self: center; flex: none; }
+.tabs-right { margin-left: auto; padding-bottom: 8px; position: sticky; right: 0; z-index: 2;
+  background: var(--bg-canvas); padding-left: 12px; display: inline-flex; gap: 6px; }
 .tab { display: inline-flex; align-items: center; gap: 7px; padding: 8px 13px; border: none; background: none;
+  white-space: nowrap; flex: none;
   color: var(--text-muted); font-size: 13.5px; font-weight: 560; border-radius: var(--r-sm) var(--r-sm) 0 0;
   position: relative; transition: .12s; }
 .tab svg { color: var(--text-faint); }
@@ -231,8 +246,19 @@
 .tab[data-active] svg { color: var(--accent-ink); }
 .tab[data-active]::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px;
   background: var(--accent); border-radius: 2px; }
+.tab-name-input { border: none; background: none; outline: none; color: inherit; font: inherit; width: 84px; }
 .tab-add { color: var(--text-faint); padding: 8px 9px; }
 .tab-add:hover { color: var(--text-strong); }
+.tab-x { display: inline-grid; place-items: center; width: 16px; height: 16px; margin: -2px -4px -2px 1px;
+  border-radius: 4px; color: var(--text-faint); opacity: 0; transition: .12s; cursor: pointer; }
+.tab:hover .tab-x, .tab[data-active] .tab-x { opacity: 1; }
+.tab-x:hover { background: var(--bg-hover); color: var(--text-strong); }
+/* icon button (Filter / Display triggers in the tab strip) */
+.icon-tool { border: 1px solid var(--border-soft); background: var(--bg-surface); color: var(--text-muted);
+  width: 32px; height: 32px; border-radius: var(--r-sm); display: grid; place-items: center; transition: .12s; position: relative; }
+.icon-tool:hover { color: var(--text-strong); border-color: var(--border-strong); }
+.icon-tool[data-on] { background: var(--accent-softer); border-color: var(--accent-ring); color: var(--accent-ink); }
+.icon-tool .tool-dot { position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 999px; background: var(--accent); }
 
 /* ============================================================
    Display popover (group + filter consolidated)
@@ -266,6 +292,29 @@
   border-radius: 999px; background: #fff; box-shadow: var(--shadow-sm); transition: .15s; }
 .dp-switch[data-on] { background: var(--accent); }
 .dp-switch[data-on]::after { transform: translateX(14px); }
+.dp-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 1px 4px; }
+.dp-row > .dp-row-lbl { font-size: 12.5px; color: var(--text); font-weight: 530; }
+.dp-dd { border: 1px solid var(--border-soft); background: var(--bg-surface); color: var(--text-strong);
+  font-size: 12.5px; font-weight: 560; padding: 5px 8px; border-radius: var(--r-sm); font-family: inherit;
+  min-width: 124px; cursor: pointer; text-transform: capitalize; }
+.dp-field { display: flex; align-items: center; gap: 9px; width: 100%; padding: 6px 4px; border: none; background: none;
+  color: var(--text); font-size: 12.5px; font-weight: 530; transition: .12s; cursor: pointer; }
+.dp-field:hover { color: var(--text-strong); }
+.dp-field-ex { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; }
+.dp-field-ex .task-ref { font: 500 11px/1 var(--font-mono); color: var(--text-faint); }
+/* group ordering sub-screen */
+.dp-back { display: inline-flex; align-items: center; gap: 6px; border: none; background: none; color: var(--text-muted);
+  font-size: 12.5px; font-weight: 600; padding: 4px 4px 8px; cursor: pointer; }
+.dp-back:hover { color: var(--text-strong); }
+.dp-order-row { display: flex; align-items: center; gap: 8px; padding: 6px 6px; border: 1px solid var(--border-soft);
+  border-radius: var(--r-sm); background: var(--bg-surface); margin-bottom: 4px; transition: .12s; }
+.dp-order-row[data-dragover] { border-color: var(--accent-ring); box-shadow: inset 0 0 0 1px var(--accent-ring); }
+.dp-order-row[data-dragging] { opacity: .45; }
+.dp-order-row[data-hidden] .dp-order-name { color: var(--text-faint); text-decoration: line-through; }
+.dp-order-grip { color: var(--text-faint); cursor: grab; display: grid; place-items: center; flex: none; }
+.dp-order-name { flex: 1; font-size: 12.5px; font-weight: 540; color: var(--text); display: inline-flex; align-items: center; gap: 7px; }
+.dp-order-eye { border: none; background: none; color: var(--text-faint); display: grid; place-items: center; padding: 3px; border-radius: var(--r-xs); }
+.dp-order-eye:hover { background: var(--bg-hover); color: var(--text); }
 .dp-reset { border: none; background: none; color: var(--text-muted); font-size: 12.5px; font-weight: 560;
   padding: 5px; border-radius: var(--r-sm); text-align: center; }
 .dp-reset:hover { background: var(--bg-hover); color: var(--text-strong); }

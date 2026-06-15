@@ -39,6 +39,9 @@ import {
   Table,
   KeyRound,
   Folder,
+  Eye,
+  ArrowLeft,
+  ListFilter,
   type LucideProps,
 } from 'lucide-react';
 
@@ -64,9 +67,12 @@ export const Ic = {
   search: make(Search),
   filter: make(SlidersHorizontal),
   sliders: make(SlidersHorizontal),
+  filterFunnel: make(ListFilter),
   copy: make(Copy),
   trash: make(Trash2),
   dots: make(MoreHorizontal),
+  eye: make(Eye),
+  arrowLeft: make(ArrowLeft),
   settings: make(Settings),
   sun: make(Sun),
   moon: make(Moon),
