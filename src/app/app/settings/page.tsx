@@ -10,11 +10,6 @@ export default async function SettingsPage({
 }) {
   const { section } = await searchParams;
   const [workspace, apiKeys] = await Promise.all([workspaceService.getDefault(), apiKeyService.list()]);
-  return (
-    <SettingsScreen
-      workspace={workspace}
-      apiKeys={apiKeys}
-      initialSection={section === 'general' ? 'general' : 'api'}
-    />
-  );
+  const initialSection = section === 'general' || section === 'appearance' ? section : 'api';
+  return <SettingsScreen workspace={workspace} apiKeys={apiKeys} initialSection={initialSection} />;
 }

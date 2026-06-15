@@ -9,6 +9,8 @@ import { updateWorkspace } from '@/app/_actions/workspace';
 import { createApiKey, revokeApiKey } from '@/app/_actions/apikeys';
 import { EmojiPicker } from '@/components/ui/emoji-picker';
 import { Ic } from '@/components/ui/icons';
+import { UI_FONTS } from '@/lib/fonts';
+import { useUiFont } from '@/lib/use-ui-font';
 
 interface Workspace {
   id: string;
@@ -17,6 +19,14 @@ interface Workspace {
   tagline: string | null;
 }
 
+type SettingsSection = 'general' | 'appearance' | 'api';
+
+const SECTIONS: { id: SettingsSection; label: string; icon: keyof typeof Ic }[] = [
+  { id: 'general', label: 'General', icon: 'sun' },
+  { id: 'appearance', label: 'Appearance', icon: 'type' },
+  { id: 'api', label: 'API keys', icon: 'key' },
+];
+
 export function SettingsScreen({
   workspace,
   apiKeys,
@@ -24,37 +34,72 @@ export function SettingsScreen({
 }: {
   workspace: Workspace | null;
   apiKeys: ApiKeyPublic[];
-  initialSection?: 'general' | 'api';
+  initialSection?: SettingsSection;
 }) {
-  const [section, setSection] = useState<'general' | 'api'>(initialSection);
+  const [section, setSection] = useState<SettingsSection>(initialSection);
 
   return (
     <div className="settings">
       <nav className="settings-nav">
         <div className="settings-navlabel">App settings</div>
-        <button
-          className="settings-navitem"
-          data-active={section === 'general' ? '' : undefined}
-          onClick={() => setSection('general')}
-          type="button"
-        >
-          <Ic.sun size={16} /> General
-        </button>
-        <button
-          className="settings-navitem"
-          data-active={section === 'api' ? '' : undefined}
-          onClick={() => setSection('api')}
-          type="button"
-        >
-          <Ic.key size={16} /> API keys
-        </button>
+        {SECTIONS.map(({ id, label, icon }) => {
+          const Icon = Ic[icon];
+          return (
+            <button
+              key={id}
+              className="settings-navitem"
+              data-active={section === id ? '' : undefined}
+              onClick={() => setSection(id)}
+              type="button"
+            >
+              <Icon size={16} /> {label}
+            </button>
+          );
+        })}
       </nav>
       <div className="settings-main">
-        {section === 'general' ? (
-          <GeneralPane workspace={workspace} />
-        ) : (
-          <ApiKeysPane apiKeys={apiKeys} />
-        )}
+        {section === 'general' && <GeneralPane workspace={workspace} />}
+        {section === 'appearance' && <AppearancePane />}
+        {section === 'api' && <ApiKeysPane apiKeys={apiKeys} />}
+      </div>
+    </div>
+  );
+}
+
+function AppearancePane() {
+  const [uiFont, setUiFont] = useUiFont();
+  return (
+    <div className="settings-pane">
+      <h1 className="settings-h">Appearance</h1>
+      <p className="settings-sub">
+        Choose the typeface IndieWork uses across the app. Every option has full Vietnamese
+        support, so accented characters always render cleanly.
+      </p>
+      <div className="font-pick">
+        {UI_FONTS.map((f) => {
+          const active = uiFont === f.id;
+          return (
+            <button
+              key={f.id}
+              className="font-opt"
+              type="button"
+              data-active={active ? '' : undefined}
+              onClick={() => setUiFont(f.id)}
+            >
+              <div className="font-opt-top">
+                <span className="font-opt-name" style={{ fontFamily: f.stack }}>
+                  {f.label}
+                </span>
+                {f.tag && <span className="font-opt-tag">{f.tag}</span>}
+                <span className="font-opt-check">{active && <Ic.check size={14} strokeWidth={2.6} />}</span>
+              </div>
+              <div className="font-opt-sample" style={{ fontFamily: f.stack }}>
+                Trạng thái · mỗi luồng — 12.840₫
+              </div>
+              <div className="font-opt-note">{f.note}</div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

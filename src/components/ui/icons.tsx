@@ -48,6 +48,7 @@ import {
   Image as ImageIcon,
   Download,
   CornerDownRight,
+  Baseline,
   type LucideProps,
 } from 'lucide-react';
 
@@ -104,6 +105,7 @@ export const Ic = {
   image: make(ImageIcon),
   download: make(Download),
   cornerDownRight: make(CornerDownRight),
+  type: make(Baseline),
 };
 
 export type IconName = keyof typeof Ic;

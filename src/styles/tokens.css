@@ -6,7 +6,8 @@
 
 :root {
   /* --- tweakable knobs (overridden inline by React) --- */
-  --font-ui: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  /* --font-ui is owned by globals.css (the next/font mapping layer) and
+     overridden live on <html> by the Appearance picker — see src/lib/fonts.ts. */
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
   --accent: #3FB984;            /* solo-dev green */
   --radius-scale: 1;            /* tweak: 0.5 .. 1.6 */
