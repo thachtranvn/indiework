@@ -13,6 +13,7 @@ import {
 } from '@/server/services';
 import { requireBearer, MCP_COMMENT_SOURCE } from '@/server/auth/token';
 import { ServiceError } from '@/server/services';
+import { TASK_STATUS, TASK_PRIORITY } from '@/lib/domain';
 import { ZodError } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -51,7 +52,8 @@ const TOOLS: Tool[] = [
         project: str(),
         module: str(),
         milestone: str(),
-        priority: { type: 'string', enum: ['none', 'low', 'medium', 'high', 'urgent'] },
+        status: { type: 'string', enum: [...TASK_STATUS], description: 'inbox·backlog·todo·in_progress·in_review·pending·done·cancelled' },
+        priority: { type: 'string', enum: [...TASK_PRIORITY] },
         due_date: { type: 'string', description: 'ISO date, e.g. 2026-07-15' },
       },
       required: ['title'],
@@ -62,16 +64,27 @@ const TOOLS: Tool[] = [
         projectId: await projectIdFromKey(a.project),
         moduleId: (a.module as string) ?? undefined,
         milestoneId: (a.milestone as string) ?? undefined,
+        status: a.status as never,
         priority: a.priority as never,
         dueDate: a.due_date ? new Date(a.due_date as string) : undefined,
       }),
   },
   {
-    name: 'list_tasks',
-    description: 'List tasks, optionally filtered. `project` is a project KEY; `status` is a single status.',
+    name: 'add_subtask',
+    description: 'Add a sub-task (one level) under a parent task. `parent_ref` is the parent ref, e.g. "SITE-3". Inherits the parent project/module/milestone.',
     inputSchema: {
       type: 'object',
-      properties: { project: str(), status: str(), milestone: str(), module: str() },
+      properties: { parent_ref: str(), title: str() },
+      required: ['parent_ref', 'title'],
+    },
+    run: async (a) => taskService.addSubtask(await idFromRef(a.parent_ref), a.title as string),
+  },
+  {
+    name: 'list_tasks',
+    description: 'List root tasks, optionally filtered. `project` is a project KEY; `status` is a single status.',
+    inputSchema: {
+      type: 'object',
+      properties: { project: str(), status: { type: 'string', enum: [...TASK_STATUS] }, milestone: str(), module: str() },
     },
     run: async (a) =>
       taskService.list({

@@ -17,11 +17,13 @@ export function Sidebar({
   onNewProject,
   onNewWorkspace,
   onOpenSearch,
+  onCollapse,
 }: {
   shell: ShellData;
   onNewProject: () => void;
   onNewWorkspace: () => void;
   onOpenSearch: () => void;
+  onCollapse?: () => void;
 }) {
   const pathname = usePathname();
   const { workspaces, activeWorkspace, projects, inboxCount } = shell;
@@ -38,6 +40,11 @@ export function Sidebar({
 
   return (
     <aside className="sidebar">
+      {onCollapse && (
+        <button className="sb-collapse" type="button" onClick={onCollapse} title="Collapse sidebar" aria-label="Collapse sidebar">
+          <Ic.arrowLeft size={16} />
+        </button>
+      )}
       {/* workspace switcher */}
       <Popover
         align="left"

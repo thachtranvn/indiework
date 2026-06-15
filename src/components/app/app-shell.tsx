@@ -8,6 +8,7 @@ import { DetailPanel } from './detail-panel';
 import { ProjectForm } from './project-form';
 import { WorkspaceForm } from './workspace-form';
 import { CommandPalette } from './command-palette';
+import { Ic } from '@/components/ui/icons';
 
 export function AppShell({ shell, children }: { shell: ShellData; children: ReactNode }) {
   const router = useRouter();
@@ -17,18 +18,27 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
 
   const [width, setWidth] = useState(256);
   const [resizing, setResizing] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [showProject, setShowProject] = useState(false);
   const [showWorkspace, setShowWorkspace] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
 
-  // sidebar width persisted to localStorage
+  // sidebar width + collapsed state persisted to localStorage (iw-*)
   useEffect(() => {
-    const v = parseInt(localStorage.getItem('wb-sidebar-w') ?? '', 10);
+    const v = parseInt(localStorage.getItem('iw-sidebar-w') ?? '', 10);
     if (v >= 180 && v <= 440) setWidth(v);
+    setCollapsed(localStorage.getItem('iw-sb-collapsed') === '1');
   }, []);
   useEffect(() => {
-    localStorage.setItem('wb-sidebar-w', String(width));
+    localStorage.setItem('iw-sidebar-w', String(width));
   }, [width]);
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed((c) => {
+      const next = !c;
+      localStorage.setItem('iw-sb-collapsed', next ? '1' : '0');
+      return next;
+    });
+  }, []);
 
   // keyboard: ⌘K search, c quick-capture
   useEffect(() => {
@@ -75,15 +85,22 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
       className="app"
       data-detail={taskId ? '' : undefined}
       data-resizing={resizing ? '' : undefined}
-      style={{ '--sidebar-w': `${width}px` } as React.CSSProperties}
+      data-sb-collapsed={collapsed ? '' : undefined}
+      style={{ '--sidebar-w': `${collapsed ? 0 : width}px` } as React.CSSProperties}
     >
       <Sidebar
         shell={shell}
         onNewProject={() => setShowProject(true)}
         onNewWorkspace={() => setShowWorkspace(true)}
         onOpenSearch={() => setShowSearch(true)}
+        onCollapse={toggleCollapsed}
       />
-      <div className="col-resizer" onMouseDown={startResize} title="Drag to resize" />
+      {!collapsed && <div className="col-resizer" onMouseDown={startResize} title="Drag to resize" />}
+      {collapsed && (
+        <button className="sb-expand" type="button" onClick={toggleCollapsed} title="Expand sidebar" aria-label="Expand sidebar">
+          <Ic.list size={18} />
+        </button>
+      )}
 
       <div className="main-col">{children}</div>
 

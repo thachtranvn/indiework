@@ -1,5 +1,14 @@
 import { describe, test, expect } from 'vitest';
-import { buildRef, parseRef, isValidProjectKey } from '@/lib/domain';
+import {
+  buildRef,
+  parseRef,
+  isValidProjectKey,
+  TASK_STATUS,
+  BOARD_COLUMNS,
+  DEFAULT_STATUS_ORDER,
+  MODULE_STATE,
+  MODULE_STATE_COLOR_KEY,
+} from '@/lib/domain';
 
 describe('isValidProjectKey', () => {
   test('accepts uppercase keys 2–10 chars', () => {
@@ -32,6 +41,37 @@ describe('buildRef / parseRef', () => {
     expect(parseRef('-14')).toBeNull();
     expect(parseRef('disk-14')).toBeNull();
     expect(parseRef('DISK-0')).toBeNull();
-    expect(parseRef('DISK-1.5')).toBeNull();
+    expect(parseRef('DISK-1.5')).toBeNull(); // sub-task dot-refs are never parsed back
+  });
+});
+
+describe('v3 status model', () => {
+  test('8 states; blocked removed, in_review + pending added', () => {
+    expect(TASK_STATUS).toEqual([
+      'inbox',
+      'backlog',
+      'todo',
+      'in_progress',
+      'in_review',
+      'pending',
+      'done',
+      'cancelled',
+    ]);
+    expect(TASK_STATUS).not.toContain('blocked');
+  });
+
+  test('board columns are the v3 subset', () => {
+    expect(BOARD_COLUMNS).toEqual(['todo', 'in_progress', 'pending', 'in_review', 'done']);
+  });
+
+  test('default status order leads with active work and excludes inbox', () => {
+    expect(DEFAULT_STATUS_ORDER[0]).toBe('in_progress');
+    expect(DEFAULT_STATUS_ORDER).not.toContain('inbox');
+  });
+
+  test('module states map onto status palette keys', () => {
+    expect(MODULE_STATE).toEqual(['planned', 'active', 'done', 'archived']);
+    expect(MODULE_STATE_COLOR_KEY.active).toBe('in_progress');
+    expect(MODULE_STATE_COLOR_KEY.archived).toBe('cancelled');
   });
 });

@@ -5,6 +5,9 @@ import {
   projectService,
   taskService,
   commentService,
+  moduleService,
+  attachmentService,
+  ServiceError,
 } from '@/server/services';
 
 const KEY = 'ZZTEST';
@@ -106,5 +109,66 @@ describe('service slice (real Postgres)', () => {
     if (firstDoneIdx !== -1) {
       expect(list.slice(firstDoneIdx).every((t) => t.done)).toBe(true);
     }
+  });
+
+  test('new v3 statuses round-trip', async () => {
+    const t = await taskService.create({ projectId, title: 'Review me', status: 'in_review' });
+    expect(t.status).toBe('in_review');
+    const pending = await taskService.update(t.id, { status: 'pending' });
+    expect(pending.status).toBe('pending');
+    expect(pending.done).toBe(false);
+  });
+
+  test('addSubtask inherits parent fields, has no seq, and is one level deep', async () => {
+    const mod = await moduleService.create({ projectId, name: 'Engine', icon: 'cube', state: 'active' });
+    const parent = await taskService.create({ projectId, title: 'Parent', moduleId: mod.id });
+    const child = await taskService.addSubtask(parent.id, 'Child A');
+    expect(child.parentId).toBe(parent.id);
+    expect(child.projectId).toBe(projectId);
+    expect(child.moduleId).toBe(mod.id); // inherited
+    expect(child.seq).toBeNull(); // no own counter → ref derived as PARENT.N elsewhere
+    expect(child.status).toBe('todo');
+
+    const kids = await taskService.listChildren(parent.id);
+    expect(kids).toHaveLength(1);
+
+    // one level only
+    await expect(taskService.addSubtask(child.id, 'Grandchild')).rejects.toBeInstanceOf(ServiceError);
+  });
+
+  test('create() with parentId delegates to addSubtask', async () => {
+    const parent = await taskService.create({ projectId, title: 'Has children' });
+    const child = await taskService.create({ projectId, parentId: parent.id, title: 'Via create' });
+    expect(child.parentId).toBe(parent.id);
+    expect(child.seq).toBeNull();
+  });
+
+  test('module carries icon / state / description', async () => {
+    const mod = await moduleService.create({
+      projectId,
+      name: 'Distribution',
+      icon: 'globe',
+      state: 'planned',
+      description: 'DMG + updates',
+    });
+    expect(mod.icon).toBe('globe');
+    expect(mod.state).toBe('planned');
+    expect(mod.description).toBe('DMG + updates');
+  });
+
+  test('attachments: add, list, count on the task DTO, remove', async () => {
+    const t = await taskService.create({ projectId, title: 'Has files' });
+    await attachmentService.add({ taskId: t.id, name: 'a.csv', type: 'file', size: '1 KB', ext: 'csv' });
+    const img = await attachmentService.add({ taskId: t.id, name: 'b.png', type: 'image', size: '2 KB', ext: 'png' });
+    expect(img.path).toBeNull(); // storage deferred — metadata only
+
+    const list = await attachmentService.list(t.id);
+    expect(list).toHaveLength(2);
+
+    const fromList = (await taskService.list({ projectId })).find((x) => x.id === t.id);
+    expect(fromList?.attachmentCount).toBe(2);
+
+    await attachmentService.remove(img.id);
+    expect(await attachmentService.list(t.id)).toHaveLength(1);
   });
 });

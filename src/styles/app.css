@@ -16,6 +16,17 @@
   grid-template-columns: var(--sidebar-w, 256px) 1fr clamp(360px, 32vw, 460px);
 }
 .app[data-resizing] { transition: none; user-select: none; cursor: col-resize; }
+/* collapsed sidebar: drop the rail column; a floating button re-expands it */
+.app[data-sb-collapsed] { grid-template-columns: 1fr; }
+.app[data-sb-collapsed][data-detail] { grid-template-columns: 1fr clamp(360px, 32vw, 460px); }
+.app[data-sb-collapsed] .sidebar { display: none; }
+.sb-collapse { position: absolute; top: 14px; right: 8px; z-index: 2; border: none; background: none;
+  color: var(--text-faint); width: 26px; height: 26px; border-radius: var(--r-sm); display: grid; place-items: center; transition: .12s; }
+.sb-collapse:hover { background: var(--bg-hover); color: var(--text-strong); }
+.sb-expand { position: absolute; top: 12px; left: 12px; z-index: 70; border: 1px solid var(--border);
+  background: var(--bg-surface); color: var(--text-muted); width: 34px; height: 34px; border-radius: var(--r-sm);
+  display: grid; place-items: center; box-shadow: var(--shadow-sm); transition: .12s; }
+.sb-expand:hover { color: var(--text-strong); border-color: var(--border-strong); }
 .main-col { display: flex; flex-direction: column; min-width: 0; background: var(--bg-canvas);
   border-left: 1px solid var(--border-strong); overflow: hidden; }
 
@@ -46,7 +57,9 @@
 }
 
 /* ---------- Sidebar ---------- */
-.sidebar { display: flex; flex-direction: column; padding: 12px 10px; min-height: 0; gap: 2px; overflow-y: auto; }
+.sidebar { display: flex; flex-direction: column; padding: 12px 10px; min-height: 0; gap: 2px; overflow-y: auto; position: relative; }
+/* nudge the workspace caret left so the collapse button doesn't overlap it */
+.sidebar .ws-switch { padding-right: 30px; }
 
 /* workspace switcher */
 .ws-switch { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 8px; border: none;
