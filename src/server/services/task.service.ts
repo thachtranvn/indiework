@@ -215,8 +215,16 @@ export const taskService = {
     if (f.priority?.length) conds.push(inArray(schema.tasks.priority, f.priority));
     if (f.hideDone) conds.push(sql`${schema.tasks.status} not in ('done','cancelled')`);
 
-    const rows = await selectWithKey().where(conds.length ? and(...conds) : undefined);
-    return rows.map((r) => toTaskDto(r.task, r.projectKey)).sort(sortTasks);
+    const rows = await db
+      .select({
+        task: schema.tasks,
+        projectKey: schema.projects.key,
+        attachmentCount: sql<number>`(select count(*)::int from ${schema.attachments} where ${schema.attachments.taskId} = ${schema.tasks.id})`,
+      })
+      .from(schema.tasks)
+      .leftJoin(schema.projects, eq(schema.tasks.projectId, schema.projects.id))
+      .where(conds.length ? and(...conds) : undefined);
+    return rows.map((r) => toTaskDto(r.task, r.projectKey, Number(r.attachmentCount))).sort(sortTasks);
   },
 
   async listInbox(): Promise<TaskDto[]> {

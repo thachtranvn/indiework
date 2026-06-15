@@ -63,6 +63,37 @@
 .dp-sub-add input { border: none; background: none; outline: none; flex: 1; font-family: inherit; font-size: 13px; color: var(--text-strong); }
 .dp-sub-add svg { color: var(--text-faint); flex: none; }
 
+/* attachments section */
+.dp-attach { margin-top: 26px; }
+.dp-attach-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.dp-attach-head .dp-section-label { display: inline-flex; align-items: center; gap: 6px; }
+.dp-attach-count { font: 600 11px/1 var(--font-mono); color: var(--text-muted); background: var(--bg-sunken);
+  border: 1px solid var(--border-soft); padding: 2px 7px; border-radius: var(--r-pill); }
+.dp-attach-add { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; border: none; background: none;
+  color: var(--text-muted); font-size: 12.5px; font-weight: 560; padding: 4px 8px; border-radius: var(--r-sm); transition: .12s; }
+.dp-attach-add:hover { background: var(--bg-hover); color: var(--text-strong); }
+.attach-item { display: flex; align-items: center; gap: 11px; padding: 8px; border: 1px solid var(--border-soft);
+  border-radius: var(--r-sm); margin-bottom: 6px; transition: .12s; }
+.attach-item:hover { border-color: var(--border); }
+.attach-item:hover .attach-act { opacity: 1; }
+.attach-tile { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: var(--r-sm);
+  color: oklch(0.5 0.12 var(--att-hue, 250)); background: oklch(0.95 0.04 var(--att-hue, 250)); }
+.attach-tile[data-image] { color: var(--accent-ink); background: var(--accent-softer); }
+.attach-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.attach-name { font-size: 13px; font-weight: 550; color: var(--text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attach-meta { font: 500 11px/1 var(--font-mono); color: var(--text-faint); }
+.attach-act { border: none; background: none; color: var(--text-faint); display: grid; place-items: center; width: 28px; height: 28px;
+  border-radius: var(--r-sm); flex: none; opacity: 0; transition: .12s; }
+.attach-act:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-strong); }
+.attach-act:disabled { cursor: default; opacity: .35; }
+.attach-drop { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; margin-top: 4px;
+  border: 1px dashed var(--border-strong); border-radius: var(--r-md); color: var(--text-muted); font-size: 12.5px;
+  cursor: pointer; transition: .12s; }
+.attach-drop:hover, .attach-drop[data-over] { border-color: var(--accent-ring); background: var(--accent-softer); color: var(--accent-ink); }
+.attach-drop b { color: var(--accent-ink); }
+.attach-count { display: inline-flex; align-items: center; gap: 3px; font: 600 11px/1 var(--font-mono); color: var(--text-muted); flex: none; }
+.attach-count svg { color: var(--text-faint); }
+
 /* quiet "add status note" affordance when there's no note and not pending */
 .dp-note-add { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 22px; padding: 7px 11px;
   border: 1px dashed var(--border-strong); background: none; border-radius: var(--r-sm);

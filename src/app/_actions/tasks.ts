@@ -1,8 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { taskService, commentService } from '@/server/services';
+import { taskService, commentService, attachmentService } from '@/server/services';
 import type { CreateTaskInput, UpdateTaskInput } from '@/server/validators/task';
+import type { CreateAttachmentInput } from '@/server/validators/attachment';
 
 function refresh() {
   revalidatePath('/app', 'layout');
@@ -68,4 +69,16 @@ export async function addTaskComment(taskId: string, body: string) {
   const comment = await commentService.add({ taskId, body }, 'web');
   refresh();
   return comment;
+}
+
+// ---- attachments (metadata only; file storage is deferred — see Phase 7) ----
+export async function addAttachment(input: CreateAttachmentInput) {
+  const att = await attachmentService.add(input);
+  refresh();
+  return att;
+}
+
+export async function removeAttachment(id: string) {
+  await attachmentService.remove(id);
+  refresh();
 }

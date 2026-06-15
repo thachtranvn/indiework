@@ -2,7 +2,7 @@
  * Optional sample data for local development / demos. Idempotent: skips if the
  * SITE project already exists. Run via `pnpm db:seed:sample`. Not used in prod.
  */
-import { projectService, moduleService, milestoneService, taskService } from '../services';
+import { projectService, moduleService, milestoneService, taskService, attachmentService } from '../services';
 
 async function main() {
   try {
@@ -74,7 +74,7 @@ async function main() {
   const cell = await taskService.addSubtask(bento.id, 'Build the responsive grid cells');
   await taskService.addSubtask(bento.id, 'Add hover + reveal interactions');
   await taskService.toggleDone(cell.id);
-  await T({
+  const pricing = await T({
     title: 'Ship the pricing page',
     status: 'pending',
     priority: 'urgent',
@@ -82,6 +82,9 @@ async function main() {
     milestoneId: p2,
     statusNote: 'Waiting on final pricing tiers from the spreadsheet.',
   });
+  // sample attachments (metadata only — byte storage is deferred)
+  await attachmentService.add({ taskId: pricing.id, name: 'pricing-tiers.csv', type: 'file', size: '3.4 KB', ext: 'csv' });
+  await attachmentService.add({ taskId: pricing.id, name: 'pricing-mock.png', type: 'image', size: '218 KB', ext: 'png' });
   await T({
     title: 'Review the hero animation timing',
     status: 'in_review',

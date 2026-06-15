@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { getTaskDetail, type TaskDetail } from '@/app/_actions/queries';
 import {
@@ -10,6 +10,8 @@ import {
   deleteTask,
   addSubtask,
   toggleTaskDone,
+  addAttachment,
+  removeAttachment,
 } from '@/app/_actions/tasks';
 import type { TaskDto } from '@/server/services';
 import {
@@ -316,6 +318,8 @@ export function DetailPanel({ taskId, onClose }: { taskId: string; onClose: () =
           </div>
         )}
 
+        <Attachments taskId={task.id} items={detail.attachments} onChanged={reload} />
+
         <div className="activity">
           <p className="dp-section-label">Activity</p>
           {comments.map((c) => (
@@ -506,6 +510,122 @@ function SubRow({
       <span className="dp-sub-title">{child.title}</span>
       {child.displayRef && <span className="task-ref">{child.displayRef}</span>}
       <Ic.chevronRight size={14} className="dp-sub-chev" />
+    </div>
+  );
+}
+
+function humanSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+function extOf(name: string): string {
+  const i = name.lastIndexOf('.');
+  return i > 0 ? name.slice(i + 1).toLowerCase() : '';
+}
+/** Deterministic per-extension hue so a set of files reads as a set. */
+function extHue(ext: string): number {
+  let h = 0;
+  for (let i = 0; i < ext.length; i++) h = (h * 31 + ext.charCodeAt(i)) % 360;
+  return h;
+}
+
+type AttachmentItem = TaskDetail['attachments'][number];
+
+/**
+ * Attachments section. Files + images on a task. NOTE: byte storage is deferred —
+ * adding a file persists its metadata only (name/type/size/ext); there is no
+ * download target yet. See docs/v3-implementation-plan.md §Phase 7.
+ */
+function Attachments({ taskId, items, onChanged }: { taskId: string; items: AttachmentItem[]; onChanged: () => Promise<void> }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
+
+  const addFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    for (const f of Array.from(files)) {
+      const ext = extOf(f.name);
+      await addAttachment({
+        taskId,
+        name: f.name,
+        type: f.type.startsWith('image/') ? 'image' : 'file',
+        size: humanSize(f.size),
+        ext: ext || null,
+      });
+    }
+    await onChanged();
+  };
+
+  return (
+    <div className="dp-attach">
+      <div className="dp-attach-head">
+        <span className="dp-section-label" style={{ margin: 0 }}>
+          <Ic.paperclip size={13} /> Attachments
+        </span>
+        {items.length > 0 && <span className="dp-attach-count">{items.length}</span>}
+        <button className="dp-attach-add" type="button" onClick={() => inputRef.current?.click()}>
+          <Ic.plus size={13} /> Add
+        </button>
+      </div>
+
+      {items.map((a) => {
+        const hue = extHue(a.ext ?? a.name);
+        return (
+          <div className="attach-item" key={a.id}>
+            <span
+              className="attach-tile"
+              data-image={a.type === 'image' ? '' : undefined}
+              style={{ '--att-hue': hue } as React.CSSProperties}
+            >
+              {a.type === 'image' ? <Ic.image size={16} /> : <Ic.fileText size={16} />}
+            </span>
+            <div className="attach-body">
+              <span className="attach-name">{a.name}</span>
+              <span className="attach-meta">
+                {(a.ext || a.type).toUpperCase()} · {a.size ?? '—'}
+              </span>
+            </div>
+            <button className="attach-act" type="button" title="Download (storage pending)" disabled>
+              <Ic.download size={15} />
+            </button>
+            <button
+              className="attach-act"
+              type="button"
+              title="Remove"
+              onClick={async () => {
+                await removeAttachment(a.id);
+                await onChanged();
+              }}
+            >
+              <Ic.close size={15} />
+            </button>
+          </div>
+        );
+      })}
+
+      <div
+        className="attach-drop"
+        data-over={over ? '' : undefined}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setOver(true);
+        }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setOver(false);
+          addFiles(e.dataTransfer.files);
+        }}
+        onClick={() => inputRef.current?.click()}
+        role="button"
+        tabIndex={0}
+      >
+        <Ic.paperclip size={15} />
+        <span>
+          Drag files here or <b>browse</b>
+        </span>
+      </div>
+      <input ref={inputRef} type="file" multiple hidden onChange={(e) => addFiles(e.target.files)} />
     </div>
   );
 }

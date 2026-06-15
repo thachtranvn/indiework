@@ -92,6 +92,11 @@ export function TaskRow({
               <Ic.listTree size={12} /> {subDone}/{children.length}
             </span>
           )}
+          {task.attachmentCount > 0 && (
+            <span className="attach-count" title={`${task.attachmentCount} attachment${task.attachmentCount === 1 ? '' : 's'}`}>
+              <Ic.paperclip size={12} /> {task.attachmentCount}
+            </span>
+          )}
           {fields.status && <StatusChip status={task.status} size="sm" />}
           {fields.priority && <PriorityBars priority={task.priority} />}
           {task.dueDate && <DuePill due={task.dueDate} />}

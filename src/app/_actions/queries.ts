@@ -7,16 +7,18 @@ import {
   moduleService,
   milestoneService,
   projectService,
+  attachmentService,
 } from '@/server/services';
 
 export async function getTaskDetail(id: string) {
   const task = await taskService.getById(id);
-  const [comments, modules, milestones, rawChildren, parent] = await Promise.all([
+  const [comments, modules, milestones, rawChildren, parent, attachments] = await Promise.all([
     commentService.list(id),
     task.projectId ? moduleService.list(task.projectId) : Promise.resolve([]),
     task.projectId ? milestoneService.list(task.projectId) : Promise.resolve([]),
     taskService.listChildren(id),
     task.parentId ? taskService.getById(task.parentId) : Promise.resolve(null),
+    attachmentService.list(id),
   ]);
 
   // dot-ref for this task when it's a sub-task ("PARENT.N" by sibling order)
@@ -29,7 +31,7 @@ export async function getTaskDetail(id: string) {
   // dot-refs for this task's own children
   const children = rawChildren.map((c, i) => ({ ...c, displayRef: task.ref ? `${task.ref}.${i + 1}` : null }));
 
-  return { task, displayRef, parent, children, comments, modules, milestones };
+  return { task, displayRef, parent, children, comments, modules, milestones, attachments };
 }
 export type TaskDetail = Awaited<ReturnType<typeof getTaskDetail>>;
 
