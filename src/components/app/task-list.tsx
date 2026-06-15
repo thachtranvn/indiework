@@ -26,7 +26,7 @@ import { ProjectHeader } from './project-header';
 import { DisplayControl } from './display-control';
 import { TaskRow } from './task-row';
 import { QuickCapture } from './quick-capture';
-import { Progress, PriorityBars } from '@/components/ui/bits';
+import { Progress, PriorityBars, ModuleIcon } from '@/components/ui/bits';
 import { Popover, OptionList } from '@/components/ui/popover';
 import { Ic } from '@/components/ui/icons';
 
@@ -217,6 +217,7 @@ export function IssuesScreen({
 }
 
 function SectionHeadIcon({ section }: { section: Sec }) {
+  if (section.modIcon) return <ModuleIcon icon={section.modIcon} color={section.color} size={15} />;
   if (section.icon === 'cube') return <Ic.cube size={15} />;
   if (section.icon === 'target') return <Ic.target size={15} />;
   if (section.icon === 'flag') return <Ic.flag size={15} />;

@@ -22,6 +22,8 @@ export interface GroupModule {
   id: string;
   name: string;
   color: string | null;
+  icon?: string | null;
+  state?: string | null;
 }
 export interface GroupMilestone {
   id: string;
@@ -48,6 +50,7 @@ export interface Section {
   name: string;
   color?: string;
   icon?: IconName;
+  modIcon?: string | null; // module's tinted icon key (module groups only)
   target?: Date | string | null;
   defaultOpen: boolean;
   keep: boolean;
@@ -61,6 +64,7 @@ interface Bucket {
   name: string;
   color?: string;
   icon?: IconName;
+  modIcon?: string | null;
   target?: Date | string | null;
   defaultOpen: boolean;
   keep: boolean;
@@ -82,6 +86,7 @@ function groupSpec(dim: GroupDim, modules: GroupModule[], milestones: GroupMiles
       key: m.id,
       name: m.name,
       color: m.color ?? undefined,
+      modIcon: m.icon ?? null,
       defaultOpen: true,
       keep: false,
       patch: { moduleId: m.id },
@@ -184,6 +189,7 @@ export function buildSections(
       name: g.name,
       color: g.color,
       icon: g.icon,
+      modIcon: g.modIcon,
       target: g.target,
       defaultOpen: g.defaultOpen,
       keep: g.keep,
@@ -198,6 +204,7 @@ export function buildSections(
           name: sg.name,
           color: sg.color,
           icon: sg.icon,
+          modIcon: sg.modIcon,
           target: sg.target,
           defaultOpen: true,
           keep: false,

@@ -38,6 +38,7 @@ import {
   Pencil,
   Table,
   KeyRound,
+  Folder,
   type LucideProps,
 } from 'lucide-react';
 
@@ -84,6 +85,12 @@ export const Ic = {
   edit: make(Pencil),
   table: make(Table),
   key: make(KeyRound),
+  folder: make(Folder),
 };
 
 export type IconName = keyof typeof Ic;
+
+/** Resolve an icon by string key (e.g. a module's `icon`), with a fallback. */
+export function iconByName(name: string | null | undefined, fallback: IconName = 'cube') {
+  return (name && name in Ic ? Ic[name as IconName] : Ic[fallback]);
+}

@@ -121,7 +121,11 @@ export function BoardScreen({
                     <div className="board-card-meta">
                       <PriorityBars priority={t.priority} />
                       {t.moduleId && moduleMap.get(t.moduleId) && (
-                        <ModuleTag name={moduleMap.get(t.moduleId)!.name} color={moduleMap.get(t.moduleId)!.color} />
+                        <ModuleTag
+                          name={moduleMap.get(t.moduleId)!.name}
+                          color={moduleMap.get(t.moduleId)!.color}
+                          icon={moduleMap.get(t.moduleId)!.icon}
+                        />
                       )}
                       {!t.moduleId && t.milestoneId && milestoneMap.get(t.milestoneId) && (
                         <MilestoneTag name={milestoneMap.get(t.milestoneId)!.name} />

@@ -6,7 +6,26 @@ import {
   type TaskPriority,
 } from '@/lib/domain';
 import { fmtDate, dueState } from '@/lib/dates';
-import { Ic } from './icons';
+import { Ic, iconByName } from './icons';
+
+/** A module's tinted icon (falls back to a color dot when no icon is set). */
+export function ModuleIcon({
+  icon,
+  color,
+  size = 13,
+}: {
+  icon?: string | null;
+  color?: string | null;
+  size?: number;
+}) {
+  if (!icon) return <span className="dot" style={{ background: color ?? 'var(--text-faint)' }} />;
+  const IconC = iconByName(icon);
+  return (
+    <span className="mod-ic" style={{ color: color ?? 'var(--text-faint)' }}>
+      <IconC size={size} />
+    </span>
+  );
+}
 
 export function StatusChip({
   status,
@@ -57,10 +76,20 @@ export function PriorityBars({
   );
 }
 
-export function ModuleTag({ name, color, faint }: { name: string; color?: string | null; faint?: boolean }) {
+export function ModuleTag({
+  name,
+  color,
+  icon,
+  faint,
+}: {
+  name: string;
+  color?: string | null;
+  icon?: string | null;
+  faint?: boolean;
+}) {
   return (
     <span className="meta-tag" style={faint ? { color: 'var(--text-muted)' } : undefined}>
-      <span className="dot" style={{ background: color ?? 'var(--text-faint)' }} />
+      <ModuleIcon icon={icon} color={color} size={13} />
       {name}
     </span>
   );

@@ -71,7 +71,7 @@ export function TaskRow({
       <div className="task-meta task-reveal">
         <PriorityBars priority={task.priority} />
         {task.dueDate && <DuePill due={task.dueDate} />}
-        {showModule && module && <ModuleTag name={module.name} color={module.color} />}
+        {showModule && module && <ModuleTag name={module.name} color={module.color} icon={module.icon} />}
         {showMilestone && milestone && <MilestoneTag name={milestone.name} />}
       </div>
     </div>

@@ -231,6 +231,7 @@
 .task-meta { display: flex; align-items: center; gap: 8px; flex: none; }
 .meta-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 530;
   color: var(--text-muted); white-space: nowrap; }
+.mod-ic { display: inline-grid; place-items: center; flex: none; }
 .milestone-tag { color: var(--text-muted); }
 .due-pill[data-due="overdue"] { color: var(--st-danger); font-weight: 600; }
 .due-pill[data-due="soon"] { color: var(--pr-high); font-weight: 580; }

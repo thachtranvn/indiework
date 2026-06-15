@@ -22,7 +22,7 @@ import { mdToHtml } from '@/lib/markdown';
 import type { UpdateTaskInput } from '@/server/validators/task';
 import { Popover, OptionList } from '@/components/ui/popover';
 import { RefTag } from '@/components/ui/interactive';
-import { PriorityBars } from '@/components/ui/bits';
+import { PriorityBars, ModuleIcon } from '@/components/ui/bits';
 import { Ic } from '@/components/ui/icons';
 
 export function DetailPanel({ taskId, onClose }: { taskId: string; onClose: () => void }) {
@@ -73,8 +73,7 @@ export function DetailPanel({ taskId, onClose }: { taskId: string; onClose: () =
 
   const { task, comments, modules, milestones } = detail;
   const pending = task.status === 'pending';
-  const moduleName = modules.find((m) => m.id === task.moduleId)?.name;
-  const moduleColor = modules.find((m) => m.id === task.moduleId)?.color;
+  const taskModule = modules.find((m) => m.id === task.moduleId);
   const milestoneName = milestones.find((m) => m.id === task.milestoneId)?.name;
 
   const onDelete = async () => {
@@ -173,11 +172,11 @@ export function DetailPanel({ taskId, onClose }: { taskId: string; onClose: () =
             <Popover
               width={210}
               trigger={
-                <button className="prop-control" type="button" data-empty={moduleName ? undefined : ''}>
-                  {moduleName ? (
+                <button className="prop-control" type="button" data-empty={taskModule ? undefined : ''}>
+                  {taskModule ? (
                     <>
-                      <span className="dot" style={{ background: moduleColor ?? 'var(--text-faint)' }} />
-                      {moduleName}
+                      <ModuleIcon icon={taskModule.icon} color={taskModule.color} size={14} />
+                      {taskModule.name}
                     </>
                   ) : (
                     'Set module'
