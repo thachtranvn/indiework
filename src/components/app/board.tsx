@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { startTransition, useMemo, useOptimistic, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { TaskDto } from '@/server/services';
 import {
@@ -13,6 +13,7 @@ import {
   type NewTaskPatch,
   type FieldVis,
 } from '@/lib/grouping';
+import { applyTaskOptimistic } from '@/lib/optimistic';
 import { createTask, updateTask } from '@/app/_actions/tasks';
 import { PriorityBars, ModuleTag, MilestoneTag, ModuleIcon, StatusChip } from '@/components/ui/bits';
 import { Ic } from '@/components/ui/icons';
@@ -41,6 +42,7 @@ export function BoardView({
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
+  const [optimisticTasks, applyOptimistic] = useOptimistic(tasks, applyTaskOptimistic);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
 
@@ -53,7 +55,10 @@ export function BoardView({
     [cfg.rows, modules, milestones],
   );
 
-  const visible = useMemo(() => (cfg.hideDone ? tasks.filter((t) => !t.done && t.status !== 'cancelled') : tasks), [tasks, cfg.hideDone]);
+  const visible = useMemo(
+    () => (cfg.hideDone ? optimisticTasks.filter((t) => !t.done && t.status !== 'cancelled') : optimisticTasks),
+    [optimisticTasks, cfg.hideDone],
+  );
   const sortFn = sortBoardCards(cfg.ordering);
 
   const openTask = (id: string) => {
@@ -62,17 +67,20 @@ export function BoardView({
     router.push(`${pathname}?${sp.toString()}`, { scroll: false });
   };
 
-  const drop = async (e: React.DragEvent, patch: NewTaskPatch, cellKey: string) => {
+  const drop = (e: React.DragEvent, patch: NewTaskPatch) => {
     const id = e.dataTransfer.getData('text/plain') || dragId;
     setDragId(null);
     setOverKey(null);
     if (!id) return;
-    await updateTask(id, patch);
-    router.refresh();
-    void cellKey;
+    // Move the card now; the action's revalidatePath re-flows the real data after.
+    startTransition(async () => {
+      applyOptimistic({ kind: 'patch', ids: [id], patch });
+      await updateTask(id, patch);
+    });
   };
 
   const addTo = async (patch: NewTaskPatch, title: string) => {
+    // Create needs a server-generated id/ref, so it stays non-optimistic (see ADR 0002).
     await createTask({ projectId: project.id, title, ...patch });
     router.refresh();
   };
@@ -92,7 +100,7 @@ export function BoardView({
         onDragLeave={(e) => {
           if (e.currentTarget === e.target) setOverKey(null);
         }}
-        onDrop={(e) => drop(e, patch, cellKey)}
+        onDrop={(e) => drop(e, patch)}
       >
         <div className="board-col-head">
           {col.modIcon ? (

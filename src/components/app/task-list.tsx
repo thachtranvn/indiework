@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { startTransition, useCallback, useMemo, useOptimistic, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { TaskDto } from '@/server/services';
 import {
@@ -28,6 +28,7 @@ import {
 } from '@/lib/domain';
 import { DEFAULT_VIEW, viewAllowsStatus, viewCaptureStatus, useViews, type ViewId } from '@/lib/views';
 import { useLocalStorage } from '@/lib/use-local-storage';
+import { applyTaskOptimistic } from '@/lib/optimistic';
 import { createTask, toggleTaskDone, bulkUpdateTasks, bulkDeleteTasks } from '@/app/_actions/tasks';
 import { ProjectTabs } from './project-tabs';
 import { DisplayPopover, FilterPopover, BoardDisplayPopover } from './display-popover';
@@ -91,12 +92,16 @@ export function ProjectView({
 
   const allowedStatus = useCallback((s: TaskStatus) => viewAllowsStatus(activeView, s), [activeView]);
 
+  // Optimistic mirror of the server `tasks` prop: drag/checkbox/bulk edits paint
+  // instantly, then reconcile when the action's revalidatePath re-flows real data.
+  const [optimisticTasks, applyOptimistic] = useOptimistic(tasks, applyTaskOptimistic);
+
   // Sub-tasks are tasks with a parentId — list/board/grouping use root tasks only;
   // children are surfaced via childrenMap (row pill + inline checklist) and the panel.
-  const rootTasks = useMemo(() => tasks.filter((t) => !t.parentId), [tasks]);
+  const rootTasks = useMemo(() => optimisticTasks.filter((t) => !t.parentId), [optimisticTasks]);
   const childrenMap = useMemo(() => {
     const m = new Map<string, TaskDto[]>();
-    for (const t of tasks) {
+    for (const t of optimisticTasks) {
       if (!t.parentId) continue;
       const arr = m.get(t.parentId) ?? [];
       arr.push(t);
@@ -104,7 +109,7 @@ export function ProjectView({
     }
     for (const arr of m.values()) arr.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     return m;
-  }, [tasks]);
+  }, [optimisticTasks]);
 
   const effPrimary = availDims.includes(disp.groupBy) || disp.groupBy === 'none' ? disp.groupBy : availDims[0] ?? 'status';
   const effSecondary =
@@ -171,9 +176,11 @@ export function ProjectView({
     await createTask({ projectId: project.id, title, ...(captureStatus ? { status: captureStatus } : {}), ...patch });
     router.refresh();
   };
-  const onToggleDone = async (id: string) => {
-    await toggleTaskDone(id);
-    router.refresh();
+  const onToggleDone = (id: string) => {
+    startTransition(async () => {
+      applyOptimistic({ kind: 'toggleDone', id });
+      await toggleTaskDone(id);
+    });
   };
 
   const clearSel = () => {
@@ -272,25 +279,37 @@ export function ProjectView({
       {selMode && (
         <BulkBar
           count={selected.size}
-          onSetStatus={async (status) => {
-            await bulkUpdateTasks([...selected], { status });
+          onSetStatus={(status) => {
+            const ids = [...selected];
             clearSel();
-            router.refresh();
+            startTransition(async () => {
+              applyOptimistic({ kind: 'patch', ids, patch: { status } });
+              await bulkUpdateTasks(ids, { status });
+            });
           }}
-          onSetPriority={async (priority) => {
-            await bulkUpdateTasks([...selected], { priority });
+          onSetPriority={(priority) => {
+            const ids = [...selected];
             clearSel();
-            router.refresh();
+            startTransition(async () => {
+              applyOptimistic({ kind: 'patch', ids, patch: { priority } });
+              await bulkUpdateTasks(ids, { priority });
+            });
           }}
-          onMarkDone={async () => {
-            await bulkUpdateTasks([...selected], { status: 'done' });
+          onMarkDone={() => {
+            const ids = [...selected];
             clearSel();
-            router.refresh();
+            startTransition(async () => {
+              applyOptimistic({ kind: 'patch', ids, patch: { status: 'done' } });
+              await bulkUpdateTasks(ids, { status: 'done' });
+            });
           }}
-          onDelete={async () => {
-            await bulkDeleteTasks([...selected]);
+          onDelete={() => {
+            const ids = [...selected];
             clearSel();
-            router.refresh();
+            startTransition(async () => {
+              applyOptimistic({ kind: 'remove', ids });
+              await bulkDeleteTasks(ids);
+            });
           }}
           onClear={clearSel}
         />

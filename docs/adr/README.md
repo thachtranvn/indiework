@@ -12,3 +12,4 @@ For *what the product is* see [../scope.md](../scope.md); for *build order* see
 | #    | Title                                                                 | Status   | Date       |
 |------|-----------------------------------------------------------------------|----------|------------|
 | 0001 | [MCP as the agent surface for task & project management](0001-mcp-as-agent-surface.md) | Accepted | 2026-06-14 |
+| 0002 | [Optimistic updates for board/list mutations](0002-optimistic-updates.md) | Accepted | 2026-06-15 |

@@ -1,7 +1,9 @@
 'use client';
 
+import { startTransition, useOptimistic } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { TaskDto } from '@/server/services';
+import { applyTaskOptimistic } from '@/lib/optimistic';
 import { createTask, toggleTaskDone, assignTaskToProject } from '@/app/_actions/tasks';
 import { QuickCapture } from './quick-capture';
 import { CircleCheck } from '@/components/ui/interactive';
@@ -20,6 +22,7 @@ export function InboxScreen({ tasks, projects }: { tasks: TaskDto[]; projects: P
   const pathname = usePathname();
   const params = useSearchParams();
   const openTaskId = params.get('task');
+  const [optimisticTasks, applyOptimistic] = useOptimistic(tasks, applyTaskOptimistic);
 
   const openTask = (id: string) => {
     const sp = new URLSearchParams(Array.from(params.entries()));
@@ -27,16 +30,22 @@ export function InboxScreen({ tasks, projects }: { tasks: TaskDto[]; projects: P
     router.push(`${pathname}?${sp.toString()}`, { scroll: false });
   };
   const add = async (title: string) => {
+    // Create needs a server-generated id, so it stays non-optimistic (see ADR 0002).
     await createTask({ title });
     router.refresh();
   };
-  const toggle = async (id: string) => {
-    await toggleTaskDone(id);
-    router.refresh();
+  const toggle = (id: string) => {
+    startTransition(async () => {
+      applyOptimistic({ kind: 'toggleDone', id });
+      await toggleTaskDone(id);
+    });
   };
-  const assign = async (id: string, projectId: string) => {
-    await assignTaskToProject(id, projectId);
-    router.refresh();
+  const assign = (id: string, projectId: string) => {
+    // Assigning to a project removes the task from the Inbox — drop it now.
+    startTransition(async () => {
+      applyOptimistic({ kind: 'remove', ids: [id] });
+      await assignTaskToProject(id, projectId);
+    });
   };
 
   return (
@@ -50,14 +59,14 @@ export function InboxScreen({ tasks, projects }: { tasks: TaskDto[]; projects: P
       <QuickCapture placeholder="Dump an idea into Inbox…" onAdd={add} />
 
       <div className="scroll-body">
-        {tasks.length === 0 ? (
+        {optimisticTasks.length === 0 ? (
           <div className="empty">
             <div className="empty-emoji">📥</div>
             <h3>Inbox zero</h3>
             <p>Nothing to triage. Type an idea above, or press c anywhere.</p>
           </div>
         ) : (
-          tasks.map((t) => (
+          optimisticTasks.map((t) => (
             <div
               key={t.id}
               className="task-row"

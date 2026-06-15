@@ -14,6 +14,7 @@ import {
   removeAttachment,
 } from '@/app/_actions/tasks';
 import type { TaskDto } from '@/server/services';
+import { toggledDone } from '@/lib/optimistic';
 import {
   TASK_STATUS,
   TASK_STATUS_LABEL,
@@ -312,7 +313,17 @@ export function DetailPanel({ taskId, onClose }: { taskId: string; onClose: () =
               )}
             </div>
             {children.map((c) => (
-              <SubRow key={c.id} child={c} onOpen={() => openOther(c.id)} onToggle={async () => { await toggleTaskDone(c.id); reload(); }} />
+              <SubRow
+                key={c.id}
+                child={c}
+                onOpen={() => openOther(c.id)}
+                onToggle={async () => {
+                  // Flip the sub-task circle now (matches the panel's manual-optimistic pattern), then reconcile.
+                  setDetail((d) => (d ? { ...d, children: d.children.map((x) => (x.id === c.id ? { ...x, ...toggledDone(x.status) } : x)) } : d));
+                  await toggleTaskDone(c.id);
+                  reload();
+                }}
+              />
             ))}
             <InlineSubAdd onAdd={async (title) => { await addSubtask(task.id, title); reload(); }} />
           </div>
