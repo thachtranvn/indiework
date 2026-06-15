@@ -68,7 +68,12 @@ async function main() {
 
   await T({ title: 'Wire up the hero section', status: 'done', priority: 'high', moduleId: core, milestoneId: p1 });
   await T({ title: 'Pick the type scale + tokens', status: 'done', priority: 'medium', moduleId: core, milestoneId: p1 });
-  await T({ title: 'Build the bento feature grid', status: 'in_progress', priority: 'high', moduleId: core, milestoneId: p2 });
+  const bento = await T({ title: 'Build the bento feature grid', status: 'in_progress', priority: 'high', moduleId: core, milestoneId: p2 });
+  // a few sub-tasks (checklist children of the bento task)
+  await taskService.addSubtask(bento.id, 'Sketch the bento layout');
+  const cell = await taskService.addSubtask(bento.id, 'Build the responsive grid cells');
+  await taskService.addSubtask(bento.id, 'Add hover + reveal interactions');
+  await taskService.toggleDone(cell.id);
   await T({
     title: 'Ship the pricing page',
     status: 'pending',

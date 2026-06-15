@@ -34,6 +34,35 @@
 .status-note textarea { width: 100%; border: none; background: none; outline: none; resize: none; font-family: inherit;
   font-size: 14px; line-height: 1.5; color: var(--text-strong); font-weight: 500; }
 .status-note textarea::placeholder { color: var(--text-muted); font-weight: 450; }
+/* sub-tasks: parent breadcrumb + checklist section */
+.dp-parent { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 14px; padding: 6px 10px;
+  border: 1px solid var(--border-soft); background: var(--bg-sunken); border-radius: var(--r-sm);
+  color: var(--text-muted); font-size: 12.5px; font-weight: 530; max-width: 100%; transition: .12s; }
+.dp-parent:hover { border-color: var(--border); color: var(--text-strong); background: var(--bg-hover); }
+.dp-parent svg { color: var(--text-faint); flex: none; }
+.dp-parent b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--text); }
+.dp-parent-ref { font: 500 11px/1 var(--font-mono); color: var(--text-faint); flex: none; }
+.dp-subtasks { margin-top: 26px; }
+.dp-subtasks-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.dp-subtasks-head .dp-section-label { display: inline-flex; align-items: center; gap: 6px; }
+.dp-subtasks-prog { display: inline-flex; align-items: center; gap: 8px; font: 500 12px/1 var(--font-mono); color: var(--text-muted); }
+.dp-sub-row { display: flex; align-items: center; gap: 11px; padding: 9px 8px; border-radius: var(--r-sm);
+  cursor: pointer; border-bottom: 1px solid var(--border-soft); transition: background .1s; }
+.dp-sub-row:last-of-type { border-bottom: none; }
+.dp-sub-row:hover { background: var(--bg-hover); }
+.dp-sub-row[data-done] .dp-sub-title { color: var(--text-faint); text-decoration: line-through; }
+.dp-sub-title { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 500; color: var(--text-strong);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dp-sub-chev { color: var(--text-faint); opacity: 0; transition: opacity .12s; flex: none; }
+.dp-sub-row:hover .dp-sub-chev { opacity: 1; }
+.dp-sub-add { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; padding: 7px 10px;
+  border: 1px dashed var(--border-strong); background: none; border-radius: var(--r-sm);
+  color: var(--text-muted); font-size: 12.5px; font-weight: 530; transition: .12s; cursor: text; width: 100%; }
+.dp-sub-add:hover { color: var(--accent-ink); border-color: var(--accent-ring); background: var(--accent-softer); }
+.dp-sub-add.editing { border-style: solid; border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-softer); }
+.dp-sub-add input { border: none; background: none; outline: none; flex: 1; font-family: inherit; font-size: 13px; color: var(--text-strong); }
+.dp-sub-add svg { color: var(--text-faint); flex: none; }
+
 /* quiet "add status note" affordance when there's no note and not pending */
 .dp-note-add { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 22px; padding: 7px 11px;
   border: 1px dashed var(--border-strong); background: none; border-radius: var(--r-sm);

@@ -43,6 +43,10 @@ function sortTasks(a: TaskDto, b: TaskDto) {
 export const taskService = {
   async create(input: unknown): Promise<TaskDto> {
     const data = createTaskSchema.parse(input);
+    // A task with a parent is a sub-task — route through addSubtask (inherits
+    // the parent's project/module/milestone, no seq).
+    if (data.parentId) return this.addSubtask(data.parentId, data.title);
+
     const status: TaskStatus = data.status ?? (data.projectId ? 'todo' : 'inbox');
 
     const values = {
@@ -156,6 +160,37 @@ export const taskService = {
 
   async getById(id: string): Promise<TaskDto> {
     return readDto(id);
+  },
+
+  /** Children of a task (one level), ordered by creation. */
+  async listChildren(parentId: string): Promise<TaskDto[]> {
+    const rows = await selectWithKey().where(eq(schema.tasks.parentId, parentId));
+    return rows
+      .map((r) => toTaskDto(r.task, r.projectKey))
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  },
+
+  /**
+   * Add a sub-task to a parent (one level deep). Inherits the parent's project,
+   * module, and milestone; starts at status `todo`; no own seq (its public ref
+   * is the dot-notation "PARENT.N" derived from sibling order at read time).
+   */
+  async addSubtask(parentId: string, title: string): Promise<TaskDto> {
+    const parent = await readDto(parentId);
+    if (parent.parentId) throw badRequest('sub-tasks are one level deep');
+    const [row] = await db
+      .insert(schema.tasks)
+      .values({
+        title,
+        parentId,
+        projectId: parent.projectId,
+        moduleId: parent.moduleId,
+        milestoneId: parent.milestoneId,
+        status: 'todo',
+        seq: null,
+      })
+      .returning({ id: schema.tasks.id });
+    return readDto(row.id);
   },
 
   /** Resolve "DISK-3" → the task DTO. */

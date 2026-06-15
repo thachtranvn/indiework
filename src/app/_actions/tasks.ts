@@ -26,6 +26,12 @@ export async function toggleTaskDone(id: string) {
   return task;
 }
 
+export async function addSubtask(parentId: string, title: string) {
+  const task = await taskService.addSubtask(parentId, title);
+  refresh();
+  return task;
+}
+
 export async function setTaskStatusNote(id: string, note: string) {
   const task = await taskService.setStatusNote(id, { note });
   refresh();

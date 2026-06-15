@@ -14,6 +14,9 @@ export function TaskRow({
   checked,
   selMode,
   fields,
+  childTasks,
+  showSubtasks,
+  openTaskId,
   onToggleDone,
   onOpen,
   onToggleSelect,
@@ -27,56 +30,103 @@ export function TaskRow({
   checked: boolean;
   selMode: boolean;
   fields: FieldVis;
-  onToggleDone: () => void;
-  onOpen: () => void;
+  childTasks?: TaskDto[];
+  showSubtasks?: boolean;
+  openTaskId?: string | null;
+  onToggleDone: (id: string) => void;
+  onOpen: (id: string) => void;
   onToggleSelect: (shift: boolean) => void;
   showModule?: boolean;
   showMilestone?: boolean;
 }) {
+  const children = childTasks ?? [];
+  const subDone = children.filter((c) => c.done).length;
+  const hasChildren = children.length > 0;
+  const allDone = hasChildren && subDone === children.length;
+
   return (
-    <div
-      className="task-row"
-      data-done={task.done ? '' : undefined}
-      data-cancelled={task.status === 'cancelled' ? '' : undefined}
-      data-selected={selected ? '' : undefined}
-      data-checked={checked ? '' : undefined}
-      data-selmode={selMode ? '' : undefined}
-      onClick={onOpen}
-    >
-      <button
-        className="task-select"
-        type="button"
-        aria-label="Select task"
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggleSelect(e.shiftKey);
-        }}
+    <>
+      <div
+        className="task-row"
+        data-done={task.done ? '' : undefined}
+        data-cancelled={task.status === 'cancelled' ? '' : undefined}
+        data-selected={selected ? '' : undefined}
+        data-checked={checked ? '' : undefined}
+        data-selmode={selMode ? '' : undefined}
+        onClick={() => onOpen(task.id)}
       >
-        {checked && <Ic.check size={11} strokeWidth={2.6} />}
-      </button>
+        <button
+          className="task-select"
+          type="button"
+          aria-label="Select task"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect(e.shiftKey);
+          }}
+        >
+          {checked && <Ic.check size={11} strokeWidth={2.6} />}
+        </button>
 
-      <CircleCheck done={task.done} status={task.status} onToggle={onToggleDone} />
+        <CircleCheck done={task.done} status={task.status} onToggle={() => onToggleDone(task.id)} />
 
-      <div className="task-main">
-        <div className="task-line">
-          <span className="task-title">{task.title}</span>
-          {fields.taskId && task.ref && <span className="task-ref">{task.ref}</span>}
-        </div>
-        {task.status === 'pending' && task.statusNote && (
-          <div className="task-note-2nd">
-            <Ic.bolt size={12} />
-            <span>{task.statusNote}</span>
+        <div className="task-main">
+          <div className="task-line">
+            <span className="task-title">{task.title}</span>
+            {fields.taskId && task.ref && <span className="task-ref">{task.ref}</span>}
           </div>
-        )}
+          {task.status === 'pending' && task.statusNote && (
+            <div className="task-note-2nd">
+              <Ic.bolt size={12} />
+              <span>{task.statusNote}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="task-meta task-reveal">
+          {hasChildren && (
+            <span
+              className="subtask-count"
+              data-complete={allDone ? '' : undefined}
+              title={`${subDone} of ${children.length} sub-tasks done`}
+            >
+              <Ic.listTree size={12} /> {subDone}/{children.length}
+            </span>
+          )}
+          {fields.status && <StatusChip status={task.status} size="sm" />}
+          {fields.priority && <PriorityBars priority={task.priority} />}
+          {task.dueDate && <DuePill due={task.dueDate} />}
+          {fields.module && showModule && module && <ModuleTag name={module.name} color={module.color} icon={module.icon} />}
+          {fields.milestone && showMilestone && milestone && <MilestoneTag name={milestone.name} />}
+        </div>
       </div>
 
-      <div className="task-meta task-reveal">
-        {fields.status && <StatusChip status={task.status} size="sm" />}
-        {fields.priority && <PriorityBars priority={task.priority} />}
-        {task.dueDate && <DuePill due={task.dueDate} />}
-        {fields.module && showModule && module && <ModuleTag name={module.name} color={module.color} icon={module.icon} />}
-        {fields.milestone && showMilestone && milestone && <MilestoneTag name={milestone.name} />}
-      </div>
-    </div>
+      {showSubtasks && hasChildren && (
+        <div className="subtask-list">
+          {children.map((c) => (
+            <div
+              key={c.id}
+              className="subtask-row"
+              data-done={c.done ? '' : undefined}
+              data-selected={openTaskId === c.id ? '' : undefined}
+              onClick={() => onOpen(c.id)}
+            >
+              <button
+                className="subtask-check"
+                type="button"
+                data-done={c.done ? '' : undefined}
+                aria-label={c.done ? 'Mark not done' : 'Mark done'}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleDone(c.id);
+                }}
+              >
+                {c.done && <Ic.check size={9} strokeWidth={3} />}
+              </button>
+              <span className="subtask-title">{c.title}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }

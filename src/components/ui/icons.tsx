@@ -42,6 +42,12 @@ import {
   Eye,
   ArrowLeft,
   ListFilter,
+  ListTree,
+  Paperclip,
+  FileText,
+  Image as ImageIcon,
+  Download,
+  CornerDownRight,
   type LucideProps,
 } from 'lucide-react';
 
@@ -92,6 +98,12 @@ export const Ic = {
   table: make(Table),
   key: make(KeyRound),
   folder: make(Folder),
+  listTree: make(ListTree),
+  paperclip: make(Paperclip),
+  fileText: make(FileText),
+  image: make(ImageIcon),
+  download: make(Download),
+  cornerDownRight: make(CornerDownRight),
 };
 
 export type IconName = keyof typeof Ic;

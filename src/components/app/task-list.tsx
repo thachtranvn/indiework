@@ -88,19 +88,34 @@ export function ProjectView({
 
   const allowedStatus = useCallback((s: TaskStatus) => viewAllowsStatus(activeView, s), [activeView]);
 
+  // Sub-tasks are tasks with a parentId — list/board/grouping use root tasks only;
+  // children are surfaced via childrenMap (row pill + inline checklist) and the panel.
+  const rootTasks = useMemo(() => tasks.filter((t) => !t.parentId), [tasks]);
+  const childrenMap = useMemo(() => {
+    const m = new Map<string, TaskDto[]>();
+    for (const t of tasks) {
+      if (!t.parentId) continue;
+      const arr = m.get(t.parentId) ?? [];
+      arr.push(t);
+      m.set(t.parentId, arr);
+    }
+    for (const arr of m.values()) arr.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    return m;
+  }, [tasks]);
+
   const effPrimary = availDims.includes(disp.groupBy) || disp.groupBy === 'none' ? disp.groupBy : availDims[0] ?? 'status';
   const effSecondary =
     disp.subGroupBy !== 'none' && disp.subGroupBy !== effPrimary && availDims.includes(disp.subGroupBy) ? disp.subGroupBy : 'none';
 
-  const scoped = useMemo(() => tasks.filter((t) => allowedStatus(t.status)), [tasks, allowedStatus]);
+  const scoped = useMemo(() => rootTasks.filter((t) => allowedStatus(t.status)), [rootTasks, allowedStatus]);
 
   const sections = useMemo(
-    () => buildSections(tasks, effPrimary, effSecondary, filters, modules, milestones, {
+    () => buildSections(rootTasks, effPrimary, effSecondary, filters, modules, milestones, {
       statusOrder: disp.statusOrder,
       statusHidden: disp.statusHidden,
       allowedStatus,
     }),
-    [tasks, effPrimary, effSecondary, filters, modules, milestones, disp.statusOrder, disp.statusHidden, allowedStatus],
+    [rootTasks, effPrimary, effSecondary, filters, modules, milestones, disp.statusOrder, disp.statusHidden, allowedStatus],
   );
   const visibleSections = sections.filter((s) => s.tasks.length > 0 || s.keep);
   const anyTasks = sections.some((s) => s.tasks.length > 0);
@@ -219,6 +234,8 @@ export function ProjectView({
                 onToggleCollapse={() => toggleCollapse(section.id)}
                 moduleMap={moduleMap}
                 milestoneMap={milestoneMap}
+                childrenMap={childrenMap}
+                showSubtasks={filters.showSubtasks}
                 fields={filters.fields}
                 showModule={effPrimary !== 'module' && effSecondary !== 'module'}
                 showMilestone={effPrimary !== 'milestone' && effSecondary !== 'milestone'}
@@ -291,6 +308,8 @@ function Section({
   onToggleCollapse,
   moduleMap,
   milestoneMap,
+  childrenMap,
+  showSubtasks,
   fields,
   showModule,
   showMilestone,
@@ -309,6 +328,8 @@ function Section({
   onToggleCollapse: () => void;
   moduleMap: Map<string, GroupModule>;
   milestoneMap: Map<string, GroupMilestone>;
+  childrenMap: Map<string, TaskDto[]>;
+  showSubtasks: boolean;
   fields: FieldVis;
   showModule: boolean;
   showMilestone: boolean;
@@ -335,8 +356,11 @@ function Section({
       checked={selected.has(t.id)}
       selMode={selMode}
       fields={fields}
-      onToggleDone={() => onToggleDone(t.id)}
-      onOpen={() => onOpen(t.id)}
+      childTasks={childrenMap.get(t.id)}
+      showSubtasks={showSubtasks}
+      openTaskId={openTaskId}
+      onToggleDone={onToggleDone}
+      onOpen={onOpen}
       onToggleSelect={(shift) => onToggleSelect(t.id, shift)}
       showModule={showModule}
       showMilestone={showMilestone}

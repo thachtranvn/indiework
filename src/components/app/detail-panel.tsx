@@ -1,14 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { getTaskDetail, type TaskDetail } from '@/app/_actions/queries';
 import {
   updateTask,
   setTaskStatusNote,
   addTaskComment,
   deleteTask,
+  addSubtask,
+  toggleTaskDone,
 } from '@/app/_actions/tasks';
+import type { TaskDto } from '@/server/services';
 import {
   TASK_STATUS,
   TASK_STATUS_LABEL,
@@ -22,13 +25,31 @@ import { mdToHtml } from '@/lib/markdown';
 import type { UpdateTaskInput } from '@/server/validators/task';
 import { Popover, OptionList } from '@/components/ui/popover';
 import { RefTag } from '@/components/ui/interactive';
-import { PriorityBars, ModuleIcon } from '@/components/ui/bits';
+import { PriorityBars, ModuleIcon, Progress } from '@/components/ui/bits';
+import { CircleCheck } from '@/components/ui/interactive';
 import { Ic } from '@/components/ui/icons';
 
 export function DetailPanel({ taskId, onClose }: { taskId: string; onClose: () => void }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
   const [detail, setDetail] = useState<TaskDetail | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
+
+  const openOther = useCallback(
+    (id: string) => {
+      const sp = new URLSearchParams(Array.from(params.entries()));
+      sp.set('task', id);
+      router.push(`${pathname}?${sp.toString()}`, { scroll: false });
+    },
+    [params, pathname, router],
+  );
+
+  const reload = useCallback(async () => {
+    const fresh = await getTaskDetail(taskId);
+    setDetail(fresh);
+    router.refresh();
+  }, [taskId, router]);
 
   useEffect(() => {
     let alive = true;
@@ -71,8 +92,9 @@ export function DetailPanel({ taskId, onClose }: { taskId: string; onClose: () =
     );
   }
 
-  const { task, comments, modules, milestones } = detail;
+  const { task, displayRef, parent, children, comments, modules, milestones } = detail;
   const pending = task.status === 'pending';
+  const subDone = children.filter((c) => c.done).length;
   const taskModule = modules.find((m) => m.id === task.moduleId);
   const milestoneName = milestones.find((m) => m.id === task.milestoneId)?.name;
 
@@ -85,7 +107,7 @@ export function DetailPanel({ taskId, onClose }: { taskId: string; onClose: () =
   return (
     <section className="detail-panel">
       <div className="dp-head">
-        {task.ref ? <RefTag value={task.ref} big /> : <span className="ref-tag ref-big">Inbox</span>}
+        {displayRef ? <RefTag value={displayRef} big /> : <span className="ref-tag ref-big">Inbox</span>}
         <span className="spacer" />
         <button className="icon-btn" onClick={onClose} aria-label="Close">
           <Ic.close size={18} />
@@ -93,6 +115,12 @@ export function DetailPanel({ taskId, onClose }: { taskId: string; onClose: () =
       </div>
 
       <div className="dp-body">
+        {parent && (
+          <button className="dp-parent" type="button" onClick={() => openOther(parent.id)}>
+            <Ic.cornerDownRight size={13} /> Sub-task of · <b>{parent.title}</b>
+            {parent.ref && <span className="dp-parent-ref">{parent.ref}</span>}
+          </button>
+        )}
         <div className="dp-check-title">
           <TitleEditor key={task.id} value={task.title} onSave={(title) => patch({ title })} />
         </div>
@@ -268,6 +296,26 @@ export function DetailPanel({ taskId, onClose }: { taskId: string; onClose: () =
         <p className="dp-section-label">Description</p>
         <DescriptionEditor key={`desc-${task.id}`} value={task.description ?? ''} onSave={(d) => patch({ description: d })} />
 
+        {!task.parentId && (
+          <div className="dp-subtasks">
+            <div className="dp-subtasks-head">
+              <span className="dp-section-label" style={{ margin: 0 }}>
+                <Ic.listTree size={13} /> Sub-tasks
+              </span>
+              {children.length > 0 && (
+                <span className="dp-subtasks-prog">
+                  {subDone}/{children.length}
+                  <Progress value={children.length ? subDone / children.length : 0} tone={subDone === children.length ? 'done' : 'accent'} />
+                </span>
+              )}
+            </div>
+            {children.map((c) => (
+              <SubRow key={c.id} child={c} onOpen={() => openOther(c.id)} onToggle={async () => { await toggleTaskDone(c.id); reload(); }} />
+            ))}
+            <InlineSubAdd onAdd={async (title) => { await addSubtask(task.id, title); reload(); }} />
+          </div>
+        )}
+
         <div className="activity">
           <p className="dp-section-label">Activity</p>
           {comments.map((c) => (
@@ -439,6 +487,61 @@ function CommentBox({ onSend }: { onSend: (body: string) => Promise<void> }) {
       <button className="comment-send" type="button" onClick={send} disabled={!v.trim() || busy} aria-label="Add comment">
         <Ic.arrowRight size={16} />
       </button>
+    </div>
+  );
+}
+
+function SubRow({
+  child,
+  onOpen,
+  onToggle,
+}: {
+  child: TaskDto & { displayRef: string | null };
+  onOpen: () => void;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="dp-sub-row" data-done={child.done ? '' : undefined} onClick={onOpen}>
+      <CircleCheck done={child.done} status={child.status} size={16} onToggle={onToggle} />
+      <span className="dp-sub-title">{child.title}</span>
+      {child.displayRef && <span className="task-ref">{child.displayRef}</span>}
+      <Ic.chevronRight size={14} className="dp-sub-chev" />
+    </div>
+  );
+}
+
+/** Quiet "+ Add sub-task" that becomes an input; Enter adds and keeps focus. */
+function InlineSubAdd({ onAdd }: { onAdd: (title: string) => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [v, setV] = useState('');
+  if (!editing) {
+    return (
+      <button className="dp-sub-add" type="button" onClick={() => setEditing(true)}>
+        <Ic.plus size={14} /> Add sub-task
+      </button>
+    );
+  }
+  const submit = async () => {
+    const t = v.trim();
+    if (t) {
+      await onAdd(t);
+      setV('');
+    }
+  };
+  return (
+    <div className="dp-sub-add editing">
+      <Ic.plus size={14} />
+      <input
+        autoFocus
+        value={v}
+        onChange={(e) => setV(e.target.value)}
+        placeholder="Sub-task title… (Enter to add)"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') submit();
+          if (e.key === 'Escape') setEditing(false);
+        }}
+        onBlur={() => !v.trim() && setEditing(false)}
+      />
     </div>
   );
 }

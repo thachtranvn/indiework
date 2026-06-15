@@ -239,6 +239,29 @@
 .task-reveal { display: flex; align-items: center; gap: 8px; opacity: 0; transition: opacity .12s; }
 .task-row:hover .task-reveal, .task-row[data-selected] .task-reveal { opacity: 1; }
 
+/* sub-task count pill + inline checklist */
+.subtask-count { display: inline-flex; align-items: center; gap: 4px; font: 600 11px/1 var(--font-mono);
+  color: var(--text-muted); background: var(--bg-sunken); border: 1px solid var(--border-soft);
+  padding: 3px 6px 3px 5px; border-radius: var(--r-pill); white-space: nowrap; flex: none; }
+.subtask-count svg { color: var(--text-faint); }
+.subtask-count[data-complete] { color: var(--st-done); background: var(--st-done-bg); border-color: transparent; }
+.subtask-count[data-complete] svg { color: var(--st-done); }
+.subtask-list { display: flex; flex-direction: column; padding: 2px 12px 6px 64px; animation: subIn .18s ease; }
+@keyframes subIn { from { transform: translateY(-3px); } to { transform: none; } }
+.subtask-row { display: flex; align-items: center; gap: 10px; padding: 5px 8px; border-radius: var(--r-sm);
+  cursor: pointer; transition: background .1s; position: relative; }
+.subtask-row::before { content: ""; position: absolute; left: -14px; top: -2px; bottom: 50%; width: 1px; background: var(--border); }
+.subtask-row::after { content: ""; position: absolute; left: -14px; top: 50%; width: 9px; height: 1px; background: var(--border); }
+.subtask-row:hover { background: var(--bg-hover); }
+.subtask-row[data-selected] { background: var(--accent-softer); }
+.subtask-check { width: 15px; height: 15px; padding: 0; border: 1.6px solid var(--border-strong); border-radius: 5px;
+  background: var(--bg-surface); display: grid; place-items: center; color: #fff; flex: none; transition: .12s; cursor: pointer; }
+.subtask-row:hover .subtask-check, .subtask-check:hover { border-color: var(--accent); }
+.subtask-check[data-done] { background: var(--accent); border-color: var(--accent); }
+.subtask-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 500; color: var(--text-muted); line-height: 1.4;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.subtask-row[data-done] .subtask-title { color: var(--text-faint); text-decoration: line-through; }
+
 /* ---------- row selection ---------- */
 .task-select { position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
   width: 16px; height: 16px; border-radius: var(--r-xs); border: 1.6px solid var(--border-strong);
