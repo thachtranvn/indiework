@@ -13,7 +13,7 @@ import {
   type TaskStatus,
   type TaskPriority,
 } from '@/lib/domain';
-import type { GroupDim, Filters, FieldVis } from '@/lib/grouping';
+import type { GroupDim, Filters, FieldVis, BoardCfg, BoardOrdering } from '@/lib/grouping';
 import type { ViewMode } from '@/lib/views';
 
 const DIM_LABEL: Record<GroupDim, string> = {
@@ -229,6 +229,105 @@ function GroupOrder({
         </div>
       ))}
     </div>
+  );
+}
+
+const ORDERING_LABEL: Record<BoardOrdering, string> = {
+  priority: 'Priority',
+  created: 'Created',
+  due: 'Due date',
+  title: 'Title',
+};
+
+export function BoardDisplayPopover({
+  setMode,
+  availDims,
+  cfg,
+  setCfg,
+}: {
+  setMode: (m: ViewMode) => void;
+  availDims: GroupDim[];
+  cfg: BoardCfg;
+  setCfg: (patch: Partial<BoardCfg>) => void;
+}) {
+  const dirty = cfg.columns !== 'status' || cfg.rows !== 'none' || cfg.ordering !== 'priority' || cfg.hideDone || !cfg.showEmpty;
+  const colDims = availDims; // columns can't be 'none'
+  const setField = (key: FieldKey) => setCfg({ fields: { ...cfg.fields, [key]: !cfg.fields[key] } });
+
+  return (
+    <Popover
+      align="right"
+      width={300}
+      trigger={
+        <button className="icon-tool" data-on={dirty ? '' : undefined} type="button" aria-label="Board display options">
+          <Ic.sliders size={16} />
+          {dirty && <span className="tool-dot" />}
+        </button>
+      }
+    >
+      <div className="display-pop">
+        <div className="dp-row">
+          <span className="dp-row-lbl">View</span>
+          <div className="seg-wrap">
+            <button className="seg-btn" onClick={() => setMode('list')} type="button">
+              <Ic.list size={14} /> List
+            </button>
+            <button className="seg-btn" data-active="" type="button">
+              <Ic.board size={14} /> Board
+            </button>
+          </div>
+        </div>
+        <div className="dp-divider" />
+        <div className="dp-row">
+          <span className="dp-row-lbl">Columns</span>
+          <select className="dp-dd" value={cfg.columns} onChange={(e) => setCfg({ columns: e.target.value as GroupDim })}>
+            {colDims.map((d) => (
+              <option key={d} value={d}>
+                {DIM_LABEL[d]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="dp-row">
+          <span className="dp-row-lbl">Rows (swimlanes)</span>
+          <select className="dp-dd" value={cfg.rows} onChange={(e) => setCfg({ rows: e.target.value as GroupDim })}>
+            {['none' as GroupDim, ...availDims.filter((d) => d !== cfg.columns)].map((d) => (
+              <option key={d} value={d}>
+                {DIM_LABEL[d]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="dp-row">
+          <span className="dp-row-lbl">Ordering</span>
+          <select className="dp-dd" value={cfg.ordering} onChange={(e) => setCfg({ ordering: e.target.value as BoardOrdering })}>
+            {(Object.keys(ORDERING_LABEL) as BoardOrdering[]).map((o) => (
+              <option key={o} value={o}>
+                {ORDERING_LABEL[o]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="dp-divider" />
+        <button className="dp-toggle" type="button" onClick={() => setCfg({ hideDone: !cfg.hideDone })}>
+          <Ic.eyeOff size={15} /> Hide done & cancelled
+          <span className="dp-switch" data-on={cfg.hideDone ? '' : undefined} />
+        </button>
+        <button className="dp-toggle" type="button" onClick={() => setCfg({ showEmpty: !cfg.showEmpty })}>
+          <Ic.board size={15} /> Show empty columns
+          <span className="dp-switch" data-on={cfg.showEmpty ? '' : undefined} />
+        </button>
+        <div className="dp-divider" />
+        <div className="dp-label">Show fields</div>
+        {FIELD_ROWS.map((f) => (
+          <button key={f.key} className="dp-field" type="button" onClick={() => setField(f.key)}>
+            {f.label}
+            <span className="dp-field-ex">{fieldExample(f.key)}</span>
+            <span className="dp-switch" data-on={cfg.fields[f.key] ? '' : undefined} />
+          </button>
+        ))}
+      </div>
+    </Popover>
   );
 }
 

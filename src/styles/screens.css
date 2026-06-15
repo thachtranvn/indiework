@@ -94,6 +94,13 @@
 
 /* ---------- Board ---------- */
 .board { flex: 1; display: flex; gap: 14px; padding: 8px 22px 24px; overflow-x: auto; overflow-y: hidden; }
+/* swimlanes (board rows dimension) */
+.board-swims { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 12px; }
+.board-swim { display: flex; flex-direction: column; }
+.board-swim + .board-swim { border-top: 1px solid var(--border-soft); }
+.board-swim-head { display: flex; align-items: center; gap: 8px; padding: 12px 22px 2px; font-size: 13px; font-weight: 640; color: var(--text-strong); position: sticky; left: 0; }
+.board-swim-name { letter-spacing: -0.01em; }
+.board-swims .board { flex: none; overflow-x: auto; padding-top: 4px; padding-bottom: 14px; }
 .board-col { width: 286px; flex: none; display: flex; flex-direction: column; background: var(--bg-sunken);
   border-radius: var(--r-md); border: 1px solid var(--border-soft); max-height: 100%; transition: .14s; }
 .board-col[data-over] { border-color: var(--accent-ring); background: var(--accent-softer); }

@@ -11,6 +11,7 @@ import {
   TASK_PRIORITY_LABEL,
   TASK_PRIORITY_RANK,
   DEFAULT_STATUS_ORDER,
+  BOARD_COLUMNS,
   type TaskStatus,
   type TaskPriority,
 } from '@/lib/domain';
@@ -262,4 +263,71 @@ export function buildSections(
     }
     return sec;
   });
+}
+
+// ============================ Board (configurable) ============================
+
+export type BoardOrdering = 'priority' | 'created' | 'due' | 'title';
+
+export interface BoardCfg {
+  columns: GroupDim; // dimension for columns
+  rows: GroupDim; // dimension for swimlanes ('none' = no lanes)
+  ordering: BoardOrdering;
+  hideDone: boolean;
+  showEmpty: boolean; // show empty columns/rows
+  fields: FieldVis;
+}
+
+export const DEFAULT_BOARD_CFG: BoardCfg = {
+  columns: 'status',
+  rows: 'none',
+  ordering: 'priority',
+  hideDone: false,
+  showEmpty: true,
+  fields: DEFAULT_FIELDS,
+};
+
+export interface BoardBucket {
+  key: string;
+  name: string;
+  color?: string;
+  modIcon?: string | null;
+  icon?: IconName;
+  patch: NewTaskPatch;
+  match: (t: TaskDto) => boolean;
+}
+
+/** Expand a dimension into ordered board columns (or swimlane rows). */
+export function boardBuckets(dim: GroupDim, modules: GroupModule[], milestones: GroupMilestone[]): BoardBucket[] {
+  if (dim === 'status') {
+    return BOARD_COLUMNS.map((s) => ({
+      key: s,
+      name: TASK_STATUS_LABEL[s],
+      color: `var(--st-${s})`,
+      patch: { status: s },
+      match: (t) => t.status === s,
+    }));
+  }
+  const spec = groupSpec(dim, modules, milestones);
+  return spec ?? [];
+}
+
+export function sortBoardCards(ordering: BoardOrdering): (a: TaskDto, b: TaskDto) => number {
+  switch (ordering) {
+    case 'created':
+      return (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    case 'title':
+      return (a, b) => a.title.localeCompare(b.title);
+    case 'due':
+      return (a, b) => {
+        const av = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+        const bv = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+        return av - bv || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      };
+    case 'priority':
+    default:
+      return (a, b) =>
+        TASK_PRIORITY_RANK[b.priority] - TASK_PRIORITY_RANK[a.priority] ||
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  }
 }

@@ -3,10 +3,18 @@
 import { useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { TaskDto } from '@/server/services';
-import type { GroupModule, GroupMilestone } from '@/lib/grouping';
-import { BOARD_COLUMNS, TASK_STATUS_LABEL, TASK_PRIORITY_RANK, type TaskStatus } from '@/lib/domain';
+import {
+  boardBuckets,
+  sortBoardCards,
+  type BoardCfg,
+  type BoardBucket,
+  type GroupModule,
+  type GroupMilestone,
+  type NewTaskPatch,
+  type FieldVis,
+} from '@/lib/grouping';
 import { createTask, updateTask } from '@/app/_actions/tasks';
-import { PriorityBars, ModuleTag, MilestoneTag } from '@/components/ui/bits';
+import { PriorityBars, ModuleTag, MilestoneTag, ModuleIcon, StatusChip } from '@/components/ui/bits';
 import { Ic } from '@/components/ui/icons';
 
 interface Project {
@@ -16,42 +24,37 @@ interface Project {
   emoji: string | null;
 }
 
-/** Board body only (no header) — rendered inside ProjectView when a view's mode is board. */
+/** Configurable board (v3): columns + optional swimlane rows, driven by boardCfg. */
 export function BoardView({
   project,
   modules,
   milestones,
   tasks,
+  cfg,
 }: {
   project: Project;
   modules: GroupModule[];
   milestones: GroupMilestone[];
   tasks: TaskDto[];
+  cfg: BoardCfg;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const [dragId, setDragId] = useState<string | null>(null);
-  const [overCol, setOverCol] = useState<TaskStatus | null>(null);
+  const [overKey, setOverKey] = useState<string | null>(null);
 
   const moduleMap = useMemo(() => new Map(modules.map((m) => [m.id, m])), [modules]);
   const milestoneMap = useMemo(() => new Map(milestones.map((m) => [m.id, m])), [milestones]);
 
-  const byColumn = useMemo(() => {
-    const map = new Map<TaskStatus, TaskDto[]>(BOARD_COLUMNS.map((c) => [c, []]));
-    for (const t of tasks) {
-      const col = map.get(t.status as TaskStatus);
-      if (col) col.push(t);
-    }
-    for (const list of map.values()) {
-      list.sort(
-        (a, b) =>
-          TASK_PRIORITY_RANK[b.priority] - TASK_PRIORITY_RANK[a.priority] ||
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      );
-    }
-    return map;
-  }, [tasks]);
+  const cols = useMemo(() => boardBuckets(cfg.columns, modules, milestones), [cfg.columns, modules, milestones]);
+  const rows = useMemo<BoardBucket[] | null>(
+    () => (cfg.rows === 'none' ? null : boardBuckets(cfg.rows, modules, milestones)),
+    [cfg.rows, modules, milestones],
+  );
+
+  const visible = useMemo(() => (cfg.hideDone ? tasks.filter((t) => !t.done && t.status !== 'cancelled') : tasks), [tasks, cfg.hideDone]);
+  const sortFn = sortBoardCards(cfg.ordering);
 
   const openTask = (id: string) => {
     const sp = new URLSearchParams(Array.from(params.entries()));
@@ -59,84 +62,138 @@ export function BoardView({
     router.push(`${pathname}?${sp.toString()}`, { scroll: false });
   };
 
-  const drop = async (e: React.DragEvent, status: TaskStatus) => {
-    // The dragged id travels on the dataTransfer, so the drop never depends on
-    // a React re-render landing between dragstart and drop.
+  const drop = async (e: React.DragEvent, patch: NewTaskPatch, cellKey: string) => {
     const id = e.dataTransfer.getData('text/plain') || dragId;
     setDragId(null);
-    setOverCol(null);
+    setOverKey(null);
     if (!id) return;
-    const task = tasks.find((t) => t.id === id);
-    if (!task || task.status === status) return;
-    await updateTask(id, { status });
+    await updateTask(id, patch);
+    router.refresh();
+    void cellKey;
+  };
+
+  const addTo = async (patch: NewTaskPatch, title: string) => {
+    await createTask({ projectId: project.id, title, ...patch });
     router.refresh();
   };
 
-  const addToColumn = async (status: TaskStatus, title: string) => {
-    await createTask({ projectId: project.id, title, status });
-    router.refresh();
+  const renderColumn = (col: BoardBucket, rowPatch: NewTaskPatch, laneKey: string, list: TaskDto[]) => {
+    const cellKey = `${laneKey}:${col.key}`;
+    const patch = { ...rowPatch, ...col.patch };
+    return (
+      <div
+        key={col.key}
+        className="board-col"
+        data-over={overKey === cellKey ? '' : undefined}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setOverKey(cellKey);
+        }}
+        onDragLeave={(e) => {
+          if (e.currentTarget === e.target) setOverKey(null);
+        }}
+        onDrop={(e) => drop(e, patch, cellKey)}
+      >
+        <div className="board-col-head">
+          {col.modIcon ? (
+            <ModuleIcon icon={col.modIcon} color={col.color} size={14} />
+          ) : (
+            <span className="dot" style={{ background: col.color ?? 'var(--text-faint)' }} />
+          )}
+          <span className="board-col-name">{col.name}</span>
+          <span className="board-col-count">{list.length}</span>
+        </div>
+        <div className="board-list">
+          {list.map((t) => (
+            <BoardCard
+              key={t.id}
+              task={t}
+              fields={cfg.fields}
+              module={t.moduleId ? moduleMap.get(t.moduleId) : undefined}
+              milestone={t.milestoneId ? milestoneMap.get(t.milestoneId) : undefined}
+              dragging={dragId === t.id}
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/plain', t.id);
+                e.dataTransfer.effectAllowed = 'move';
+                setDragId(t.id);
+              }}
+              onDragEnd={() => setDragId(null)}
+              onOpen={() => openTask(t.id)}
+            />
+          ))}
+        </div>
+        <BoardAdd onAdd={(title) => addTo(patch, title)} />
+      </div>
+    );
   };
+
+  const colsFor = (laneTasks: TaskDto[], rowPatch: NewTaskPatch, laneKey: string) =>
+    cols
+      .map((col) => ({ col, list: laneTasks.filter(col.match).sort(sortFn) }))
+      .filter(({ list }) => cfg.showEmpty || list.length > 0)
+      .map(({ col, list }) => renderColumn(col, rowPatch, laneKey, list));
+
+  if (!rows) {
+    return <div className="board">{colsFor(visible, {}, '_')}</div>;
+  }
+
+  const lanes = rows
+    .map((row) => ({ row, laneTasks: visible.filter(row.match) }))
+    .filter(({ laneTasks }) => cfg.showEmpty || laneTasks.length > 0);
 
   return (
-    <div className="board">
-      {BOARD_COLUMNS.map((status) => {
-          const list = byColumn.get(status) ?? [];
-          return (
-            <div
-              key={status}
-              className="board-col"
-              data-over={overCol === status ? '' : undefined}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setOverCol(status);
-              }}
-              onDragLeave={(e) => {
-                if (e.currentTarget === e.target) setOverCol(null);
-              }}
-              onDrop={(e) => drop(e, status)}
-            >
-              <div className="board-col-head">
-                <span className="dot" style={{ background: `var(--st-${status})` }} />
-                <span className="board-col-name">{TASK_STATUS_LABEL[status]}</span>
-                <span className="board-col-count">{list.length}</span>
-              </div>
-              <div className="board-list">
-                {list.map((t) => (
-                  <div
-                    key={t.id}
-                    className="board-card"
-                    draggable
-                    data-dragging={dragId === t.id ? '' : undefined}
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('text/plain', t.id);
-                      e.dataTransfer.effectAllowed = 'move';
-                      setDragId(t.id);
-                    }}
-                    onDragEnd={() => setDragId(null)}
-                    onClick={() => openTask(t.id)}
-                  >
-                    <div className="board-card-title">{t.title}</div>
-                    <div className="board-card-meta">
-                      <PriorityBars priority={t.priority} />
-                      {t.moduleId && moduleMap.get(t.moduleId) && (
-                        <ModuleTag
-                          name={moduleMap.get(t.moduleId)!.name}
-                          color={moduleMap.get(t.moduleId)!.color}
-                          icon={moduleMap.get(t.moduleId)!.icon}
-                        />
-                      )}
-                      {!t.moduleId && t.milestoneId && milestoneMap.get(t.milestoneId) && (
-                        <MilestoneTag name={milestoneMap.get(t.milestoneId)!.name} />
-                      )}
-                      {t.ref && <span className="task-ref">{t.ref}</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <BoardAdd onAdd={(title) => addToColumn(status, title)} />
-            </div>
-          );
-        })}
+    <div className="board-swims">
+      {lanes.map(({ row, laneTasks }) => (
+        <div className="board-swim" key={row.key}>
+          <div className="board-swim-head">
+            {row.modIcon ? <ModuleIcon icon={row.modIcon} color={row.color} size={14} /> : <span className="dot" style={{ background: row.color ?? 'var(--text-faint)' }} />}
+            <span className="board-swim-name">{row.name}</span>
+            <span className="board-col-count">{laneTasks.length}</span>
+          </div>
+          <div className="board">{colsFor(laneTasks, row.patch, row.key)}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BoardCard({
+  task,
+  fields,
+  module,
+  milestone,
+  dragging,
+  onDragStart,
+  onDragEnd,
+  onOpen,
+}: {
+  task: TaskDto;
+  fields: FieldVis;
+  module?: GroupModule;
+  milestone?: GroupMilestone;
+  dragging: boolean;
+  onDragStart: (e: React.DragEvent) => void;
+  onDragEnd: () => void;
+  onOpen: () => void;
+}) {
+  const hasMeta =
+    (fields.status && true) ||
+    fields.priority ||
+    (fields.module && module) ||
+    (fields.milestone && milestone) ||
+    (fields.taskId && task.ref);
+  return (
+    <div className="board-card" draggable data-dragging={dragging ? '' : undefined} onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={onOpen}>
+      <div className="board-card-title">{task.title}</div>
+      {hasMeta && (
+        <div className="board-card-meta">
+          {fields.status && <StatusChip status={task.status} size="sm" />}
+          {fields.priority && <PriorityBars priority={task.priority} />}
+          {fields.module && module && <ModuleTag name={module.name} color={module.color} icon={module.icon} />}
+          {fields.milestone && milestone && <MilestoneTag name={milestone.name} />}
+          {fields.taskId && task.ref && <span className="task-ref">{task.ref}</span>}
+        </div>
+      )}
     </div>
   );
 }

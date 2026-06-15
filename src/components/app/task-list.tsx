@@ -7,9 +7,11 @@ import {
   buildSections,
   computeAvailDims,
   DEFAULT_FILTERS,
+  DEFAULT_BOARD_CFG,
   type GroupDim,
   type Filters,
   type FieldVis,
+  type BoardCfg,
   type Section as Sec,
   type GroupModule,
   type GroupMilestone,
@@ -27,7 +29,7 @@ import { DEFAULT_VIEW, viewAllowsStatus, viewCaptureStatus, useViews, type ViewI
 import { useLocalStorage } from '@/lib/use-local-storage';
 import { createTask, toggleTaskDone, bulkUpdateTasks, bulkDeleteTasks } from '@/app/_actions/tasks';
 import { ProjectTabs } from './project-tabs';
-import { DisplayPopover, FilterPopover } from './display-popover';
+import { DisplayPopover, FilterPopover, BoardDisplayPopover } from './display-popover';
 import { BoardView } from './board';
 import { TaskRow } from './task-row';
 import { QuickCapture } from './quick-capture';
@@ -79,6 +81,7 @@ export function ProjectView({
     statusHidden: [],
   });
   const filters = disp.filters;
+  const [boardCfg, setBoardCfg] = useLocalStorage<BoardCfg>(`iw-board-${project.key}`, DEFAULT_BOARD_CFG);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const lastSel = useRef<string | null>(null);
@@ -174,28 +177,37 @@ export function ProjectView({
         right={
           <>
             <FilterPopover filters={filters} setFilters={(f) => setDisp((s) => ({ ...s, filters: f }))} />
-            <DisplayPopover
-              mode={mode}
-              setMode={(m) => views.setMode(activeView, m)}
-              groupBy={effPrimary}
-              setGroupBy={(d) => setDisp((s) => ({ ...s, groupBy: d }))}
-              subGroupBy={effSecondary}
-              setSubGroupBy={(d) => setDisp((s) => ({ ...s, subGroupBy: d }))}
-              availDims={availDims}
-              filters={filters}
-              setFilters={(f) => setDisp((s) => ({ ...s, filters: f }))}
-              statusOrder={disp.statusOrder}
-              setStatusOrder={(o) => setDisp((s) => ({ ...s, statusOrder: o }))}
-              statusHidden={disp.statusHidden}
-              setStatusHidden={(h) => setDisp((s) => ({ ...s, statusHidden: h }))}
-            />
+            {mode === 'board' ? (
+              <BoardDisplayPopover
+                setMode={(m) => views.setMode(activeView, m)}
+                availDims={availDims}
+                cfg={boardCfg}
+                setCfg={(patch) => setBoardCfg((c) => ({ ...c, ...patch }))}
+              />
+            ) : (
+              <DisplayPopover
+                mode={mode}
+                setMode={(m) => views.setMode(activeView, m)}
+                groupBy={effPrimary}
+                setGroupBy={(d) => setDisp((s) => ({ ...s, groupBy: d }))}
+                subGroupBy={effSecondary}
+                setSubGroupBy={(d) => setDisp((s) => ({ ...s, subGroupBy: d }))}
+                availDims={availDims}
+                filters={filters}
+                setFilters={(f) => setDisp((s) => ({ ...s, filters: f }))}
+                statusOrder={disp.statusOrder}
+                setStatusOrder={(o) => setDisp((s) => ({ ...s, statusOrder: o }))}
+                statusHidden={disp.statusHidden}
+                setStatusHidden={(h) => setDisp((s) => ({ ...s, statusHidden: h }))}
+              />
+            )}
           </>
         }
       />
       <QuickCapture placeholder="Add a task…  (it lands in this project)" onAdd={(t) => add(t)} />
 
       {mode === 'board' ? (
-        <BoardView project={project} modules={modules} milestones={milestones} tasks={scoped} />
+        <BoardView project={project} modules={modules} milestones={milestones} tasks={scoped} cfg={boardCfg} />
       ) : (
         <div className="scroll-body">
           {anyTasks ? (
