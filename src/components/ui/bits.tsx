@@ -104,10 +104,11 @@ export function MilestoneTag({ name }: { name: string }) {
   );
 }
 
-export function DuePill({ due }: { due: Date | string | null | undefined }) {
+export function DuePill({ due, muted }: { due: Date | string | null | undefined; muted?: boolean }) {
   if (!due) return null;
+  // A closed task's deadline is just history — never flag it overdue/soon (red/amber).
   return (
-    <span className="meta-tag due-pill" data-due={dueState(due) ?? undefined}>
+    <span className="meta-tag due-pill" data-due={muted ? undefined : (dueState(due) ?? undefined)}>
       <Ic.calendar size={12} /> {fmtDate(due)}
     </span>
   );

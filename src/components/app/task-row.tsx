@@ -160,7 +160,7 @@ export function TaskRow({
           )}
           {fields.module && showModule && module && <ModuleTag name={module.name} color={module.color} icon={module.icon} />}
           {fields.milestone && showMilestone && milestone && <MilestoneTag name={milestone.name} />}
-          {task.dueDate && <DuePill due={task.dueDate} />}
+          {task.dueDate && <DuePill due={task.dueDate} muted={task.done || task.status === 'cancelled'} />}
           {fields.status && (
             <span className="task-reveal status-reveal">
               <StatusChip status={task.status} size="sm" />
