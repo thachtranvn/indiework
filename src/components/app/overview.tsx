@@ -59,6 +59,7 @@ interface Project {
   key: string;
   name: string;
   emoji: string | null;
+  pinned: boolean;
   status: ProjectStatus;
   tags: string[];
   shortDesc: string | null;

@@ -133,6 +133,18 @@
 .nav-badge[data-muted] { background: var(--bg-active); color: var(--text-muted); }
 .proj-color { width: 9px; height: 9px; border-radius: 3px; flex: none; }
 
+/* project row + hover-reveal pin toggle */
+.nav-item-wrap { position: relative; }
+.nav-pin { position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+  border: none; background: none; color: var(--text-muted); width: 22px; height: 22px;
+  border-radius: var(--r-sm); display: grid; place-items: center; cursor: pointer;
+  opacity: 0; transition: opacity .12s, background .12s, color .12s; }
+.nav-item-wrap:hover .nav-pin, .nav-pin:focus-visible { opacity: 1; }
+.nav-pin:hover { background: var(--bg-active); color: var(--text-strong); }
+.nav-pin[data-on] { color: var(--accent); }
+/* keep the pin from colliding with the issue count on the right edge */
+.nav-item-wrap:hover .nav-badge, .nav-item-wrap:focus-within .nav-badge { visibility: hidden; }
+
 .sb-sub { padding-left: 8px; }
 .sb-foot { margin-top: auto; padding-top: 10px; }
 

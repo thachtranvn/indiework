@@ -18,6 +18,7 @@ interface ProjectLite {
   key: string;
   name: string;
   emoji: string | null;
+  pinned: boolean;
 }
 
 /**
@@ -48,7 +49,7 @@ export function ProjectTabs({
   const [name, setName] = useState(project.name);
   const base = `/app/p/${project.key}`;
 
-  const save = async (patch: { name?: string; emoji?: string }) => {
+  const save = async (patch: { name?: string; emoji?: string; pinned?: boolean }) => {
     await updateProject(project.id, patch);
     router.refresh();
   };
@@ -68,6 +69,17 @@ export function ProjectTabs({
           spellCheck={false}
           aria-label="Project name"
         />
+        <button
+          className="tabs-lead-pin"
+          type="button"
+          data-on={project.pinned ? '' : undefined}
+          aria-pressed={project.pinned}
+          title={project.pinned ? 'Unpin project' : 'Pin project'}
+          aria-label={project.pinned ? 'Unpin project' : 'Pin project'}
+          onClick={() => save({ pinned: !project.pinned })}
+        >
+          <Ic.pin size={15} fill={project.pinned ? 'currentColor' : 'none'} />
+        </button>
         <span className="tabs-lead-sep" />
       </div>
 

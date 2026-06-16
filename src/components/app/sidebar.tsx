@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import type { ShellData } from '@/server/load';
 import { PROJECT_STATUS, PROJECT_STATUS_LABEL, type ProjectStatus } from '@/lib/domain';
 import { setActiveWorkspace } from '@/app/_actions/workspace';
+import { updateProject } from '@/app/_actions/projects';
 import { BrandMark } from '@/components/ui/brand';
 import { Popover } from '@/components/ui/popover';
 import { Ic } from '@/components/ui/icons';
@@ -42,6 +43,11 @@ export function Sidebar({
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set(DEFAULT_COLLAPSED));
 
   const groups = useMemo(() => buildGroups(projects), [projects]);
+
+  const togglePin = async (id: string, pinned: boolean) => {
+    await updateProject(id, { pinned: !pinned });
+    router.refresh();
+  };
 
   const toggle = (key: string) =>
     setCollapsed((prev) => {
@@ -157,20 +163,31 @@ export function Sidebar({
                   {g.items.map((p) => {
                     const href = `/app/p/${p.key}`;
                     return (
-                      <Link
-                        key={p.id}
-                        className="nav-item"
-                        href={href}
-                        data-active={pathname.startsWith(href) ? '' : undefined}
-                      >
-                        <span className="nav-emoji">{p.emoji ?? '•'}</span>
-                        <span className="nav-label">{p.name}</span>
-                        {p.issues > 0 && (
-                          <span className="nav-badge" data-muted="">
-                            {p.issues}
-                          </span>
-                        )}
-                      </Link>
+                      <div className="nav-item-wrap" key={p.id}>
+                        <Link
+                          className="nav-item"
+                          href={href}
+                          data-active={pathname.startsWith(href) ? '' : undefined}
+                        >
+                          <span className="nav-emoji">{p.emoji ?? '•'}</span>
+                          <span className="nav-label">{p.name}</span>
+                          {p.issues > 0 && (
+                            <span className="nav-badge" data-muted="">
+                              {p.issues}
+                            </span>
+                          )}
+                        </Link>
+                        <button
+                          className="nav-pin"
+                          type="button"
+                          data-on={p.pinned ? '' : undefined}
+                          title={p.pinned ? 'Unpin' : 'Pin'}
+                          aria-label={p.pinned ? `Unpin ${p.name}` : `Pin ${p.name}`}
+                          onClick={() => togglePin(p.id, p.pinned)}
+                        >
+                          <Ic.pin size={13} fill={p.pinned ? 'currentColor' : 'none'} />
+                        </button>
+                      </div>
                     );
                   })}
                 </div>

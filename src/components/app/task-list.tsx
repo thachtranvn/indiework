@@ -50,6 +50,7 @@ interface Project {
   key: string;
   name: string;
   emoji: string | null;
+  pinned: boolean;
 }
 
 interface DisplayState {
