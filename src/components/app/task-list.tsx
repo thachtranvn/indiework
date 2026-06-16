@@ -40,9 +40,10 @@ import { Progress, PriorityBars, ModuleIcon } from '@/components/ui/bits';
 import { Popover, OptionList } from '@/components/ui/popover';
 import { Ic } from '@/components/ui/icons';
 
-// Opening a task navigates to /issue/<ref>/<slug>, which remounts this view.
-// Scroll position is kept in-memory (per project) so the list doesn't jump to
-// the top behind the panel; collapsed sections persist via localStorage below.
+// Opening a task is a shallow History API URL change (see useTaskNav), so this
+// view no longer remounts on open — only switching *projects* remounts it.
+// Scroll position is kept in-memory per project so returning to a project
+// restores its list position; collapsed sections persist via localStorage below.
 const scrollPositions = new Map<string, number>();
 
 interface Project {

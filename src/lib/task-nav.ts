@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { taskPath, refFromPath, projectPathForRef, type OpenableTask } from './task-url';
 
 export { slugify, taskPath, refFromPath, projectPathForRef, taskKey } from './task-url';
@@ -13,9 +13,17 @@ export type { OpenableTask } from './task-url';
  * Project tasks (have a `ref`) get a readable, shareable path URL
  * (`…/issue/IW-11/slug`). Inbox tasks have no ref until triaged, so they fall
  * back to the legacy `?task=<uuid>` overlay on the current surface.
+ *
+ * Opening/switching/closing a task is just an overlay — it must NOT trigger a
+ * Next route navigation. `router.push` would cross route segments (project →
+ * issue) and, with both pages `force-dynamic`, re-run `loadProject` on the
+ * server and remount the entire list behind the panel on every click (flicker).
+ * Instead we use the native History API: it updates the URL (and `usePathname`/
+ * `useSearchParams`, which Next keeps in sync) with no server round-trip, so the
+ * list stays mounted and untouched while only the panel reacts to the new ref.
+ * Deep links / refresh still SSR via the issue route as before.
  */
 export function useTaskNav() {
-  const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
 
@@ -26,13 +34,13 @@ export function useTaskNav() {
       const path = task.ref ? taskPath(task.ref, task.title) : null;
       if (path) {
         const qs = sp.toString();
-        router.push(qs ? `${path}?${qs}` : path, { scroll: false });
+        window.history.pushState(null, '', qs ? `${path}?${qs}` : path);
         return;
       }
       sp.set('task', task.id);
-      router.push(`${pathname}?${sp.toString()}`, { scroll: false });
+      window.history.pushState(null, '', `${pathname}?${sp.toString()}`);
     },
-    [router, pathname, params],
+    [pathname, params],
   );
 
   const closeTask = useCallback(() => {
@@ -41,8 +49,8 @@ export function useTaskNav() {
     const qs = sp.toString();
     const fromPath = refFromPath(pathname);
     const base = (fromPath && projectPathForRef(fromPath.ref)) || pathname;
-    router.push(qs ? `${base}?${qs}` : base, { scroll: false });
-  }, [router, pathname, params]);
+    window.history.pushState(null, '', qs ? `${base}?${qs}` : base);
+  }, [pathname, params]);
 
   return { openTask, closeTask };
 }
