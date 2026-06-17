@@ -10,7 +10,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { TaskDto } from '@/server/services';
 import type { TaskDetail } from '@/app/_actions/queries';
 import { addAttachment, removeAttachment } from '@/app/_actions/tasks';
-import { mdToHtml } from '@/lib/markdown';
 import { commitOnEnter } from '@/lib/inline-edit';
 import { CircleCheck } from '@/components/ui/interactive';
 import { Ic } from '@/components/ui/icons';
@@ -89,40 +88,6 @@ export function StatusNote({
           if (!v.trim() && !pending) setOpen(false);
         }}
       />
-    </div>
-  );
-}
-
-export function DescriptionEditor({ value, onSave }: { value: string; onSave: (v: string) => void }) {
-  const [editing, setEditing] = useState(false);
-  const [v, setV] = useState(value);
-  if (editing) {
-    return (
-      <div className="dp-desc">
-        <textarea
-          autoFocus
-          value={v}
-          onChange={(e) => setV(e.target.value)}
-          onBlur={() => {
-            setEditing(false);
-            if (v !== value) onSave(v);
-          }}
-          placeholder="Add a description… (markdown)"
-        />
-      </div>
-    );
-  }
-  return (
-    <div
-      className="dp-desc md-render"
-      data-empty={value ? undefined : ''}
-      onClick={() => setEditing(true)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && setEditing(true)}
-      {...(value ? { dangerouslySetInnerHTML: { __html: mdToHtml(value) } } : {})}
-    >
-      {value ? null : 'Add a description…'}
     </div>
   );
 }

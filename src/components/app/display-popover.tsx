@@ -13,7 +13,7 @@ import {
   type TaskStatus,
   type TaskPriority,
 } from '@/lib/domain';
-import type { GroupDim, GroupStyle, Filters, FieldVis, BoardCfg, BoardOrdering } from '@/lib/grouping';
+import type { GroupDim, GroupStyle, Filters, FieldVis, BoardCfg, BoardOrdering, GroupModule, GroupMilestone } from '@/lib/grouping';
 import type { ViewMode } from '@/lib/views';
 
 const DIM_LABEL: Record<GroupDim, string> = {
@@ -347,8 +347,24 @@ export function BoardDisplayPopover({
   );
 }
 
-export function FilterPopover({ filters, setFilters }: { filters: Filters; setFilters: (f: Filters) => void }) {
-  const activeCount = filters.status.length + filters.priority.length;
+export function FilterPopover({
+  filters,
+  setFilters,
+  modules,
+  milestones,
+}: {
+  filters: Filters;
+  setFilters: (f: Filters) => void;
+  modules: GroupModule[];
+  milestones: GroupMilestone[];
+}) {
+  // `?? []` guards stale localStorage written before these fields existed.
+  const moduleSel = filters.moduleId ?? [];
+  const milestoneSel = filters.milestoneId ?? [];
+  const activeCount = filters.status.length + filters.priority.length + moduleSel.length + milestoneSel.length;
+  // Module/milestone names run long, so they live in collapsible dropdowns
+  // (full-width rows) rather than wrapping chips. One open at a time.
+  const [openSec, setOpenSec] = useState<'module' | 'milestone' | null>(null);
   const toggleStatus = (s: TaskStatus) =>
     setFilters({
       ...filters,
@@ -358,6 +374,16 @@ export function FilterPopover({ filters, setFilters }: { filters: Filters; setFi
     setFilters({
       ...filters,
       priority: filters.priority.includes(p) ? filters.priority.filter((x) => x !== p) : [...filters.priority, p],
+    });
+  const toggleModule = (id: string) =>
+    setFilters({
+      ...filters,
+      moduleId: moduleSel.includes(id) ? moduleSel.filter((x) => x !== id) : [...moduleSel, id],
+    });
+  const toggleMilestone = (id: string) =>
+    setFilters({
+      ...filters,
+      milestoneId: milestoneSel.includes(id) ? milestoneSel.filter((x) => x !== id) : [...milestoneSel, id],
     });
 
   return (
@@ -394,8 +420,58 @@ export function FilterPopover({ filters, setFilters }: { filters: Filters; setFi
             ))}
           </div>
         </div>
+        {modules.length > 0 && (
+          <div className="dp-block">
+            <button className="dp-acc" data-open={openSec === 'module' ? '' : undefined} type="button" onClick={() => setOpenSec((s) => (s === 'module' ? null : 'module'))}>
+              <span className="dp-acc-lbl">Module</span>
+              {moduleSel.length > 0 && <span className="dp-acc-count">{moduleSel.length}</span>}
+              <Ic.chevronRight size={14} className="dp-acc-chev" />
+            </button>
+            {openSec === 'module' && (
+              <div className="dp-acc-list">
+                {modules.map((m) => (
+                  <button key={m.id} className="opt" data-active={moduleSel.includes(m.id) ? '' : undefined} onClick={() => toggleModule(m.id)} type="button">
+                    <ModuleIcon icon={m.icon} color={m.color} size={14} />
+                    <span className="dp-acc-name">{m.name}</span>
+                    {moduleSel.includes(m.id) && <Ic.check size={15} strokeWidth={2.4} style={{ marginLeft: 'auto', color: 'var(--accent-ink)' }} />}
+                  </button>
+                ))}
+                <button className="opt" data-active={moduleSel.includes('') ? '' : undefined} onClick={() => toggleModule('')} type="button">
+                  <span className="dot" style={{ background: 'var(--text-faint)' }} />
+                  <span className="dp-acc-name">No module</span>
+                  {moduleSel.includes('') && <Ic.check size={15} strokeWidth={2.4} style={{ marginLeft: 'auto', color: 'var(--accent-ink)' }} />}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        {milestones.length > 0 && (
+          <div className="dp-block">
+            <button className="dp-acc" data-open={openSec === 'milestone' ? '' : undefined} type="button" onClick={() => setOpenSec((s) => (s === 'milestone' ? null : 'milestone'))}>
+              <span className="dp-acc-lbl">Milestone</span>
+              {milestoneSel.length > 0 && <span className="dp-acc-count">{milestoneSel.length}</span>}
+              <Ic.chevronRight size={14} className="dp-acc-chev" />
+            </button>
+            {openSec === 'milestone' && (
+              <div className="dp-acc-list">
+                {milestones.map((m) => (
+                  <button key={m.id} className="opt" data-active={milestoneSel.includes(m.id) ? '' : undefined} onClick={() => toggleMilestone(m.id)} type="button">
+                    <Ic.target size={14} />
+                    <span className="dp-acc-name">{m.name}</span>
+                    {milestoneSel.includes(m.id) && <Ic.check size={15} strokeWidth={2.4} style={{ marginLeft: 'auto', color: 'var(--accent-ink)' }} />}
+                  </button>
+                ))}
+                <button className="opt" data-active={milestoneSel.includes('') ? '' : undefined} onClick={() => toggleMilestone('')} type="button">
+                  <span className="dot" style={{ background: 'var(--text-faint)' }} />
+                  <span className="dp-acc-name">No milestone</span>
+                  {milestoneSel.includes('') && <Ic.check size={15} strokeWidth={2.4} style={{ marginLeft: 'auto', color: 'var(--accent-ink)' }} />}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         {activeCount > 0 && (
-          <button className="dp-reset" type="button" onClick={() => setFilters({ ...filters, status: [], priority: [] })}>
+          <button className="dp-reset" type="button" onClick={() => setFilters({ ...filters, status: [], priority: [], moduleId: [], milestoneId: [] })}>
             Clear filters
           </button>
         )}

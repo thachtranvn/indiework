@@ -3,10 +3,11 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { useTaskNav, taskFullPath } from '@/lib/task-nav';
+import { MarkdownEditor } from '@/components/ui/markdown-editor';
 import { RefTag } from '@/components/ui/interactive';
 import { Ic } from '@/components/ui/icons';
 import { useTaskDetail } from './task-detail/use-task-detail';
-import { TitleEditor, StatusNote, DescriptionEditor, Attachments } from './task-detail/parts';
+import { TitleEditor, StatusNote, Attachments } from './task-detail/parts';
 import { ParentLink, TaskProperties, TaskSubtasks, TaskActivity, DeleteControl } from './task-detail/sections';
 
 /**
@@ -99,7 +100,12 @@ export function DetailPanel({
         <TaskProperties detail={detail} patch={patch} />
 
         <p className="dp-section-label">Description</p>
-        <DescriptionEditor key={`desc-${task.id}`} value={task.description ?? ''} onSave={(d) => patch({ description: d })} />
+        <MarkdownEditor
+          key={`desc-${task.id}`}
+          value={task.description ?? ''}
+          onSave={(d) => patch({ description: d })}
+          placeholder="Add a description…"
+        />
 
         <TaskSubtasks detail={detail} onOpenTask={openTask} toggleChild={toggleChild} addChild={addChild} />
 

@@ -16,8 +16,9 @@ import { taskFullPath, projectPathForRef } from '@/lib/task-nav';
 import { parseRef } from '@/lib/domain';
 import { RefTag } from '@/components/ui/interactive';
 import { Ic } from '@/components/ui/icons';
+import { MarkdownEditor } from '@/components/ui/markdown-editor';
 import { useTaskDetail } from './task-detail/use-task-detail';
-import { TitleEditor, StatusNote, DescriptionEditor, Attachments } from './task-detail/parts';
+import { TitleEditor, StatusNote, Attachments } from './task-detail/parts';
 import { ParentLink, TaskProperties, TaskSubtasks, TaskActivity, DeleteControl } from './task-detail/sections';
 
 export function TaskPageView({ taskRef, initialDetail }: { taskRef: string; initialDetail: TaskDetail }) {
@@ -102,10 +103,11 @@ export function TaskPageView({ taskRef, initialDetail }: { taskRef: string; init
           <StatusNote key={`note-${task.id}`} value={task.statusNote ?? ''} pending={pending} onSave={saveStatusNote} />
 
           <p className="dp-section-label">Description</p>
-          <DescriptionEditor
+          <MarkdownEditor
             key={`desc-${task.id}`}
             value={task.description ?? ''}
             onSave={(d) => patch({ description: d })}
+            placeholder="Add a description…"
           />
 
           <TaskSubtasks detail={detail} onOpenTask={openFull} toggleChild={toggleChild} addChild={addChild} />
