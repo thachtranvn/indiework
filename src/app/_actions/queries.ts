@@ -1,41 +1,16 @@
 'use server';
 
 /** Read-only actions callable from client components (detail panel, palette). */
-import {
-  taskService,
-  commentService,
-  moduleService,
-  milestoneService,
-  projectService,
-  attachmentService,
-} from '@/server/services';
-
-async function assembleDetail(task: Awaited<ReturnType<typeof taskService.getById>>) {
-  const id = task.id;
-  const [comments, modules, milestones, rawChildren, parent, attachments] = await Promise.all([
-    commentService.list(id),
-    task.projectId ? moduleService.list(task.projectId) : Promise.resolve([]),
-    task.projectId ? milestoneService.list(task.projectId) : Promise.resolve([]),
-    taskService.listChildren(id),
-    task.parentId ? taskService.getById(task.parentId) : Promise.resolve(null),
-    attachmentService.list(id),
-  ]);
-
-  // Sub-tasks are first-class tasks: each carries its own ref (KEY-<n>), so the
-  // display ref is simply the task's own ref (null only while in the Inbox).
-  const displayRef = task.ref;
-  const children = rawChildren.map((c) => ({ ...c, displayRef: c.ref }));
-
-  return { task, displayRef, parent, children, comments, modules, milestones, attachments };
-}
+import { taskService, projectService } from '@/server/services';
+import { assembleTaskDetail } from '@/server/task-detail';
 
 export async function getTaskDetail(id: string) {
-  return assembleDetail(await taskService.getById(id));
+  return assembleTaskDetail(await taskService.getById(id));
 }
 
 /** Resolve a detail panel from a public ref ("IW-11") — the path-URL scheme. */
 export async function getTaskDetailByRef(ref: string) {
-  return assembleDetail(await taskService.getByRef(ref));
+  return assembleTaskDetail(await taskService.getByRef(ref));
 }
 export type TaskDetail = Awaited<ReturnType<typeof getTaskDetail>>;
 

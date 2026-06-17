@@ -51,6 +51,7 @@ import {
   Baseline,
   Archive,
   ArchiveRestore,
+  Maximize2,
   type LucideProps,
 } from 'lucide-react';
 
@@ -110,6 +111,7 @@ export const Ic = {
   type: make(Baseline),
   archive: make(Archive),
   restore: make(ArchiveRestore),
+  maximize: make(Maximize2),
 };
 
 export type IconName = keyof typeof Ic;

@@ -152,6 +152,52 @@
 .del-confirm .yes { background: var(--st-danger); color: #fff; }
 .del-confirm .no { background: var(--bg-active); color: var(--text); }
 
+/* ---------- Standalone task page (2-column, Linear-style) ---------- */
+/* Fills the main column and scrolls on its own; the inner grid is centered with
+   a max-width so the page reads as an intentional document, not a full-bleed
+   form. Reuses the panel's dp- and prop- leaf styles inside two columns. */
+.task-page { flex: 1; min-height: 0; overflow-y: auto; background: var(--bg-canvas); }
+.tp-bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 6px;
+  padding: 11px 28px; border-bottom: 1px solid var(--border-soft);
+  background: color-mix(in oklch, var(--bg-canvas) 86%, transparent); backdrop-filter: blur(8px); }
+.tp-back { border: none; background: none; color: var(--text-muted); width: 30px; height: 30px; flex: none;
+  border-radius: var(--r-sm); display: grid; place-items: center; transition: .12s; }
+.tp-back:hover { background: var(--bg-hover); color: var(--text-strong); }
+.tp-crumbs { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.tp-crumb { font: 530 12.5px/1 var(--font-ui); color: var(--text-muted); background: none; border: none;
+  padding: 4px 6px; border-radius: var(--r-sm); transition: .12s; white-space: nowrap; }
+.tp-crumb:hover { color: var(--text-strong); background: var(--bg-hover); }
+.tp-crumb-sep { color: var(--text-faint); flex: none; }
+
+.tp-grid { width: 100%; max-width: 1080px; margin: 0 auto;
+  display: grid; grid-template-columns: minmax(0, 1fr) 282px; gap: 14px 52px; padding: 30px 32px 72px; }
+.tp-main { min-width: 0; }
+/* Larger title than the panel — scale contrast signals this is the full page. */
+.tp-main .dp-check-title { margin-bottom: 22px; }
+.tp-main .dp-title-input { font-size: 27px; font-weight: 700; line-height: 1.2; }
+
+.tp-side { align-self: start; position: sticky; top: 78px; padding-left: 26px;
+  border-left: 1px solid var(--border-soft); display: flex; flex-direction: column; }
+.tp-side-label { margin-bottom: 12px; }
+.prop-rail { display: flex; flex-direction: column; gap: 1px; }
+.prop-rail .prop-label { padding: 11px 0 3px; }
+.prop-rail .prop-val { margin: 0 -9px; }
+.prop-rail .prop-control { width: 100%; justify-content: flex-start; }
+.tp-side-foot { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border-soft); }
+
+.tp-empty { max-width: 1080px; margin: 0 auto; padding: 60px 32px; color: var(--text-muted); font-size: 14px; }
+
+/* Narrow viewports: rail drops below the content. */
+@media (max-width: 880px) {
+  .tp-grid { grid-template-columns: 1fr; gap: 8px; }
+  .tp-side { position: static; padding-left: 0; border-left: none; padding-top: 22px;
+    margin-top: 8px; border-top: 1px solid var(--border-soft); }
+  .prop-rail { display: grid; grid-template-columns: 92px 1fr; gap: 4px 14px; align-items: center; }
+  .prop-rail .prop-label { padding: 7px 0; }
+  .prop-rail .prop-val { margin: 0; }
+  .prop-rail .prop-control { width: auto; }
+}
+
 /* ---------- Board ---------- */
 .board { flex: 1; display: flex; gap: 14px; padding: 8px 22px 24px; overflow-x: auto; overflow-y: hidden; }
 /* swimlanes (board rows dimension) */

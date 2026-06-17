@@ -9,6 +9,7 @@ import {
   taskService,
 } from '@/server/services';
 import { resolveActiveWorkspace } from '@/server/active-workspace';
+import { assembleTaskDetail, type TaskDetail } from '@/server/task-detail';
 
 export async function loadShell() {
   const { workspaces, active, isDefault } = await resolveActiveWorkspace();
@@ -36,3 +37,8 @@ export async function loadProject(projectKey: string) {
   return { project, modules, milestones, tasks };
 }
 export type ProjectData = Awaited<ReturnType<typeof loadProject>>;
+
+/** SSR-seed for the standalone task page — resolves a task's full detail by ref. */
+export async function loadTaskDetail(ref: string): Promise<TaskDetail> {
+  return assembleTaskDetail(await taskService.getByRef(ref));
+}

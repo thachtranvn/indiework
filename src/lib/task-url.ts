@@ -35,6 +35,18 @@ export function taskPath(ref: string, title: string): string | null {
   return `/app/issue/${ref}${slug ? `/${slug}` : ''}`;
 }
 
+/**
+ * Standalone full-page path: /app/task/IW-11/sua-link-task-cho-dung-seq. A
+ * distinct segment from `taskPath` on purpose — `/app/task/...` is NOT matched
+ * by the overlay's `refFromPath` regex, so the full page renders on its own
+ * instead of also triggering the peek panel.
+ */
+export function taskFullPath(ref: string, title: string): string | null {
+  if (!parseRef(ref)) return null;
+  const slug = slugify(title);
+  return `/app/task/${ref}${slug ? `/${slug}` : ''}`;
+}
+
 /** Pull the open task's ref out of a path-based detail URL. */
 export function refFromPath(pathname: string): { ref: string } | null {
   const m = pathname.match(/^\/app\/issue\/([^/]+)/);

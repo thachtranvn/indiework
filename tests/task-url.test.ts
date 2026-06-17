@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { slugify, taskPath, refFromPath, projectPathForRef, taskKey } from '@/lib/task-url';
+import { slugify, taskPath, taskFullPath, refFromPath, projectPathForRef, taskKey } from '@/lib/task-url';
 
 describe('slugify', () => {
   test('ASCII-folds Vietnamese diacritics (IW-11 target)', () => {
@@ -43,6 +43,22 @@ describe('taskPath', () => {
   });
 });
 
+describe('taskFullPath', () => {
+  test('builds the standalone /app/task/<ref>/<slug> page path', () => {
+    expect(taskFullPath('IW-11', 'Sửa link task cho dùng SEQ')).toBe(
+      '/app/task/IW-11/sua-link-task-cho-dung-seq',
+    );
+  });
+
+  test('omits the slug segment when the title slugs to empty', () => {
+    expect(taskFullPath('IW-3', '   ')).toBe('/app/task/IW-3');
+  });
+
+  test('returns null for an invalid ref', () => {
+    expect(taskFullPath('not-a-ref!', 'x')).toBeNull();
+  });
+});
+
 describe('refFromPath', () => {
   test('extracts ref from a top-level detail URL', () => {
     expect(refFromPath('/app/issue/IW-11/some-slug')).toEqual({ ref: 'IW-11' });
@@ -53,6 +69,13 @@ describe('refFromPath', () => {
     expect(refFromPath('/app/p/IW')).toBeNull();
     expect(refFromPath('/app/inbox')).toBeNull();
     expect(refFromPath('/app/p/IW/board')).toBeNull();
+  });
+
+  // The standalone page lives at /app/task/... precisely so it is NOT matched
+  // here — otherwise AppShell would also slide the peek panel over the page.
+  test('does NOT match the standalone /app/task/<ref> page (no peek overlay)', () => {
+    expect(refFromPath('/app/task/IW-11/some-slug')).toBeNull();
+    expect(refFromPath('/app/task/IW-3')).toBeNull();
   });
 });
 
