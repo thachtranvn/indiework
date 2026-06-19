@@ -23,7 +23,9 @@ import type { UpdateTaskInput } from '@/server/validators/task';
 import { Popover, OptionList } from '@/components/ui/popover';
 import { PriorityBars, ModuleIcon, Progress } from '@/components/ui/bits';
 import { Ic } from '@/components/ui/icons';
-import { CommentBox, SubRow, InlineSubAdd } from './parts';
+import { MarkdownView } from '@/components/ui/markdown-view';
+import { CommentComposer } from '@/components/ui/comment-composer';
+import { SubRow, InlineSubAdd } from './parts';
 
 /** "Sub-task of <parent>" affordance — opens the parent via the injected nav. */
 export function ParentLink({ parent, onOpenTask }: { parent: TaskDetail['parent']; onOpenTask: (t: OpenableTask) => void }) {
@@ -264,7 +266,7 @@ export function TaskActivity({
         <div className="act-item" key={c.id}>
           <span className="act-day">{fmtDay(c.createdAt)}</span>
           <div className="act-body">
-            <span className="act-text">{c.body}</span>
+            <MarkdownView value={c.body} className="act-text" />
             {c.source !== 'web' && (
               <span className="act-src" data-src={c.source === 'mcp' ? 'agent' : c.source}>
                 {c.source}
@@ -273,7 +275,7 @@ export function TaskActivity({
           </div>
         </div>
       ))}
-      <CommentBox onSend={addComment} />
+      <CommentComposer onSend={addComment} />
     </div>
   );
 }
