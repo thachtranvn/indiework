@@ -25,6 +25,7 @@ import { PriorityBars, ModuleIcon, Progress } from '@/components/ui/bits';
 import { Ic } from '@/components/ui/icons';
 import { MarkdownView } from '@/components/ui/markdown-view';
 import { CommentComposer } from '@/components/ui/comment-composer';
+import { CommentEditor } from '@/components/ui/comment-editor';
 import { SubRow, InlineSubAdd } from './parts';
 
 /** "Sub-task of <parent>" affordance — opens the parent via the injected nav. */
@@ -251,29 +252,82 @@ export function TaskSubtasks({
   );
 }
 
-/** Append-only activity log + comment composer. */
+/** One activity-log entry — read-only by default, edit-in-place on demand. */
+function CommentRow({
+  comment,
+  editComment,
+}: {
+  comment: TaskDetail['comments'][number];
+  editComment: (commentId: string, body: string) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+
+  return (
+    <div className="act-item">
+      <span className="act-day">{fmtDay(comment.createdAt)}</span>
+      <div className="act-body">
+        {editing ? (
+          <CommentEditor
+            value={comment.body}
+            onSave={async (body) => {
+              await editComment(comment.id, body);
+              setEditing(false);
+            }}
+            onCancel={() => setEditing(false)}
+          />
+        ) : (
+          <>
+            {/* Click the text to edit in place (blur saves, Esc cancels). The
+                link guard lets clickable links in a comment open normally. */}
+            <div
+              className="act-text-edit"
+              tabIndex={0}
+              aria-label="Edit comment"
+              title="Click to edit"
+              onClick={(e) => {
+                if (!(e.target as HTMLElement).closest('a')) setEditing(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  setEditing(true);
+                }
+              }}
+            >
+              <MarkdownView value={comment.body} className="act-text" />
+            </div>
+            {(comment.source !== 'web' || comment.editedAt) && (
+              <div className="act-meta">
+                {comment.source !== 'web' && (
+                  <span className="act-src" data-src={comment.source === 'mcp' ? 'agent' : comment.source}>
+                    {comment.source}
+                  </span>
+                )}
+                {comment.editedAt && <span className="act-edited">edited</span>}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Activity log (edit-in-place) + comment composer. */
 export function TaskActivity({
   comments,
   addComment,
+  editComment,
 }: {
   comments: TaskDetail['comments'];
   addComment: (body: string) => Promise<void>;
+  editComment: (commentId: string, body: string) => Promise<void>;
 }) {
   return (
     <div className="activity">
       <p className="dp-section-label">Activity</p>
       {comments.map((c) => (
-        <div className="act-item" key={c.id}>
-          <span className="act-day">{fmtDay(c.createdAt)}</span>
-          <div className="act-body">
-            <MarkdownView value={c.body} className="act-text" />
-            {c.source !== 'web' && (
-              <span className="act-src" data-src={c.source === 'mcp' ? 'agent' : c.source}>
-                {c.source}
-              </span>
-            )}
-          </div>
-        </div>
+        <CommentRow key={c.id} comment={c} editComment={editComment} />
       ))}
       <CommentComposer onSend={addComment} />
     </div>

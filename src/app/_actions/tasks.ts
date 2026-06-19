@@ -83,6 +83,13 @@ export async function addTaskComment(taskId: string, body: string) {
   return comment;
 }
 
+export async function editTaskComment(commentId: string, body: string) {
+  await requireSession();
+  const comment = await commentService.update({ id: commentId, body });
+  refresh();
+  return comment;
+}
+
 // ---- attachments (metadata only; file storage is deferred — see Phase 7) ----
 export async function addAttachment(input: CreateAttachmentInput) {
   await requireSession();

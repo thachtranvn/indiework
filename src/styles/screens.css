@@ -124,11 +124,19 @@
    activity scale and drop the read-card padding (the source-text fallback shown
    while the renderer loads also lands here). */
 .act-text.md-render { padding: 0; font-size: 13.5px; line-height: 1.55; color: var(--text); overflow-wrap: anywhere; }
+.act-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
 .act-src { font-size: 10px; font-weight: 680; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 6px;
-  border-radius: var(--r-pill); margin-top: 6px; display: inline-block; vertical-align: middle; }
+  border-radius: var(--r-pill); display: inline-block; vertical-align: middle; }
 .act-src[data-src="web"] { color: var(--text-muted); background: var(--bg-active); }
 .act-src[data-src="api"] { color: var(--st-todo); background: var(--st-todo-bg); }
 .act-src[data-src="agent"] { color: var(--st-inbox); background: var(--st-inbox-bg); }
+.act-edited { font-size: 11px; font-style: italic; color: var(--text-faint); }
+/* Click-to-edit: the comment text itself is the affordance (blur saves, Esc
+   cancels — no button). Subtle hover/focus surface signals it's interactive;
+   negative margin offsets the padding so text stays aligned with the day column. */
+.act-text-edit { border-radius: var(--r-sm); padding: 3px 6px; margin: -3px -6px; cursor: text; transition: background .12s; }
+.act-text-edit:hover { background: var(--bg-active); }
+.act-text-edit:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 1px; }
 .comment-box { display: flex; flex-direction: column; align-items: stretch; gap: 8px; margin-top: 14px;
   border: 1px solid var(--border); border-radius: var(--r-md); padding: 11px 13px; background: var(--bg-surface); transition: .14s; }
 .comment-box:focus-within { border-color: var(--accent-ring); box-shadow: 0 0 0 3px var(--accent-softer); }
@@ -144,6 +152,9 @@
   display: grid; place-items: center; flex: none; transition: .12s; }
 .comment-send:hover:not(:disabled) { background: var(--accent-strong); }
 .comment-send:disabled { background: var(--bg-active); color: var(--text-faint); }
+/* Edit-in-place variant: inline in an activity row (no top gap), blur-to-save so
+   no footer/buttons — just the bordered editor box reusing .comment-box chrome. */
+.comment-box--edit { margin-top: 0; }
 
 .dp-foot { display: flex; align-items: center; padding: 12px 22px; border-top: 1px solid var(--border-soft); }
 .del-btn { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border-soft); background: none;
