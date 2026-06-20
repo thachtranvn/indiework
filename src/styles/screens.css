@@ -115,6 +115,11 @@
 /* description / activity */
 .dp-section-label { font-size: 11.5px; font-weight: 680; text-transform: uppercase; letter-spacing: 0.04em;
   color: var(--text-faint); margin: 0 0 9px; }
+
+/* transient load failure (e.g. Server Action version skew after a deploy) */
+.dp-loaderr { margin-top: 4px; }
+.dp-loaderr-hint { font-size: 13px; color: var(--text-muted); margin: 0 0 14px; }
+.tp-empty .btn { margin-top: 14px; }
 .activity { margin-top: 26px; }
 .act-item { display: flex; gap: 11px; padding: 10px 0; border-bottom: 1px solid var(--border-soft); }
 .act-item:last-of-type { border-bottom: none; }

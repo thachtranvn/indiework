@@ -23,7 +23,7 @@ import { ParentLink, TaskProperties, TaskSubtasks, TaskActivity, DeleteControl }
 
 export function TaskPageView({ taskRef, initialDetail }: { taskRef: string; initialDetail: TaskDetail }) {
   const router = useRouter();
-  const { detail, missing, patch, saveStatusNote, addComment, editComment, addChild, toggleChild, remove, reload } = useTaskDetail({
+  const { detail, missing, loadError, patch, saveStatusNote, addComment, editComment, addChild, toggleChild, remove, reload } = useTaskDetail({
     taskRef,
     taskId: null,
     initialDetail,
@@ -41,7 +41,7 @@ export function TaskPageView({ taskRef, initialDetail }: { taskRef: string; init
   const projectPath = projectPathForRef(taskRef);
   const projectKey = parseRef(taskRef)?.key ?? null;
 
-  if (missing) {
+  if (missing || loadError) {
     return (
       <div className="task-page">
         <header className="tp-bar">
@@ -51,7 +51,19 @@ export function TaskPageView({ taskRef, initialDetail }: { taskRef: string; init
             </Link>
           )}
         </header>
-        <div className="tp-empty">This task no longer exists.</div>
+        {missing ? (
+          <div className="tp-empty">This task no longer exists.</div>
+        ) : (
+          // A thrown fetch (most often a Server Action version-skew 404 after a
+          // deploy) — the task likely still exists, so offer a refresh rather
+          // than falsely claiming it was deleted.
+          <div className="tp-empty">
+            <p>Couldn’t load this task. The app may have updated.</p>
+            <button className="btn btn-primary" type="button" onClick={() => window.location.reload()}>
+              Refresh
+            </button>
+          </div>
+        )}
       </div>
     );
   }

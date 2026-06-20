@@ -26,7 +26,7 @@ export function DetailPanel({
   onClose: () => void;
 }) {
   const { openTask } = useTaskNav();
-  const { detail, missing, patch, saveStatusNote, addComment, editComment, addChild, toggleChild, remove, reload } = useTaskDetail({
+  const { detail, missing, loadError, patch, saveStatusNote, addComment, editComment, addChild, toggleChild, remove, reload } = useTaskDetail({
     taskRef,
     taskId,
   });
@@ -39,7 +39,7 @@ export function DetailPanel({
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  if (missing) {
+  if (missing || loadError) {
     return (
       <section className="detail-panel">
         <div className="dp-head">
@@ -50,7 +50,20 @@ export function DetailPanel({
           </button>
         </div>
         <div className="dp-body">
-          <p className="dp-section-label">This task no longer exists.</p>
+          {missing ? (
+            <p className="dp-section-label">This task no longer exists.</p>
+          ) : (
+            // A thrown fetch (most often a Server Action version-skew 404 from a
+            // tab left open across a deploy) — the task likely still exists, so
+            // offer a refresh instead of falsely claiming it was deleted.
+            <div className="dp-loaderr">
+              <p className="dp-section-label">Couldn’t load this task.</p>
+              <p className="dp-loaderr-hint">The app may have updated. Refresh to continue.</p>
+              <button className="btn btn-primary" type="button" onClick={() => window.location.reload()}>
+                Refresh
+              </button>
+            </div>
+          )}
         </div>
       </section>
     );
