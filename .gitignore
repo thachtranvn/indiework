@@ -50,5 +50,7 @@ yarn-error.log*
 next-env.d.ts
 
 design-handoff
+.ds-sync
+ds-bundle
 
 data
