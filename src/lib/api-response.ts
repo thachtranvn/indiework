@@ -34,7 +34,9 @@ export function handleServiceError(e: unknown): Response {
           ? 409
           : e.code === 'unauthorized'
             ? 401
-            : 400;
+            : e.code === 'forbidden'
+              ? 403
+              : 400;
     return fail(e.message, status);
   }
   if (e instanceof SyntaxError) return fail('Invalid JSON body', 400);
