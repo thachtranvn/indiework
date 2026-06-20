@@ -54,3 +54,5 @@ design-handoff
 ds-bundle
 
 data
+
+.claude/worktrees/*

@@ -24,14 +24,14 @@ Keep your existing `COOKIE_SECRET` and `API_TOKEN` — they still work:
 
 ## 2. Run migrations + seed
 
-**Postgres (Docker or local):**
+### Local (pnpm on the host)
+
+**Postgres:**
 
 ```bash
 pnpm db:migrate
 pnpm db:seed
 ```
-
-Docker images run `migrate && seed` automatically on boot.
 
 **SQLite:**
 
@@ -40,13 +40,40 @@ pnpm db:push:sqlite
 pnpm db:seed:sqlite
 ```
 
-## 3. Restart the app
+### Docker
+
+The app image **already runs migrate + seed on every container start** (see
+`docker/Dockerfile` CMD). After you update `.env` and deploy a new image, you usually
+**do not** need to run these by hand — just recreate the app container:
 
 ```bash
-docker compose restart app   # or your deploy method
+# VPS (compose.prod.yml next to your .env)
+docker compose -f compose.prod.yml pull
+docker compose -f compose.prod.yml up -d app
+
+# Local full stack (Postgres in Docker)
+docker compose -f docker/compose.postgres-container.yml up -d --build app
 ```
 
-## 4. Sign in with email + password
+`docker compose restart` is **not** enough: it does not re-run the entrypoint and may
+not reload `env_file`. Prefer `up -d` after changing `.env`.
+
+**Manual run inside a running container** (same as the entrypoint, env comes from
+compose — do **not** use `pnpm db:*` there; those scripts expect a `.env` file on disk):
+
+```bash
+# VPS
+docker compose -f compose.prod.yml exec app node --import tsx src/server/db/migrate.ts
+docker compose -f compose.prod.yml exec app node --import tsx src/server/db/seed.ts
+
+# Local compose (service name: app)
+docker compose -f docker/compose.postgres-container.yml exec app node --import tsx src/server/db/migrate.ts
+docker compose -f docker/compose.postgres-container.yml exec app node --import tsx src/server/db/seed.ts
+```
+
+Both commands are idempotent — safe on existing data (see backfill table below).
+
+## 3. Sign in
 
 The `/login` screen now asks for **email + password** instead of a single shared password.
 Use the `ADMIN_EMAIL` / `ADMIN_PASSWORD` you set above.
@@ -86,9 +113,13 @@ ADMIN_PASSWORD=new-password-here
 2. Sync the hash:
 
 ```bash
-pnpm db:reset-admin-password          # Postgres
+pnpm db:reset-admin-password          # Postgres on the host
 # or
-pnpm db:reset-admin-password:sqlite   # SQLite
+pnpm db:reset-admin-password:sqlite   # SQLite on the host
+
+# Docker (after `up -d` so the container has the new ADMIN_PASSWORD):
+docker compose -f compose.prod.yml exec app \
+  node --import tsx src/server/db/reset-admin-password.ts
 ```
 
 3. Sign in at `/login` with the new password.
