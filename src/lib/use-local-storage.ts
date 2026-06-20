@@ -13,11 +13,17 @@ export function useLocalStorage<T>(key: string, initial: T): [T, (v: T | ((prev:
   useEffect(() => {
     try {
       const raw = localStorage.getItem(key);
-      if (raw != null) setValue(JSON.parse(raw) as T);
+      if (raw != null) {
+        setValue(JSON.parse(raw) as T);
+        return;
+      }
     } catch {
-      // ignore malformed / unavailable storage
+      // fall through to initial
     }
-    // re-read when the key changes (e.g. switching projects)
+    // `initial` is read from the render when `key` changed; omit from deps so a
+    // new default object identity (e.g. availDims loading) doesn't wipe saved prefs.
+    setValue(initial);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync storage when key changes only
   }, [key]);
 
   const set = useCallback(

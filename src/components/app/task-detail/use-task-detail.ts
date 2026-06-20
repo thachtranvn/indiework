@@ -36,7 +36,11 @@ export function useTaskDetail({
 }) {
   const router = useRouter();
   const [detail, setDetail] = useState<TaskDetail | null>(initialDetail);
+  // `missing` = the task genuinely no longer exists (fetch resolved to null).
+  // `loadError` = the fetch threw (network, auth, or a Server Action version-skew
+  // 404 after a deploy) — the task may well exist; a refresh usually clears it.
   const [missing, setMissing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   // Project tasks resolve by ref (path URL); Inbox tasks by uuid (?task=).
   const fetchDetail = useCallback(
@@ -50,9 +54,14 @@ export function useTaskDetail({
   useEffect(() => {
     let alive = true;
     setMissing(false);
+    setLoadError(false);
     fetchDetail()
-      .then((d) => alive && setDetail(d))
-      .catch(() => alive && setMissing(true));
+      .then((d) => {
+        if (!alive) return;
+        if (d) setDetail(d);
+        else setMissing(true);
+      })
+      .catch(() => alive && setLoadError(true));
     return () => {
       alive = false;
     };
@@ -71,7 +80,8 @@ export function useTaskDetail({
 
   const reload = useCallback(async () => {
     const fresh = await fetchDetail();
-    setDetail(fresh);
+    if (fresh) setDetail(fresh);
+    else setMissing(true);
     router.refresh();
   }, [fetchDetail, router]);
 
@@ -100,7 +110,7 @@ export function useTaskDetail({
       if (!detail) return;
       await addTaskComment(detail.task.id, body);
       const fresh = await fetchDetail();
-      setDetail(fresh);
+      if (fresh) setDetail(fresh);
       router.refresh();
     },
     [detail, fetchDetail, router],
@@ -111,7 +121,7 @@ export function useTaskDetail({
       if (!detail) return;
       await editTaskComment(commentId, body);
       const fresh = await fetchDetail();
-      setDetail(fresh);
+      if (fresh) setDetail(fresh);
       router.refresh();
     },
     [detail, fetchDetail, router],
@@ -148,6 +158,7 @@ export function useTaskDetail({
   return {
     detail,
     missing,
+    loadError,
     setDetail,
     reload,
     patch,
