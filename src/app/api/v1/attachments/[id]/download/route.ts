@@ -2,15 +2,10 @@ import { attachmentService } from '@/server/services';
 import { requireBearer } from '@/server/auth/token';
 import { requireApiUser } from '@/server/auth/require-api-user';
 import { apiRateState } from '@/server/auth/rate-limit';
+import { contentDisposition, inlineGuardHeaders } from '@/server/attachment-headers';
 import { ok, unauthorized, tooManyRequests, handleServiceError } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
-
-function contentDisposition(filename: string, inline: boolean): string {
-  const safe = filename.replace(/["\r\n]/g, '_');
-  const kind = inline ? 'inline' : 'attachment';
-  return `${kind}; filename="${safe}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
-}
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const rate = apiRateState(req);
@@ -20,7 +15,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   try {
     const { id } = await ctx.params;
     const { row, body, contentType } = await attachmentService.open(id);
-    const inline = row.type === 'image';
+    // Images render inline for thumbnails; `?inline=1` opts any type into the
+    // in-app preview. Either way we must harden the response (see guard headers).
+    const inline = row.type === 'image' || new URL(req.url).searchParams.has('inline');
     return new Response(Buffer.from(body), {
       status: 200,
       headers: {
@@ -28,6 +25,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
         'Content-Disposition': contentDisposition(row.name, inline),
         'Content-Length': String(body.byteLength),
         'Cache-Control': 'private, max-age=3600',
+        ...(inline ? inlineGuardHeaders(contentType) : {}),
       },
     });
   } catch (e) {

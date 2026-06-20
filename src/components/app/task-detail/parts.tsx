@@ -15,6 +15,8 @@ import {
   attachmentSizeLimitLabel,
   attachmentUploadErrorMessage,
 } from '@/server/attachment-limits';
+import { previewKind, attachmentDownloadUrl } from '@/lib/attachment-preview';
+import { AttachmentPreview } from './attachment-preview';
 import { commitOnEnter } from '@/lib/inline-edit';
 import { CircleCheck } from '@/components/ui/interactive';
 import { Ic } from '@/components/ui/icons';
@@ -125,16 +127,13 @@ function extHue(ext: string): number {
 
 type AttachmentItem = TaskDetail['attachments'][number];
 
-function attachmentDownloadUrl(id: string): string {
-  return `/api/v1/attachments/${id}/download`;
-}
-
 /** Attachments section — uploads go to R2 (or in-memory storage in tests). */
 export function Attachments({ taskId, items, onChanged }: { taskId: string; items: AttachmentItem[]; onChanged: () => Promise<void> }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<AttachmentItem | null>(null);
   const sizeLimit = attachmentSizeLimitLabel();
 
   const addFiles = async (files: FileList | null) => {
@@ -183,12 +182,15 @@ export function Attachments({ taskId, items, onChanged }: { taskId: string; item
         const hue = extHue(a.ext ?? a.name);
         const hasFile = Boolean(a.path);
         const downloadUrl = hasFile ? attachmentDownloadUrl(a.id) : undefined;
+        const canPreview = hasFile && previewKind(a) !== 'none';
+        const openPreview = canPreview ? () => setPreview(a) : undefined;
         return (
-          <div className="attach-item" key={a.id}>
+          <div className="attach-item" key={a.id} data-preview={canPreview ? '' : undefined}>
             <span
               className="attach-tile"
               data-image={a.type === 'image' ? '' : undefined}
               style={{ '--att-hue': hue } as React.CSSProperties}
+              onClick={openPreview}
             >
               {a.type === 'image' && downloadUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- same-origin authenticated download URL
@@ -199,7 +201,22 @@ export function Attachments({ taskId, items, onChanged }: { taskId: string; item
                 <Ic.fileText size={16} />
               )}
             </span>
-            <div className="attach-body">
+            <div
+              className="attach-body"
+              role={canPreview ? 'button' : undefined}
+              tabIndex={canPreview ? 0 : undefined}
+              onClick={openPreview}
+              onKeyDown={
+                canPreview
+                  ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setPreview(a);
+                      }
+                    }
+                  : undefined
+              }
+            >
               <span className="attach-name">{a.name}</span>
               <span className="attach-meta">
                 {(a.ext || a.type).toUpperCase()} · {a.size ?? '—'}
@@ -264,6 +281,7 @@ export function Attachments({ taskId, items, onChanged }: { taskId: string; item
         </p>
       )}
       <input ref={inputRef} type="file" multiple hidden onChange={(e) => addFiles(e.target.files)} />
+      {preview && <AttachmentPreview key={preview.id} att={preview} onClose={() => setPreview(null)} />}
     </div>
   );
 }
