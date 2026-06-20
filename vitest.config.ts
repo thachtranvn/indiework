@@ -13,6 +13,7 @@ process.env.ADMIN_EMAIL ??= 'test@example.com';
 process.env.ADMIN_PASSWORD ??= process.env.APP_PASSWORD ?? 'test-password';
 process.env.COOKIE_SECRET ??= 'test-cookie-secret-at-least-32-characters-long';
 process.env.API_TOKEN ??= 'test-api-token';
+process.env.DATABASE_URL ??= 'postgres://indiework:indiework@127.0.0.1:5432/indiework';
 
 export default defineConfig({
   plugins: [tsconfigPaths()],

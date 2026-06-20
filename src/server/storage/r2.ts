@@ -1,4 +1,3 @@
-import 'server-only';
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { env } from '@/server/env';
 import type { ObjectStorage } from './types';

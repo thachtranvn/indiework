@@ -1,6 +1,6 @@
 /** Shared `{ data, error }` envelope + error mapping for the REST API. */
 import { ZodError } from 'zod';
-import { ServiceError } from '@/server/services';
+import { ServiceError } from '@/server/services/errors';
 
 export function ok<T>(data: T, status = 200): Response {
   return Response.json({ data, error: null }, { status });
