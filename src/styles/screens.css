@@ -92,6 +92,8 @@
   cursor: pointer; transition: .12s; }
 .attach-drop:hover, .attach-drop[data-over] { border-color: var(--accent-ring); background: var(--accent-softer); color: var(--accent-ink); }
 .attach-drop b { color: var(--accent-ink); }
+.attach-limit { color: var(--text-faint); font-weight: 500; }
+.attach-error { margin: 6px 0 0; font-size: 12px; line-height: 1.4; color: var(--danger-ink, oklch(0.45 0.15 25)); }
 .attach-count { display: inline-flex; align-items: center; gap: 3px; font: 600 11px/1 var(--font-mono); color: var(--text-muted); flex: none; }
 .attach-count svg { color: var(--text-faint); }
 

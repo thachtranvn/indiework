@@ -16,6 +16,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  experimental: {
+    // Match MAX_ATTACHMENT_BYTES (5 MiB) — default 1 MiB rejects uploads before the action runs.
+    serverActions: { bodySizeLimit: '5mb' },
+    proxyClientMaxBodySize: '5mb',
+  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
