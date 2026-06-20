@@ -17,9 +17,10 @@
  *    is not rate-bounded by the constant delay; it only stops naive sequential
  *    hammering.
  *
- * The real compensating control for the single-secret login is a high-entropy
- * `APP_PASSWORD` (see .env.example). This layer raises the cost of casual,
- * sequential brute force and abuse; it is not a substitute for that secret.
+ * The real compensating control is per-user password hashing (see
+ * user.service.ts) — credentials are checked against a slow password hash, not a
+ * single shared secret. This layer raises the cost of casual, sequential brute
+ * force and abuse; it is not a substitute for strong per-account passwords.
  */
 
 export interface RateLimitConfig {

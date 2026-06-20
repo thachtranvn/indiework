@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   const rate = apiRateState(req);
   if (rate.limited) return tooManyRequests(rate.retryAfterSec);
-  if (!requireBearer(req)) return unauthorized();
+  if (!(await requireBearer(req))) return unauthorized();
   try {
     return ok(await taskService.listInbox());
   } catch (e) {

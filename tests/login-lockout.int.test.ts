@@ -14,10 +14,12 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 vi.mock('@/server/auth/session', () => ({
-  passwordMatches: () => Promise.resolve(false), // every attempt is wrong
   createSessionValue: () => Promise.resolve('sess'),
   SESSION_COOKIE: 'iw_session',
   SESSION_MAX_AGE: 100,
+}));
+vi.mock('@/server/services/user.service', () => ({
+  userService: { verifyLogin: () => Promise.resolve(null) }, // every attempt is wrong
 }));
 // Keep the real singleton + clientIp; stub only the delay so 6 attempts are instant.
 vi.mock('@/server/auth/rate-limit', async (importOriginal) => {
@@ -27,22 +29,23 @@ vi.mock('@/server/auth/rate-limit', async (importOriginal) => {
 
 import { login } from '@/app/_actions/auth';
 
-function wrongPassword(): FormData {
+function wrongLogin(): FormData {
   const f = new FormData();
+  f.set('email', 'admin@example.com');
   f.set('password', 'wrong');
   f.set('next', '/app');
   return f;
 }
 
 describe('login() lockout — real limiter, default config', () => {
-  test('locks out after the configured threshold of wrong passwords', async () => {
-    // threshold = 5: attempts 1–5 report a wrong password (the 5th trips the lock),
+  test('locks out after the configured threshold of wrong credentials', async () => {
+    // threshold = 5: attempts 1–5 report wrong credentials (the 5th trips the lock),
     // so the 6th is refused up front with the retry message.
     for (let i = 0; i < 5; i++) {
-      const res = await login({ error: null }, wrongPassword());
-      expect(res.error).toBe('Wrong password.');
+      const res = await login({ error: null }, wrongLogin());
+      expect(res.error).toBe('Wrong email or password.');
     }
-    const blocked = await login({ error: null }, wrongPassword());
+    const blocked = await login({ error: null }, wrongLogin());
     expect(blocked.error).toMatch(/^Too many attempts\. Try again in \d+s\.$/);
   });
 });

@@ -20,7 +20,7 @@ describe('proxy — auth gate', () => {
   });
 
   test('lets /app through with a valid session and still sets the CSP', async () => {
-    const res = await proxy(reqFor('/app/inbox', await createSessionValue()));
+    const res = await proxy(reqFor('/app/inbox', await createSessionValue('test-user-id')));
     expect(res.headers.get('location')).toBeNull();
     expect(res.headers.get('content-security-policy')).toContain("frame-ancestors 'none'");
   });

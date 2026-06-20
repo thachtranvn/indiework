@@ -11,7 +11,7 @@ const bool = (v: string | null) => (v === null ? undefined : v !== 'false');
 export async function GET(req: Request) {
   const rate = apiRateState(req);
   if (rate.limited) return tooManyRequests(rate.retryAfterSec);
-  if (!requireBearer(req)) return unauthorized();
+  if (!(await requireBearer(req))) return unauthorized();
   try {
     const q = new URL(req.url).searchParams;
     const tasks = await taskService.list({
@@ -32,10 +32,11 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const rate = apiRateState(req);
   if (rate.limited) return tooManyRequests(rate.retryAfterSec);
-  if (!requireBearer(req)) return unauthorized();
+  const userId = await requireBearer(req);
+  if (!userId) return unauthorized();
   try {
     const body = await req.json();
-    const task = await taskService.create(body);
+    const task = await taskService.create(body, userId);
     return ok(task, 201);
   } catch (e) {
     return handleServiceError(e);
