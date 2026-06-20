@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useCallback, useLayoutEffect, useMemo, useOptimistic, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useOptimistic, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { TaskDto } from '@/server/services';
 import {
@@ -64,6 +64,28 @@ interface DisplayState {
   statusHidden: TaskStatus[];
 }
 
+/** Display/filter/board prefs are stored per view, not per project. */
+function viewStorageKey(projectKey: string, viewId: ViewId, kind: 'display' | 'board' | 'collapsed') {
+  return `iw-${kind}-${projectKey}-${viewId}`;
+}
+
+/** One-time migration from pre–per-view keys (`iw-*-<KEY>` → `iw-*-<KEY>-all`). */
+function migrateLegacyViewStorage(projectKey: string) {
+  for (const kind of ['display', 'board', 'collapsed'] as const) {
+    const legacyKey = `iw-${kind}-${projectKey}`;
+    const migratedKey = viewStorageKey(projectKey, 'all', kind);
+    try {
+      const legacy = localStorage.getItem(legacyKey);
+      if (legacy != null && localStorage.getItem(migratedKey) == null) {
+        localStorage.setItem(migratedKey, legacy);
+        localStorage.removeItem(legacyKey);
+      }
+    } catch {
+      // ignore unavailable storage
+    }
+  }
+}
+
 export function ProjectView({
   project,
   modules,
@@ -84,21 +106,25 @@ export function ProjectView({
   const views = useViews(project.key);
   const mode = views.modeFor(activeView);
 
+  useEffect(() => {
+    migrateLegacyViewStorage(project.key);
+  }, [project.key]);
+
   const availDims = useMemo(() => computeAvailDims(modules, milestones), [modules, milestones]);
-  const [disp, setDisp] = useLocalStorage<DisplayState>(`iw-display-${project.key}`, {
+  const defaultDisplay: DisplayState = {
     groupBy: availDims[0] ?? 'status',
     subGroupBy: 'none',
     groupStyle: 'band',
     filters: DEFAULT_FILTERS,
     statusOrder: [],
     statusHidden: [],
-  });
+  };
+  const [disp, setDisp] = useLocalStorage<DisplayState>(viewStorageKey(project.key, activeView, 'display'), defaultDisplay);
   const filters = disp.filters;
-  const [boardCfg, setBoardCfg] = useLocalStorage<BoardCfg>(`iw-board-${project.key}`, DEFAULT_BOARD_CFG);
+  const [boardCfg, setBoardCfg] = useLocalStorage<BoardCfg>(viewStorageKey(project.key, activeView, 'board'), DEFAULT_BOARD_CFG);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  // Persisted per project (Set isn't JSON-serializable, so store string[] and
-  // derive the Set) — survives the remount that opening a task triggers.
-  const [collapsedArr, setCollapsedArr] = useLocalStorage<string[]>(`iw-collapsed-${project.key}`, []);
+  // Persisted per view (Set isn't JSON-serializable, so store string[] and derive the Set).
+  const [collapsedArr, setCollapsedArr] = useLocalStorage<string[]>(viewStorageKey(project.key, activeView, 'collapsed'), []);
   const collapsed = useMemo(() => new Set(collapsedArr), [collapsedArr]);
   const lastSel = useRef<string | null>(null);
 

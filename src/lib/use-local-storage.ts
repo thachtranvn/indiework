@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * SSR-safe localStorage state. Renders `initial` on the server and the first
@@ -9,15 +9,18 @@ import { useCallback, useEffect, useState } from 'react';
  */
 export function useLocalStorage<T>(key: string, initial: T): [T, (v: T | ((prev: T) => T)) => void] {
   const [value, setValue] = useState<T>(initial);
+  const initialRef = useRef(initial);
+  initialRef.current = initial;
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(key);
       if (raw != null) setValue(JSON.parse(raw) as T);
+      else setValue(initialRef.current);
     } catch {
-      // ignore malformed / unavailable storage
+      setValue(initialRef.current);
     }
-    // re-read when the key changes (e.g. switching projects)
+    // re-read when the key changes (e.g. switching projects or views)
   }, [key]);
 
   const set = useCallback(
