@@ -5,7 +5,7 @@ import { taskService, commentService, attachmentService } from '@/server/service
 import { requireSession } from '@/server/auth/require-session';
 import type { CreateTaskInput, UpdateTaskInput } from '@/server/validators/task';
 import type { CreateAttachmentInput } from '@/server/validators/attachment';
-import { MAX_ATTACHMENT_BYTES } from '@/server/attachment-limits';
+import { MAX_ATTACHMENT_BYTES, humanAttachmentSize } from '@/server/attachment-limits';
 import { badRequest } from '@/server/services/errors';
 
 function refresh() {
@@ -105,7 +105,7 @@ export async function uploadAttachment(taskId: string, formData: FormData) {
   const file = formData.get('file');
   if (!(file instanceof File)) throw badRequest('file is required');
   if (file.size > MAX_ATTACHMENT_BYTES) {
-    throw badRequest(`File exceeds the ${MAX_ATTACHMENT_BYTES} byte limit`);
+    throw badRequest(`File exceeds the ${humanAttachmentSize(MAX_ATTACHMENT_BYTES)} limit`);
   }
   const bytes = new Uint8Array(await file.arrayBuffer());
   const att = await attachmentService.upload({

@@ -10,6 +10,11 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { TaskDto } from '@/server/services';
 import type { TaskDetail } from '@/app/_actions/queries';
 import { uploadAttachment, removeAttachment } from '@/app/_actions/tasks';
+import {
+  MAX_ATTACHMENT_BYTES,
+  attachmentSizeLimitLabel,
+  attachmentUploadErrorMessage,
+} from '@/server/attachment-limits';
 import { commitOnEnter } from '@/lib/inline-edit';
 import { CircleCheck } from '@/components/ui/interactive';
 import { Ic } from '@/components/ui/icons';
@@ -129,17 +134,33 @@ export function Attachments({ taskId, items, onChanged }: { taskId: string; item
   const inputRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const sizeLimit = attachmentSizeLimitLabel();
 
   const addFiles = async (files: FileList | null) => {
     if (!files?.length || uploading) return;
+    setError(null);
     setUploading(true);
+    const failures: string[] = [];
     try {
       for (const f of Array.from(files)) {
-        const fd = new FormData();
-        fd.set('file', f);
-        await uploadAttachment(taskId, fd);
+        if (f.size > MAX_ATTACHMENT_BYTES) {
+          failures.push(`${f.name} exceeds the ${sizeLimit} limit`);
+          continue;
+        }
+        try {
+          const fd = new FormData();
+          fd.set('file', f);
+          await uploadAttachment(taskId, fd);
+        } catch (e) {
+          failures.push(`${f.name}: ${attachmentUploadErrorMessage(e)}`);
+        }
       }
-      await onChanged();
+      if (failures.length) {
+        setError(failures.join(' · '));
+      } else {
+        await onChanged();
+      }
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
@@ -227,13 +248,21 @@ export function Attachments({ taskId, items, onChanged }: { taskId: string; item
       >
         <Ic.paperclip size={15} />
         <span>
-          {uploading ? 'Uploading…' : (
+          {uploading ? (
+            'Uploading…'
+          ) : (
             <>
               Drag files here or <b>browse</b>
+              <span className="attach-limit"> · max {sizeLimit}</span>
             </>
           )}
         </span>
       </div>
+      {error && (
+        <p className="attach-error" role="alert">
+          {error}
+        </p>
+      )}
       <input ref={inputRef} type="file" multiple hidden onChange={(e) => addFiles(e.target.files)} />
     </div>
   );

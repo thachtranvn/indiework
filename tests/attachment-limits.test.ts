@@ -4,6 +4,7 @@ import {
   humanAttachmentSize,
   MAX_ATTACHMENT_BYTES,
   sanitizeAttachmentName,
+  attachmentUploadErrorMessage,
 } from '@/server/attachment-limits';
 
 describe('attachment limits', () => {
@@ -22,7 +23,11 @@ describe('attachment limits', () => {
     expect(extFromName('noext')).toBe('');
   });
 
-  test('MAX_ATTACHMENT_BYTES is 25 MiB', () => {
-    expect(MAX_ATTACHMENT_BYTES).toBe(25 * 1024 * 1024);
+  test('MAX_ATTACHMENT_BYTES is 5 MiB', () => {
+    expect(MAX_ATTACHMENT_BYTES).toBe(5 * 1024 * 1024);
+  });
+
+  test('attachmentUploadErrorMessage maps body limit errors', () => {
+    expect(attachmentUploadErrorMessage(new Error('Body exceeded 1 MB limit.'))).toContain('5.0 MB');
   });
 });

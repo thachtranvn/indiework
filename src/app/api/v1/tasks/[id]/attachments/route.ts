@@ -1,7 +1,7 @@
 import { attachmentService } from '@/server/services';
 import { requireBearer } from '@/server/auth/token';
 import { apiRateState } from '@/server/auth/rate-limit';
-import { MAX_ATTACHMENT_BYTES } from '@/server/attachment-limits';
+import { MAX_ATTACHMENT_BYTES, humanAttachmentSize } from '@/server/attachment-limits';
 import { ok, unauthorized, tooManyRequests, fail, handleServiceError } from '@/lib/api-response';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +17,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     const file = form.get('file');
     if (!(file instanceof File)) return fail('file is required (multipart field "file")', 400);
     if (file.size > MAX_ATTACHMENT_BYTES) {
-      return fail(`File exceeds the ${MAX_ATTACHMENT_BYTES} byte limit`, 413);
+      return fail(`File exceeds the ${humanAttachmentSize(MAX_ATTACHMENT_BYTES)} limit`, 413);
     }
 
     const bytes = new Uint8Array(await file.arrayBuffer());
