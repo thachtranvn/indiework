@@ -9,11 +9,14 @@ export function Modal({
   onClose,
   children,
   footer,
+  className,
 }: {
   title: ReactNode;
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  /** Extra class on the dialog surface — e.g. `modal-preview` to widen it. */
+  className?: string;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -30,7 +33,7 @@ export function Modal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
+      <div className={`modal${className ? ` ${className}` : ''}`} onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h2>{title}</h2>
           <button className="icon-btn" type="button" onClick={onClose} aria-label="Close">
