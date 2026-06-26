@@ -114,7 +114,7 @@ export async function closeDb(): Promise<void> {
 }
 
 /**
- * Allocate the next per-project sequence number (docs/scope.md §2, spec §4.9).
+ * Allocate the next per-project sequence number (docs/product/scope.md §2, spec §4.9).
  * Call inside the transaction that inserts/assigns the task. Single-user, so
  * never contended; the UPDATE … RETURNING is atomic regardless. Portable across
  * both dialects (UPDATE … RETURNING is supported by Postgres and sqlite ≥3.35).

@@ -1,7 +1,7 @@
 # IndieWork — v3 Implementation Plan
 
 > Maps the design **v2 → v3** changes (plus v2 **sub-tasks**) onto the real codebase.
-> Companion to [roadmap.md](roadmap.md) and [scope.md](scope.md). Source of truth for
+> Companion to [roadmap.md](product/roadmap.md) and [scope.md](product/scope.md). Source of truth for
 > the design: `design-handoff/design_handoff_indiework_pm_v3/README.md` and the delta doc
 > `design-handoff/design_handoff_indiework_pm_v3_changes/README.md`. **Where this plan and
 > the design CSS disagree, the CSS wins.**

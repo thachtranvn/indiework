@@ -1,5 +1,5 @@
 /**
- * PostgreSQL schema (Drizzle) — the full IndieWork data model (docs/scope.md §2).
+ * PostgreSQL schema (Drizzle) — the full IndieWork data model (docs/product/scope.md §2).
  *
  * Conventions:
  *  - PK: uuid v7, app-generated (newUuid). Internal only — public identity is

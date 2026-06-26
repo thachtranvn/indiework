@@ -20,7 +20,7 @@ to whatever MCP client you use.
 
 > The same `API_TOKEN` guards the REST API. Treat it like a password: keep it out of
 > commits, rotate it if it leaks. There is no per-key scope yet — the token grants
-> full access (managed `api_keys` with scopes are Phase 4 on the [roadmap](roadmap.md)).
+> full access (managed `api_keys` with scopes are Phase 4 on the [roadmap](product/roadmap.md)).
 
 ## Client setup
 

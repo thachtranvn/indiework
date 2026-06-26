@@ -157,7 +157,7 @@ must get a teamspace-specific value.
 - [ ] Create a **new IndieWork project** for teamspace (KEY from D1, e.g. `TS`); update
       `teamspace/CLAUDE.md` to default to it. Move the relevant `IW` "Team (pivot)"
       milestone/tasks over, or relabel.
-- [ ] Update `indiework/docs/architecture.md` + `roadmap.md`: scope is now **solo only**;
+- [ ] Update `indiework/docs/architecture.md` + `docs/product/roadmap.md`: scope is now **solo only**;
       link out to the teamspace repo for the team product. Trim the `docs/pivot/*` set that
       no longer applies to solo (or move it to teamspace).
 - [ ] Write a one-paragraph **backport policy**: which kinds of fixes (security, shared bug

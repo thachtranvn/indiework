@@ -6,8 +6,9 @@ decision, named `NNNN-kebab-title.md`. Status flows
 `Proposed → Accepted → Superseded by NNNN`.
 
 An ADR captures *why* a decision was made so future readers don't re-litigate it.
-For *what the product is* see [../scope.md](../scope.md); for *build order* see
-[../roadmap.md](../roadmap.md).
+For *what the product is* see [../scope.md](../product/scope.md); for *build order* see
+[../roadmap.md](../product/roadmap.md); for *how the code is structured* see
+[../technical/README.md](../technical/README.md).
 
 | #    | Title                                                                 | Status   | Date       |
 |------|-----------------------------------------------------------------------|----------|------------|

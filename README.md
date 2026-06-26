@@ -166,8 +166,8 @@ See **[`docs/mcp.md`](docs/mcp.md)** for client config snippets and the full too
 ## Architecture & design
 
 All three front doors call one service layer (`src/server/services/*`); adapters stay
-thin. See [`docs/scope.md`](docs/scope.md) for the product source-of-truth,
-[`docs/roadmap.md`](docs/roadmap.md) for what's built vs planned, and `docs/brainstorm/`
+thin. See [`docs/product/scope.md`](docs/product/scope.md) for the product source-of-truth,
+[`docs/product/roadmap.md`](docs/product/roadmap.md) for what's built vs planned, and `docs/brainstorm/`
 + `design-handoff/` for the original spec and UI design.
 
 ## License
