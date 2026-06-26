@@ -33,6 +33,30 @@ export async function toggleTaskDone(id: string) {
   return task;
 }
 
+// ---- scoped (no-revalidate) variants for return-row reconcile (PP-B4) ----
+// A pure single-field edit shown on the *same* surface doesn't need a full
+// `revalidatePath('/app','layout')` re-read: the client commits the returned
+// row into its task mirror directly (see lib/use-reconciled-tasks). This skips
+// re-running loadShell + loadProject per edit (the §4 refetch cost) and drains
+// the action queue faster (§2). Only for edits the shell/other surfaces do NOT
+// depend on — assign-to-project, creates, deletes still use the revalidating
+// variants above so the sidebar badge/counts stay correct.
+
+export async function updateTaskScoped(id: string, patch: UpdateTaskInput) {
+  await requireSession();
+  return taskService.update(id, patch);
+}
+
+export async function toggleTaskDoneScoped(id: string) {
+  await requireSession();
+  return taskService.toggleDone(id);
+}
+
+export async function bulkUpdateTasksScoped(ids: string[], patch: UpdateTaskInput) {
+  await requireSession();
+  return Promise.all(ids.map((id) => taskService.update(id, patch)));
+}
+
 export async function addSubtask(parentId: string, title: string) {
   const userId = await requireSession();
   const task = await taskService.addSubtask(parentId, title, undefined, userId);

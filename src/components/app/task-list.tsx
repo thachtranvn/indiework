@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useOptimistic, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { TaskDto } from '@/server/services';
 import {
@@ -28,10 +28,17 @@ import {
 } from '@/lib/domain';
 import { DEFAULT_VIEW, viewAllowsStatus, viewCaptureStatus, useViews, type ViewId } from '@/lib/views';
 import { useLocalStorage } from '@/lib/use-local-storage';
-import { applyTaskOptimistic } from '@/lib/optimistic';
+import { useReconciledTasks } from '@/lib/use-reconciled-tasks';
 import { useTaskNav, useOpenTaskKey, taskKey } from '@/lib/task-nav';
-import { useOptimisticRun, useRun } from '@/components/ui/toast';
-import { createTask, updateTask, toggleTaskDone, bulkUpdateTasks, bulkDeleteTasks } from '@/app/_actions/tasks';
+import { useOptimisticRun, useReconcileRun, useRun } from '@/components/ui/toast';
+import {
+  createTask,
+  updateTask,
+  bulkDeleteTasks,
+  updateTaskScoped,
+  toggleTaskDoneScoped,
+  bulkUpdateTasksScoped,
+} from '@/app/_actions/tasks';
 import { ProjectTabs } from './project-tabs';
 import { DisplayPopover, FilterPopover, BoardDisplayPopover } from './display-popover';
 import { BoardView } from './board';
@@ -142,9 +149,11 @@ export function ProjectView({
 
   const allowedStatus = useCallback((s: TaskStatus) => viewAllowsStatus(activeView, s), [activeView]);
 
-  // Optimistic mirror of the server `tasks` prop: drag/checkbox/bulk edits paint
-  // instantly, then reconcile when the action's revalidatePath re-flows real data.
-  const [optimisticTasks, applyOptimistic] = useOptimistic(tasks, applyTaskOptimistic);
+  // Client task mirror: checkbox/bulk-field edits paint instantly, then commit
+  // the action's returned row(s) without a full re-read (PP-B4). Rename + delete
+  // stay on the revalidating runner (`runOptimistic`) so other surfaces re-sync.
+  const { tasks: optimisticTasks, applyOptimistic, commit } = useReconciledTasks(tasks);
+  const runReconcile = useReconcileRun(applyOptimistic, commit);
   const runOptimistic = useOptimisticRun(applyOptimistic);
   const run = useRun();
 
@@ -238,7 +247,21 @@ export function ProjectView({
     [runOptimistic],
   );
   const onToggleDone = (id: string) => {
-    runOptimistic({ kind: 'toggleDone', id }, () => toggleTaskDone(id), "Couldn't update that task.");
+    runReconcile({ kind: 'toggleDone', id }, () => toggleTaskDoneScoped(id), "Couldn't update that task.");
+  };
+  // Board callbacks — run through this view's single mirror so a drag stays
+  // consistent when the user flips board↔list (PP-B4).
+  const onMoveCard = (id: string, patch: Sec['patch']) => {
+    runReconcile({ kind: 'patch', ids: [id], patch }, () => updateTaskScoped(id, patch), "Couldn't move that card.");
+  };
+  const addCard = async (patch: Sec['patch'], title: string) => {
+    // Create needs a server-generated id/ref, so it stays non-optimistic (see ADR 0002).
+    const task = await run(() => createTask({ projectId: project.id, title, ...patch }), {
+      error: "Couldn't add that card.",
+      retry: false,
+    });
+    if (task) router.refresh();
+    return task;
   };
 
   const clearSel = () => {
@@ -297,7 +320,14 @@ export function ProjectView({
       <QuickCapture placeholder="Add a task…  (it lands in this project)" onAdd={(t) => add(t)} />
 
       {mode === 'board' ? (
-        <BoardView project={project} modules={modules} milestones={milestones} tasks={scoped} cfg={boardCfg} />
+        <BoardView
+          modules={modules}
+          milestones={milestones}
+          tasks={scoped}
+          cfg={boardCfg}
+          onMoveCard={onMoveCard}
+          onAddCard={addCard}
+        />
       ) : (
         <div className="scroll-body" data-group-style={disp.groupStyle ?? 'band'} ref={scrollRef} onScroll={onScroll}>
           {anyTasks ? (
@@ -352,27 +382,27 @@ export function ProjectView({
           onSetStatus={(status) => {
             const ids = [...selected];
             clearSel();
-            runOptimistic({ kind: 'patch', ids, patch: { status } }, () => bulkUpdateTasks(ids, { status }), "Couldn't update those tasks.");
+            runReconcile({ kind: 'patch', ids, patch: { status } }, () => bulkUpdateTasksScoped(ids, { status }), "Couldn't update those tasks.");
           }}
           onSetPriority={(priority) => {
             const ids = [...selected];
             clearSel();
-            runOptimistic({ kind: 'patch', ids, patch: { priority } }, () => bulkUpdateTasks(ids, { priority }), "Couldn't update those tasks.");
+            runReconcile({ kind: 'patch', ids, patch: { priority } }, () => bulkUpdateTasksScoped(ids, { priority }), "Couldn't update those tasks.");
           }}
           onSetModule={(moduleId) => {
             const ids = [...selected];
             clearSel();
-            runOptimistic({ kind: 'patch', ids, patch: { moduleId } }, () => bulkUpdateTasks(ids, { moduleId }), "Couldn't update those tasks.");
+            runReconcile({ kind: 'patch', ids, patch: { moduleId } }, () => bulkUpdateTasksScoped(ids, { moduleId }), "Couldn't update those tasks.");
           }}
           onSetMilestone={(milestoneId) => {
             const ids = [...selected];
             clearSel();
-            runOptimistic({ kind: 'patch', ids, patch: { milestoneId } }, () => bulkUpdateTasks(ids, { milestoneId }), "Couldn't update those tasks.");
+            runReconcile({ kind: 'patch', ids, patch: { milestoneId } }, () => bulkUpdateTasksScoped(ids, { milestoneId }), "Couldn't update those tasks.");
           }}
           onMarkDone={() => {
             const ids = [...selected];
             clearSel();
-            runOptimistic({ kind: 'patch', ids, patch: { status: 'done' } }, () => bulkUpdateTasks(ids, { status: 'done' }), "Couldn't update those tasks.");
+            runReconcile({ kind: 'patch', ids, patch: { status: 'done' } }, () => bulkUpdateTasksScoped(ids, { status: 'done' }), "Couldn't update those tasks.");
           }}
           onDelete={() => {
             const ids = [...selected];

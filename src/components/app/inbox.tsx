@@ -1,12 +1,11 @@
 'use client';
 
-import { useOptimistic } from 'react';
 import { useRouter } from 'next/navigation';
 import type { TaskDto } from '@/server/services';
-import { applyTaskOptimistic } from '@/lib/optimistic';
+import { useReconciledTasks } from '@/lib/use-reconciled-tasks';
 import { useTaskNav, useOpenTaskKey, taskKey } from '@/lib/task-nav';
-import { useOptimisticRun, useRun } from '@/components/ui/toast';
-import { createTask, toggleTaskDone, assignTaskToProject } from '@/app/_actions/tasks';
+import { useOptimisticRun, useReconcileRun, useRun } from '@/components/ui/toast';
+import { createTask, assignTaskToProject, toggleTaskDoneScoped } from '@/app/_actions/tasks';
 import { QuickCapture } from './quick-capture';
 import { CircleCheck } from '@/components/ui/interactive';
 import { Popover, OptionList } from '@/components/ui/popover';
@@ -25,7 +24,8 @@ export function InboxScreen({ tasks, projects }: { tasks: TaskDto[]; projects: P
   const router = useRouter();
   const { openTask } = useTaskNav();
   const openKey = useOpenTaskKey();
-  const [optimisticTasks, applyOptimistic] = useOptimistic(tasks, applyTaskOptimistic);
+  const { tasks: optimisticTasks, applyOptimistic, commit } = useReconciledTasks(tasks);
+  const runReconcile = useReconcileRun(applyOptimistic, commit);
   const runOptimistic = useOptimisticRun(applyOptimistic);
   const run = useRun();
 
@@ -36,10 +36,12 @@ export function InboxScreen({ tasks, projects }: { tasks: TaskDto[]; projects: P
     return task; // success signal → the capture field clears only then
   };
   const toggle = (id: string) => {
-    runOptimistic({ kind: 'toggleDone', id }, () => toggleTaskDone(id), "Couldn't update that task.");
+    // Pure same-surface field edit → commit the returned row, no full re-read (PP-B4).
+    runReconcile({ kind: 'toggleDone', id }, () => toggleTaskDoneScoped(id), "Couldn't update that task.");
   };
   const assign = (id: string, projectId: string) => {
-    // Assigning to a project removes the task from the Inbox — drop it now.
+    // Assigning to a project removes the task from the Inbox AND changes the
+    // sidebar's inbox-count badge — keep the revalidating path so the shell re-syncs.
     runOptimistic({ kind: 'remove', ids: [id] }, () => assignTaskToProject(id, projectId), "Couldn't move that task.");
   };
 

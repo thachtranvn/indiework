@@ -11,9 +11,10 @@
 (toast + mutation runner — [toast.tsx](../../../../src/components/ui/toast.tsx),
 [app/error.tsx](../../../../src/app/app/error.tsx)); **(#2)** route-level streaming —
 `loading.tsx` per leaf app segment + dimension-matched skeletons
-([skeletons.tsx](../../../../src/components/app/skeletons.tsx)). Still absent: per-sub-region
-`<Suspense>` inside a page, and `revalidateTag` (still 20 `force-dynamic`, 0 tag-cache;
-`reactCompiler: true`).
+([skeletons.tsx](../../../../src/components/app/skeletons.tsx)); **(#3)** return-row reconcile for
+pure same-surface field edits (scoped no-revalidate actions + a client task mirror —
+[use-reconciled-tasks.ts](../../../../src/lib/use-reconciled-tasks.ts)). Still absent: per-sub-region
+`<Suspense>` inside a page; tag-based read caching (still `force-dynamic`); `reactCompiler: true`.
 
 ---
 
@@ -63,9 +64,16 @@
   (same doc); direct/IPv6 rejected. → design: [solution.md §6](solution.md).
 - [ ] **PP-B3** — No N+1 / sequential waterfall. **Unaudited.** Known: `taskService.reorder` loops
   per-row `UPDATE`. → design: [solution.md §5](solution.md).
-- [ ] **PP-B4** — Scoped invalidation. **Not met:** actions end in `revalidatePath('/app','layout')`
-  ([tasks.ts](../../../../src/app/_actions/tasks.ts)) — coarse full-subtree refetch; compounds the
-  action queue (solution.md §2). → design: [solution.md §4](solution.md).
+- [~] **PP-B4** — Scoped invalidation. **Implemented; mechanism verified, latency unmeasured.**
+  High-frequency pure same-surface field edits (board drag, list checkbox, list bulk
+  status/priority/module/milestone) now use **return-row reconcile** — scoped no-revalidate actions
+  + a per-surface task mirror ([use-reconciled-tasks.ts](../../../../src/lib/use-reconciled-tasks.ts),
+  [toast.tsx](../../../../src/components/ui/toast.tsx) `useReconcileRun`) commit the returned row
+  instead of re-reading the whole subtree. Shell-coupled edits (inbox assign → sidebar badge,
+  creates, deletes, rename) deliberately **keep** `revalidatePath`. `revalidateTag` ruled out
+  (inert under `force-dynamic`). *The query-count/latency reduction is network-bound — unmeasurable
+  on the same-region dev DB; confirm on the live deploy alongside PP-B5.* → design:
+  [solution.md §4](solution.md).
 - [ ] **PP-B5** — P95 action round-trip < 400 ms. **Unmeasured** (no telemetry). *Todo: add action
   timing; read Vercel observability.* → design: [solution.md §2, §4](solution.md).
 
@@ -107,8 +115,8 @@ the deploy doc, so the open, in-repo work, in priority order:
 2. ~~**Streaming reads (PP-R1, PP-R2, PP-R3)**~~ — ✅ **done** (PP-R1/R2 met; PP-R3 partial):
    `loading.tsx` per leaf segment + dimension-matched skeletons. Remaining: per-sub-region
    `<Suspense>` within a page (deferred — needs splitting the monolithic client views).
-3. **Scoped invalidation (PP-B4)** — `revalidateTag` or return-row reconcile, so a single edit stops
-   triggering a full-layout refetch — and the action queue drains faster (solution.md §2).
+3. ~~**Scoped invalidation (PP-B4)**~~ — ✅ **done** (mechanism verified; latency remote-only):
+   return-row reconcile for pure same-surface field edits; shell-coupled edits keep `revalidatePath`.
 4. **Query-shape audit (PP-B3)** — N+1 / sequential waterfalls in the service layer; reorder representation.
 5. **Measurement (PP-R4, PP-B5, verify PP-W2/W3/W4)** — trace against the real Vercel+Supabase deploy
    so targets are checked with data, not assumed. *(Also worth a smoke-test of PP-F1/F2/F3 on the

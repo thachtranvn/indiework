@@ -269,3 +269,36 @@ export function useOptimisticRun<A>(applyOptimistic: (action: A) => void) {
     [applyOptimistic, notifyError, beginPending],
   );
 }
+
+/**
+ * Like `useOptimisticRun`, but for the return-row reconcile path (PP-B4): the
+ * action returns the authoritative changed row(s) and the surface skips the
+ * full `revalidatePath` re-read. `applyOptimistic` paints the prediction during
+ * the transition; `commit` writes the server's returned value into the client
+ * task mirror so it **survives** the transition ending (no refetch). On throw,
+ * nothing is committed and the optimistic value reverts to the mirror's last
+ * truth — same return-to-truth + Retry as the optimistic runner. Composes with
+ * `useReconciledTasks` (which owns the mirror + `commit`).
+ */
+export function useReconcileRun<A, R>(applyOptimistic: (action: A) => void, commit: (result: R) => void) {
+  const { notifyError, beginPending } = useFeedback();
+  return useCallback(
+    (optimistic: A, thunk: () => Promise<R>, error?: string) => {
+      const attempt = () => {
+        startTransition(async () => {
+          applyOptimistic(optimistic);
+          const end = beginPending();
+          try {
+            commit(await thunk());
+          } catch {
+            notifyError(error ?? DEFAULT_ERROR, () => attempt());
+          } finally {
+            end();
+          }
+        });
+      };
+      attempt();
+    },
+    [applyOptimistic, commit, notifyError, beginPending],
+  );
+}

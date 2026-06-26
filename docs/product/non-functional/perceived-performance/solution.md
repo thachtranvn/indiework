@@ -130,21 +130,44 @@ These are read-path structural changes, independent of the write loop in §1.
 
 ## 4. Reconciliation scope — stop refetching the whole subtree
 
-Every action ends in `revalidatePath('/app','layout')`
+Most actions end in `revalidatePath('/app','layout')`
 ([_actions/tasks.ts](../../../../src/app/_actions/tasks.ts) `refresh()`) — a **coarse
-full-subtree refetch**. It is cheap against an idle local DB but expensive across a network, and
-it compounds the §2 queue: each serialized action drags a full re-read behind it (**PP-B4**).
+full-subtree refetch** (re-runs `loadShell` + `loadProject`). Cheap against an idle local DB,
+expensive across a network, and it compounds the §2 queue: each serialized action drags a full
+re-read behind it (**PP-B4**).
 
-Two target designs, in increasing divergence from today:
+**`revalidateTag` was ruled out:** every app route is `force-dynamic`, so nothing is tag-cached —
+`revalidateTag` has nothing to invalidate. It would first require introducing `use cache`/
+`cacheTag` over the read path; deferred.
 
-- **`revalidateTag` per surface/task-list** — keep the server-owned-cache model, but invalidate
-  only the affected region. Minimal client change.
-- **Return the changed row from the action and reconcile client-side** through the existing
-  optimistic reducer — the change already round-tripped, so apply it directly and skip the
-  refetch. A middle ground that is explicitly **not** the global client store ADR 0002 rejected;
-  it reuses [optimistic.ts](../../../../src/lib/optimistic.ts) `applyTaskOptimistic`.
+**As built — return-row reconcile (the chosen path).** For pure single-field edits shown on the
+*same* surface, the action returns the authoritative changed row(s) via **scoped (no-revalidate)
+variants** (`updateTaskScoped`, `toggleTaskDoneScoped`, `bulkUpdateTasksScoped`), and the client
+**commits** that row into a per-surface **task mirror** instead of refetching:
 
-Either one shortens the §2 queue-drain time directly, which is the highest-leverage write-path win.
+- [use-reconciled-tasks.ts](../../../../src/lib/use-reconciled-tasks.ts) holds the list in a
+  `useState` mirror seeded from the server prop, re-synced whenever the prop changes (navigation, or
+  a *revalidating* mutation from another path). It is **not** the global store ADR 0002 rejected —
+  it's per-surface and defers to server truth; the optimistic prediction still layers on via
+  `useOptimistic` + the pure `applyTaskOptimistic` reducer.
+- [toast.tsx](../../../../src/components/ui/toast.tsx) `useReconcileRun` is the §1 optimistic runner
+  plus a `commit(returnedRow)` on success, so the prediction **survives** the transition ending
+  (no refetch). On throw it commits nothing and reverts to the mirror — same return-to-truth + Retry
+  as §7. Verified by fault injection: success → commit persists (no revert); throw → revert to
+  mirror + toast; prop change → re-sync.
+
+**Scoped deliberately, per mutation (the key correctness rule).** Reconcile is applied **only** to
+edits the shell/other surfaces don't depend on — board drag, list checkbox, list bulk
+status/priority/module/milestone. `ProjectView` owns the single mirror and feeds the board
+(now presentational) through it, so a drag stays consistent across board↔list. Everything that
+moves shell-coupled state **keeps `revalidatePath`**: inbox **assign-to-project** (sidebar
+inbox-count badge), all **creates**, **deletes**, **rename** (cross-surface), and pin/config.
+Blanket-dropping the revalidate would have staled the sidebar — a real in-session regression, not a
+cross-surface non-goal.
+
+This shortens the §2 queue-drain on the highest-frequency edits. The actual query-count/latency win
+is **network-bound, so unmeasured locally** (same-region dev DB is too fast to show it) — see
+[plan.md](plan.md) PP-B4 / the measurement todo.
 
 ---
 
