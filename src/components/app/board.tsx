@@ -1,7 +1,6 @@
 'use client';
 
-import { startTransition, useMemo, useOptimistic, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
 import type { TaskDto } from '@/server/services';
 import {
   boardBuckets,
@@ -13,36 +12,34 @@ import {
   type NewTaskPatch,
   type FieldVis,
 } from '@/lib/grouping';
-import { applyTaskOptimistic } from '@/lib/optimistic';
 import { useTaskNav } from '@/lib/task-nav';
-import { createTask, updateTask } from '@/app/_actions/tasks';
 import { PriorityBars, ModuleTag, MilestoneTag, ModuleIcon, StatusChip } from '@/components/ui/bits';
 import { Ic } from '@/components/ui/icons';
 
-interface Project {
-  id: string;
-  key: string;
-  name: string;
-  emoji: string | null;
-}
-
-/** Configurable board (v3): columns + optional swimlane rows, driven by boardCfg. */
+/**
+ * Configurable board (v3): columns + optional swimlane rows, driven by boardCfg.
+ *
+ * Presentational over the parent's task mirror: `tasks` already carries any
+ * optimistic prediction (ProjectView owns the one `useReconciledTasks` mirror,
+ * shared by list + board modes — PP-B4). A drag calls `onMoveCard`, which the
+ * parent runs through the reconcile runner; a card add calls `onAddCard`.
+ */
 export function BoardView({
-  project,
   modules,
   milestones,
   tasks,
   cfg,
+  onMoveCard,
+  onAddCard,
 }: {
-  project: Project;
   modules: GroupModule[];
   milestones: GroupMilestone[];
   tasks: TaskDto[];
   cfg: BoardCfg;
+  onMoveCard: (id: string, patch: NewTaskPatch) => void;
+  onAddCard: (patch: NewTaskPatch, title: string) => Promise<TaskDto | undefined>;
 }) {
-  const router = useRouter();
   const { openTask } = useTaskNav();
-  const [optimisticTasks, applyOptimistic] = useOptimistic(tasks, applyTaskOptimistic);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
 
@@ -56,8 +53,8 @@ export function BoardView({
   );
 
   const visible = useMemo(
-    () => (cfg.hideDone ? optimisticTasks.filter((t) => !t.done && t.status !== 'cancelled') : optimisticTasks),
-    [optimisticTasks, cfg.hideDone],
+    () => (cfg.hideDone ? tasks.filter((t) => !t.done && t.status !== 'cancelled') : tasks),
+    [tasks, cfg.hideDone],
   );
   const sortFn = sortBoardCards(cfg.ordering);
 
@@ -66,18 +63,12 @@ export function BoardView({
     setDragId(null);
     setOverKey(null);
     if (!id) return;
-    // Move the card now; the action's revalidatePath re-flows the real data after.
-    startTransition(async () => {
-      applyOptimistic({ kind: 'patch', ids: [id], patch });
-      await updateTask(id, patch);
-    });
+    // Move the card now; the parent's reconcile runner commits the returned row
+    // to the shared mirror (no full re-read), or reverts + toasts on failure.
+    onMoveCard(id, patch);
   };
 
-  const addTo = async (patch: NewTaskPatch, title: string) => {
-    // Create needs a server-generated id/ref, so it stays non-optimistic (see ADR 0002).
-    await createTask({ projectId: project.id, title, ...patch });
-    router.refresh();
-  };
+  const addTo = (patch: NewTaskPatch, title: string) => onAddCard(patch, title);
 
   const renderColumn = (col: BoardBucket, rowPatch: NewTaskPatch, laneKey: string, list: TaskDto[]) => {
     const cellKey = `${laneKey}:${col.key}`;
@@ -200,7 +191,7 @@ function BoardCard({
   );
 }
 
-function BoardAdd({ onAdd }: { onAdd: (title: string) => void }) {
+function BoardAdd({ onAdd }: { onAdd: (title: string) => Promise<unknown> | void }) {
   const [editing, setEditing] = useState(false);
   const [v, setV] = useState('');
   if (!editing) {
@@ -210,10 +201,11 @@ function BoardAdd({ onAdd }: { onAdd: (title: string) => void }) {
       </button>
     );
   }
-  const submit = () => {
+  const submit = async () => {
     const t = v.trim();
-    if (t) onAdd(t);
-    setV('');
+    if (!t) return setV('');
+    // Clear only on a successful create; a failed add keeps the typed title.
+    if (await onAdd(t)) setV('');
   };
   return (
     <div className="board-add">

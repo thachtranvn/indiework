@@ -8,6 +8,7 @@ import { PROJECT_STATUS, PROJECT_STATUS_LABEL, type ProjectStatus } from '@/lib/
 import { setActiveWorkspace } from '@/app/_actions/workspace';
 import { updateProject } from '@/app/_actions/projects';
 import { logout } from '@/app/_actions/auth';
+import { useRun } from '@/components/ui/toast';
 import { BrandMark } from '@/components/ui/brand';
 import { Popover } from '@/components/ui/popover';
 import { Ic } from '@/components/ui/icons';
@@ -32,11 +33,19 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const run = useRun();
   const { workspaces, activeWorkspace, projects, inboxCount } = shell;
 
   const switchWorkspace = async (id: string) => {
     if (id === activeWorkspace?.id) return;
-    await setActiveWorkspace(id);
+    const ok = await run(
+      async () => {
+        await setActiveWorkspace(id);
+        return true as const;
+      },
+      { error: "Couldn't switch workspace." },
+    );
+    if (!ok) return;
     // Leaving a project page: that project may not live in the new workspace,
     // so land on the app home instead of staring at an out-of-scope project.
     if (pathname.startsWith('/app/p/')) router.push('/app');
@@ -46,10 +55,14 @@ export function Sidebar({
 
   const groups = useMemo(() => buildGroups(projects), [projects]);
 
-  const togglePin = async (id: string, pinned: boolean) => {
-    await updateProject(id, { pinned: !pinned });
-    router.refresh();
-  };
+  const togglePin = (id: string, pinned: boolean) =>
+    run(
+      async () => {
+        await updateProject(id, { pinned: !pinned });
+        router.refresh();
+      },
+      { error: "Couldn't update the project." },
+    );
 
   const toggle = (key: string) =>
     setCollapsed((prev) => {

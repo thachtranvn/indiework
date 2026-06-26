@@ -3,7 +3,7 @@
  *
  * Framework-agnostic and client-safe (no server/db imports), so the Drizzle
  * schema, the zod validators, and React components all import the same values.
- * Ported from `docs/brainstorm/shared.ts` and extended per `docs/scope.md`.
+ * Ported from `docs/brainstorm/shared.ts` and extended per `docs/product/scope.md`.
  */
 
 // ---- Enum value tuples (as const so they drive Drizzle, zod, and the UI) ----

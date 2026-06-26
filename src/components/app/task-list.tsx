@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useCallback, useEffect, useLayoutEffect, useMemo, useOptimistic, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { TaskDto } from '@/server/services';
 import {
@@ -28,9 +28,17 @@ import {
 } from '@/lib/domain';
 import { DEFAULT_VIEW, viewAllowsStatus, viewCaptureStatus, useViews, type ViewId } from '@/lib/views';
 import { useLocalStorage } from '@/lib/use-local-storage';
-import { applyTaskOptimistic } from '@/lib/optimistic';
+import { useReconciledTasks } from '@/lib/use-reconciled-tasks';
 import { useTaskNav, useOpenTaskKey, taskKey } from '@/lib/task-nav';
-import { createTask, updateTask, toggleTaskDone, bulkUpdateTasks, bulkDeleteTasks } from '@/app/_actions/tasks';
+import { useOptimisticRun, useReconcileRun, useRun } from '@/components/ui/toast';
+import {
+  createTask,
+  updateTask,
+  bulkDeleteTasks,
+  updateTaskScoped,
+  toggleTaskDoneScoped,
+  bulkUpdateTasksScoped,
+} from '@/app/_actions/tasks';
 import { ProjectTabs } from './project-tabs';
 import { DisplayPopover, FilterPopover, BoardDisplayPopover } from './display-popover';
 import { BoardView } from './board';
@@ -141,9 +149,13 @@ export function ProjectView({
 
   const allowedStatus = useCallback((s: TaskStatus) => viewAllowsStatus(activeView, s), [activeView]);
 
-  // Optimistic mirror of the server `tasks` prop: drag/checkbox/bulk edits paint
-  // instantly, then reconcile when the action's revalidatePath re-flows real data.
-  const [optimisticTasks, applyOptimistic] = useOptimistic(tasks, applyTaskOptimistic);
+  // Client task mirror: checkbox/bulk-field edits paint instantly, then commit
+  // the action's returned row(s) without a full re-read (PP-B4). Rename + delete
+  // stay on the revalidating runner (`runOptimistic`) so other surfaces re-sync.
+  const { tasks: optimisticTasks, applyOptimistic, commit } = useReconciledTasks(tasks);
+  const runReconcile = useReconcileRun(applyOptimistic, commit);
+  const runOptimistic = useOptimisticRun(applyOptimistic);
+  const run = useRun();
 
   // Sub-tasks are tasks with a parentId — list/board/grouping use root tasks only;
   // children are surfaced via childrenMap (row pill + inline checklist) and the panel.
@@ -212,8 +224,11 @@ export function ProjectView({
 
   const add = async (title: string, patch: Sec['patch'] = {}) => {
     const captureStatus = viewCaptureStatus(activeView);
-    const task = await createTask({ projectId: project.id, title, ...(captureStatus ? { status: captureStatus } : {}), ...patch });
-    router.refresh();
+    const task = await run(
+      () => createTask({ projectId: project.id, title, ...(captureStatus ? { status: captureStatus } : {}), ...patch }),
+      { error: "Couldn't add that task.", retry: false },
+    );
+    if (task) router.refresh();
     return task;
   };
   // IW-8: adding inside a section opens the new task's detail panel; the top
@@ -221,23 +236,32 @@ export function ProjectView({
   const addAndOpen = async (title: string, patch: Sec['patch'] = {}) => {
     const task = await add(title, patch);
     if (task) openTask(task);
+    return task; // success signal so the inline-add field clears only on success
   };
   const onRename = useCallback(
     (id: string, title: string) => {
       // Let an open detail panel for this task reflect the rename immediately.
       window.dispatchEvent(new CustomEvent('iw:task-updated', { detail: { id, patch: { title } } }));
-      startTransition(async () => {
-        applyOptimistic({ kind: 'patch', ids: [id], patch: { title } });
-        await updateTask(id, { title });
-      });
+      runOptimistic({ kind: 'patch', ids: [id], patch: { title } }, () => updateTask(id, { title }), "Couldn't rename that task.");
     },
-    [applyOptimistic],
+    [runOptimistic],
   );
   const onToggleDone = (id: string) => {
-    startTransition(async () => {
-      applyOptimistic({ kind: 'toggleDone', id });
-      await toggleTaskDone(id);
+    runReconcile({ kind: 'toggleDone', id }, () => toggleTaskDoneScoped(id), "Couldn't update that task.");
+  };
+  // Board callbacks — run through this view's single mirror so a drag stays
+  // consistent when the user flips board↔list (PP-B4).
+  const onMoveCard = (id: string, patch: Sec['patch']) => {
+    runReconcile({ kind: 'patch', ids: [id], patch }, () => updateTaskScoped(id, patch), "Couldn't move that card.");
+  };
+  const addCard = async (patch: Sec['patch'], title: string) => {
+    // Create needs a server-generated id/ref, so it stays non-optimistic (see ADR 0002).
+    const task = await run(() => createTask({ projectId: project.id, title, ...patch }), {
+      error: "Couldn't add that card.",
+      retry: false,
     });
+    if (task) router.refresh();
+    return task;
   };
 
   const clearSel = () => {
@@ -293,10 +317,17 @@ export function ProjectView({
           </>
         }
       />
-      <QuickCapture placeholder="Add a task…  (it lands in this project)" onAdd={(t) => void add(t)} />
+      <QuickCapture placeholder="Add a task…  (it lands in this project)" onAdd={(t) => add(t)} />
 
       {mode === 'board' ? (
-        <BoardView project={project} modules={modules} milestones={milestones} tasks={scoped} cfg={boardCfg} />
+        <BoardView
+          modules={modules}
+          milestones={milestones}
+          tasks={scoped}
+          cfg={boardCfg}
+          onMoveCard={onMoveCard}
+          onAddCard={addCard}
+        />
       ) : (
         <div className="scroll-body" data-group-style={disp.groupStyle ?? 'band'} ref={scrollRef} onScroll={onScroll}>
           {anyTasks ? (
@@ -351,50 +382,32 @@ export function ProjectView({
           onSetStatus={(status) => {
             const ids = [...selected];
             clearSel();
-            startTransition(async () => {
-              applyOptimistic({ kind: 'patch', ids, patch: { status } });
-              await bulkUpdateTasks(ids, { status });
-            });
+            runReconcile({ kind: 'patch', ids, patch: { status } }, () => bulkUpdateTasksScoped(ids, { status }), "Couldn't update those tasks.");
           }}
           onSetPriority={(priority) => {
             const ids = [...selected];
             clearSel();
-            startTransition(async () => {
-              applyOptimistic({ kind: 'patch', ids, patch: { priority } });
-              await bulkUpdateTasks(ids, { priority });
-            });
+            runReconcile({ kind: 'patch', ids, patch: { priority } }, () => bulkUpdateTasksScoped(ids, { priority }), "Couldn't update those tasks.");
           }}
           onSetModule={(moduleId) => {
             const ids = [...selected];
             clearSel();
-            startTransition(async () => {
-              applyOptimistic({ kind: 'patch', ids, patch: { moduleId } });
-              await bulkUpdateTasks(ids, { moduleId });
-            });
+            runReconcile({ kind: 'patch', ids, patch: { moduleId } }, () => bulkUpdateTasksScoped(ids, { moduleId }), "Couldn't update those tasks.");
           }}
           onSetMilestone={(milestoneId) => {
             const ids = [...selected];
             clearSel();
-            startTransition(async () => {
-              applyOptimistic({ kind: 'patch', ids, patch: { milestoneId } });
-              await bulkUpdateTasks(ids, { milestoneId });
-            });
+            runReconcile({ kind: 'patch', ids, patch: { milestoneId } }, () => bulkUpdateTasksScoped(ids, { milestoneId }), "Couldn't update those tasks.");
           }}
           onMarkDone={() => {
             const ids = [...selected];
             clearSel();
-            startTransition(async () => {
-              applyOptimistic({ kind: 'patch', ids, patch: { status: 'done' } });
-              await bulkUpdateTasks(ids, { status: 'done' });
-            });
+            runReconcile({ kind: 'patch', ids, patch: { status: 'done' } }, () => bulkUpdateTasksScoped(ids, { status: 'done' }), "Couldn't update those tasks.");
           }}
           onDelete={() => {
             const ids = [...selected];
             clearSel();
-            startTransition(async () => {
-              applyOptimistic({ kind: 'remove', ids });
-              await bulkDeleteTasks(ids);
-            });
+            runOptimistic({ kind: 'remove', ids }, () => bulkDeleteTasks(ids), "Couldn't delete those tasks.");
           }}
           onClear={clearSel}
         />
@@ -452,7 +465,7 @@ function Section({
   onToggleSelect: (id: string, shift: boolean) => void;
   collapsedSet: Set<string>;
   toggleCollapse: (key: string) => void;
-  onAdd: (title: string, patch: Sec['patch']) => void;
+  onAdd: (title: string, patch: Sec['patch']) => Promise<unknown> | void;
 }) {
   const total = section.tasks.length;
   const done = section.tasks.filter((t) => t.done).length;
@@ -540,7 +553,7 @@ function Section({
   );
 }
 
-function InlineAdd({ onAdd }: { onAdd: (title: string) => void }) {
+function InlineAdd({ onAdd }: { onAdd: (title: string) => Promise<unknown> | void }) {
   const [editing, setEditing] = useState(false);
   const [v, setV] = useState('');
   if (!editing) {
@@ -550,10 +563,11 @@ function InlineAdd({ onAdd }: { onAdd: (title: string) => void }) {
       </button>
     );
   }
-  const submit = () => {
+  const submit = async () => {
     const t = v.trim();
-    if (t) onAdd(t);
-    setV('');
+    if (!t) return setV('');
+    // Clear only on a successful create; a failed add keeps the typed title.
+    if (await onAdd(t)) setV('');
   };
   return (
     <div className="row-add">

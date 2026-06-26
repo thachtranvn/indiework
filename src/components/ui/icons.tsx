@@ -54,6 +54,8 @@ import {
   ArchiveRestore,
   Maximize2,
   LogOut,
+  CircleAlert,
+  LoaderCircle,
   type LucideProps,
 } from 'lucide-react';
 
@@ -116,6 +118,8 @@ export const Ic = {
   restore: make(ArchiveRestore),
   maximize: make(Maximize2),
   logout: make(LogOut),
+  alert: make(CircleAlert),
+  loader: make(LoaderCircle),
 };
 
 export type IconName = keyof typeof Ic;

@@ -33,6 +33,7 @@ import {
 } from '@/app/_actions/structure';
 import { ProjectTabs } from './project-tabs';
 import { useViews } from '@/lib/views';
+import { useRun } from '@/components/ui/toast';
 import { Progress } from '@/components/ui/bits';
 import { IconPicker } from '@/components/ui/icon-picker';
 import { Popover, OptionList } from '@/components/ui/popover';
@@ -134,24 +135,39 @@ export function OverviewScreen({
 // ---------------------------------------------------------------- Info panel
 function InfoPanel({ project, workspaces }: { project: Project; workspaces: WorkspaceOpt[] }) {
   const router = useRouter();
-  const save = async (patch: Parameters<typeof updateProject>[1]) => {
-    await updateProject(project.id, patch);
-    router.refresh();
-  };
+  const run = useRun();
+  const save = (patch: Parameters<typeof updateProject>[1]) =>
+    run(
+      async () => {
+        await updateProject(project.id, patch);
+        router.refresh();
+      },
+      { error: "Couldn't save the project changes." },
+    );
   const currentWs = workspaces.find((w) => w.id === project.workspaceId) ?? null;
 
   const isArchived = !!project.archivedAt;
 
   const archive = async () => {
     if (!confirm(`Archive “${project.name}”? It will be hidden from the sidebar. You can restore it later from All projects.`)) return;
-    await archiveProject(project.id);
-    router.push('/app/all');
+    const ok = await run(
+      async () => {
+        await archiveProject(project.id);
+        return true as const;
+      },
+      { error: "Couldn't archive the project.", retry: false },
+    );
+    if (ok) router.push('/app/all');
   };
 
-  const restore = async () => {
-    await unarchiveProject(project.id);
-    router.refresh();
-  };
+  const restore = () =>
+    run(
+      async () => {
+        await unarchiveProject(project.id);
+        router.refresh();
+      },
+      { error: "Couldn't restore the project." },
+    );
 
   return (
     <>
@@ -277,8 +293,19 @@ function MilestonesPanel({
   tasks: TaskDto[];
 }) {
   const router = useRouter();
+  const run = useRun();
   const progress = useProgress(milestones, tasks, (t) => t.milestoneId);
-  const drag = useDragReorder(milestones, (ids) => reorderMilestones(ids));
+  const drag = useDragReorder(milestones, (ids) =>
+    run(() => reorderMilestones(ids), { error: "Couldn't reorder the milestones." }),
+  );
+  const saveMile = (id: string, patch: Parameters<typeof updateMilestone>[1]) =>
+    run(
+      async () => {
+        await updateMilestone(id, patch);
+        router.refresh();
+      },
+      { error: "Couldn't save the milestone." },
+    );
 
   return (
     <div className="ov-list-block">
@@ -314,15 +341,20 @@ function MilestonesPanel({
                 className="ov-rowname"
                 defaultValue={m.name}
                 onKeyDown={commitOnEnter}
-                onBlur={(e) => e.target.value.trim() && e.target.value !== m.name && saveMile(m.id, { name: e.target.value.trim() }, router)}
+                onBlur={(e) => e.target.value.trim() && e.target.value !== m.name && saveMile(m.id, { name: e.target.value.trim() })}
               />
               <button
                 className="icon-btn ov-del"
                 type="button"
-                onClick={async () => {
-                  await deleteMilestone(m.id);
-                  router.refresh();
-                }}
+                onClick={() =>
+                  run(
+                    async () => {
+                      await deleteMilestone(m.id);
+                      router.refresh();
+                    },
+                    { error: "Couldn't delete the milestone.", retry: false },
+                  )
+                }
                 aria-label="Delete milestone"
               >
                 <Ic.trash size={14} />
@@ -332,14 +364,19 @@ function MilestonesPanel({
               <StatePicker
                 value={st}
                 options={MILESTONE_STATUS.map((s) => ({ id: s, label: MILESTONE_STATUS_LABEL[s], colorKey: MILE_COLOR_KEY[s] }))}
-                onPick={async (s) => {
-                  await setMilestoneStatus(m.id, s as MilestoneStatus);
-                  router.refresh();
-                }}
+                onPick={(s) =>
+                  run(
+                    async () => {
+                      await setMilestoneStatus(m.id, s as MilestoneStatus);
+                      router.refresh();
+                    },
+                    { error: "Couldn't update the milestone." },
+                  )
+                }
               />
               <CompactDate
                 value={m.targetDate}
-                onChange={(d) => saveMile(m.id, { targetDate: d }, router)}
+                onChange={(d) => saveMile(m.id, { targetDate: d })}
               />
               <span className="ov-mile-prog">
                 <Progress value={prog.total ? prog.done / prog.total : 0} width={54} tone={prog.total && prog.done === prog.total ? 'done' : 'accent'} />
@@ -354,10 +391,15 @@ function MilestonesPanel({
       <button
         className="add-row-btn sm"
         type="button"
-        onClick={async () => {
-          await createMilestone({ projectId, name: 'New milestone' });
-          router.refresh();
-        }}
+        onClick={() =>
+          run(
+            async () => {
+              await createMilestone({ projectId, name: 'New milestone' });
+              router.refresh();
+            },
+            { error: "Couldn't add the milestone.", retry: false },
+          )
+        }
       >
         <Ic.plus size={15} /> Add milestone
       </button>
@@ -376,8 +418,19 @@ function ModulesPanel({
   tasks: TaskDto[];
 }) {
   const router = useRouter();
+  const run = useRun();
   const progress = useProgress(modules, tasks, (t) => t.moduleId);
-  const drag = useDragReorder(modules, (ids) => reorderModules(ids));
+  const drag = useDragReorder(modules, (ids) =>
+    run(() => reorderModules(ids), { error: "Couldn't reorder the modules." }),
+  );
+  const saveMod = (id: string, patch: Parameters<typeof updateModule>[1]) =>
+    run(
+      async () => {
+        await updateModule(id, patch);
+        router.refresh();
+      },
+      { error: "Couldn't save the module." },
+    );
 
   return (
     <div className="ov-list-block">
@@ -412,13 +465,12 @@ function ModulesPanel({
               <IconPicker
                 value={m.icon}
                 color={m.color}
-                onPick={async (p) => {
-                  await updateModule(m.id, {
+                onPick={(p) =>
+                  saveMod(m.id, {
                     ...(p.value !== undefined ? { icon: p.value } : {}),
                     ...(p.color !== undefined ? { color: p.color } : {}),
-                  });
-                  router.refresh();
-                }}
+                  })
+                }
                 triggerClass="ov-modicon"
                 triggerSize={16}
               />
@@ -426,20 +478,14 @@ function ModulesPanel({
                 className="ov-rowname"
                 defaultValue={m.name}
                 onKeyDown={commitOnEnter}
-                onBlur={async (e) => {
-                  if (e.target.value.trim() && e.target.value !== m.name) {
-                    await updateModule(m.id, { name: e.target.value.trim() });
-                    router.refresh();
-                  }
+                onBlur={(e) => {
+                  if (e.target.value.trim() && e.target.value !== m.name) saveMod(m.id, { name: e.target.value.trim() });
                 }}
               />
               <StatePicker
                 value={state}
                 options={MODULE_STATE.map((s) => ({ id: s, label: MODULE_STATE_LABEL[s], colorKey: MODULE_STATE_COLOR_KEY[s] }))}
-                onPick={async (s) => {
-                  await updateModule(m.id, { state: s as ModuleState });
-                  router.refresh();
-                }}
+                onPick={(s) => saveMod(m.id, { state: s as ModuleState })}
               />
               <span className="ov-mod-prog">
                 <Progress value={prog.total ? prog.done / prog.total : 0} width={48} tone={prog.total && prog.done === prog.total ? 'done' : 'accent'} />
@@ -450,10 +496,15 @@ function ModulesPanel({
               <button
                 className="icon-btn ov-del"
                 type="button"
-                onClick={async () => {
-                  await archiveModule(m.id);
-                  router.refresh();
-                }}
+                onClick={() =>
+                  run(
+                    async () => {
+                      await archiveModule(m.id);
+                      router.refresh();
+                    },
+                    { error: "Couldn't remove the module.", retry: false },
+                  )
+                }
                 aria-label="Remove module"
               >
                 <Ic.trash size={14} />
@@ -464,11 +515,8 @@ function ModulesPanel({
               defaultValue={m.description ?? ''}
               placeholder="What does this module cover?"
               onKeyDown={commitOnEnter}
-              onBlur={async (e) => {
-                if (e.target.value !== (m.description ?? '')) {
-                  await updateModule(m.id, { description: e.target.value || null });
-                  router.refresh();
-                }
+              onBlur={(e) => {
+                if (e.target.value !== (m.description ?? '')) saveMod(m.id, { description: e.target.value || null });
               }}
             />
           </div>
@@ -477,10 +525,15 @@ function ModulesPanel({
       <button
         className="add-row-btn sm"
         type="button"
-        onClick={async () => {
-          await createModule({ projectId, name: 'New module', color: '#6E8BFF', icon: 'cube' });
-          router.refresh();
-        }}
+        onClick={() =>
+          run(
+            async () => {
+              await createModule({ projectId, name: 'New module', color: '#6E8BFF', icon: 'cube' });
+              router.refresh();
+            },
+            { error: "Couldn't add the module.", retry: false },
+          )
+        }
       >
         <Ic.plus size={15} /> Add module
       </button>
@@ -605,14 +658,6 @@ function useDragReorder<T extends { id: string }>(items: T[], persist: (ids: str
   };
 
   return { ordered, dragId, overId, setDragId, setOverId, onDrop, reset };
-}
-
-function saveMile(
-  id: string,
-  patch: Parameters<typeof updateMilestone>[1],
-  router: ReturnType<typeof useRouter>,
-) {
-  updateMilestone(id, patch).then(() => router.refresh());
 }
 
 function TagEditor({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {

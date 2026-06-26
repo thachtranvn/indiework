@@ -7,7 +7,7 @@
 > Companion: [team-gap-analysis.md](team-gap-analysis.md),
 > [multi-tenant-gap-analysis.md](multi-tenant-gap-analysis.md),
 > [team-implementation-plan.md](team-implementation-plan.md). Nguồn single-user:
-> [../scope.md](../scope.md).
+> [../scope.md](../product/scope.md).
 
 ---
 

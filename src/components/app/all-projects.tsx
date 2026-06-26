@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import type { ShellData } from '@/server/load';
 import { PROJECT_STATUS, PROJECT_STATUS_LABEL, type ProjectStatus } from '@/lib/domain';
 import { unarchiveProject } from '@/app/_actions/projects';
+import { useRun } from '@/components/ui/toast';
 import { Ic } from '@/components/ui/icons';
 import { EntityIcon } from '@/components/ui/bits';
 
@@ -24,6 +25,7 @@ const ARCHIVED_KEY = '__archived';
 
 export function AllProjectsScreen({ projects }: { projects: Projects }) {
   const router = useRouter();
+  const run = useRun();
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set([ARCHIVED_KEY]));
 
   // Archive is orthogonal to status — partition it out first so an archived
@@ -48,10 +50,14 @@ export function AllProjectsScreen({ projects }: { projects: Projects }) {
 
   const open = (key: string) => router.push(`/app/p/${key}/overview`);
 
-  const restore = async (id: string) => {
-    await unarchiveProject(id);
-    router.refresh();
-  };
+  const restore = (id: string) =>
+    run(
+      async () => {
+        await unarchiveProject(id);
+        router.refresh();
+      },
+      { error: "Couldn't restore the project." },
+    );
 
   return (
     <>

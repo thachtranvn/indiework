@@ -4,7 +4,7 @@
 >
 > This is not a feature list — it is a map of the **identity / tenancy / authorization backbone that does not exist today**. Collaboration features (assignee, mentions, notifications) sit *on top* of that backbone and are cheap by comparison.
 >
-> Companion to [../scope.md](../scope.md) (single-user source of truth) and [../roadmap.md](../roadmap.md).
+> Companion to [../scope.md](../product/scope.md) (single-user source of truth) and [../roadmap.md](../product/roadmap.md).
 >
 > **Status: decided — Path 1, and the identity foundation is built.** This doc now reads as the *original* gap map; §1 below is the **historical starting point**, not the current state. For where the code is *now* and the locked plan, see **[team-implementation-plan.md](team-implementation-plan.md)** (Path 1: one multi-tenant platform, team = a workspace capability tier). Items already shipped are annotated ✅ inline.
 
@@ -22,7 +22,7 @@ The code stated this explicitly; the gap was structural, not cosmetic.
 | **One static `API_TOKEN`** shared by REST `/api/v1` and MCP. | [`src/server/auth/token.ts`](../../src/server/auth/token.ts) |
 | **`workspaces` exists but is just a container** — no owner, no members. "Active" workspace comes from a browser cookie, not a user. | [`src/server/active-workspace.ts`](../../src/server/active-workspace.ts) — `getDefault()` = *"the single-user home"* |
 | **Tasks have no assignee/reporter; comments have no author** (only `source`: web/api/agent). | [`src/server/db/schema.ts`](../../src/server/db/schema.ts) |
-| Product self-description: *"a calm, single-person tool… No assignees."* | landing page + [../scope.md §1](../scope.md) |
+| Product self-description: *"a calm, single-person tool… No assignees."* | landing page + [../scope.md §1](../product/scope.md) |
 
 **Implication:** "going team" means building identity, multi-tenancy, and authorization first. Every existing service method trusts its caller and is unscoped — that is safe with one user and a data leak with two.
 

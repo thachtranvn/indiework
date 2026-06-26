@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, afterAll } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { db, schema, closeDb } from '@/server/db';
 import {
   projectService,
@@ -28,7 +28,10 @@ afterAll(async () => {
   await closeDb();
 });
 
-describe('service slice (real Postgres)', () => {
+// Hits a real database, so it runs ONLY against a dedicated TEST_DATABASE_URL
+// (routed in vitest.config.ts). A bare `pnpm test` skips it — never touching the
+// dev DB. Run it with:  TEST_DATABASE_URL=postgres://…/indiework_test pnpm test
+describe.skipIf(!process.env.TEST_DATABASE_URL)('service slice (real Postgres)', () => {
   test('create project', async () => {
     const p = await projectService.create({ key: KEY, name: 'Slice Test' });
     projectId = p.id;
@@ -230,5 +233,47 @@ describe('service slice (real Postgres)', () => {
 
     await attachmentService.remove(img.id);
     expect(await attachmentService.list(t.id)).toHaveLength(1);
+  });
+
+  // PP-B3: reorder is a single bulk CASE update; verify the new id order maps to
+  // dense positions on the moved rows. Exercises the shared `positionByOrder`
+  // helper across two tables (modules via the schema path, tasks via the
+  // direct-ids path) so a regression in the SQL is caught.
+  test('reorder persists the new order as dense positions in one bulk update', async () => {
+    const [a, b, c] = await Promise.all([
+      moduleService.create({ projectId, name: 'RO A', icon: 'cube' }),
+      moduleService.create({ projectId, name: 'RO B', icon: 'cube' }),
+      moduleService.create({ projectId, name: 'RO C', icon: 'cube' }),
+    ]);
+    await moduleService.reorder({ ids: [c.id, a.id, b.id] });
+    const modRows = await db
+      .select({ id: schema.modules.id, position: schema.modules.position })
+      .from(schema.modules)
+      .where(inArray(schema.modules.id, [a.id, b.id, c.id]));
+    const modPos = new Map(modRows.map((r) => [r.id, r.position]));
+    expect(modPos.get(c.id)).toBe(0);
+    expect(modPos.get(a.id)).toBe(1);
+    expect(modPos.get(b.id)).toBe(2);
+
+    const [t1, t2, t3] = await Promise.all([
+      taskService.create({ projectId, title: 'RO T1' }),
+      taskService.create({ projectId, title: 'RO T2' }),
+      taskService.create({ projectId, title: 'RO T3' }),
+    ]);
+    await taskService.reorder([t2.id, t3.id, t1.id]);
+    const taskRows = await db
+      .select({ id: schema.tasks.id, position: schema.tasks.position })
+      .from(schema.tasks)
+      .where(inArray(schema.tasks.id, [t1.id, t2.id, t3.id]));
+    const taskPos = new Map(taskRows.map((r) => [r.id, r.position]));
+    expect(taskPos.get(t2.id)).toBe(0);
+    expect(taskPos.get(t3.id)).toBe(1);
+    expect(taskPos.get(t1.id)).toBe(2);
+  });
+
+  test('reorder of an empty id list is a safe no-op (task takes raw ids)', async () => {
+    // taskService.reorder takes a raw string[]; the empty guard must not emit
+    // a malformed `case  end`. (module/milestone reorder validate ids >= 1.)
+    await expect(taskService.reorder([])).resolves.toEqual({ ok: true });
   });
 });

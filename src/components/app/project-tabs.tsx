@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { IconPicker } from '@/components/ui/icon-picker';
 import { Ic } from '@/components/ui/icons';
 import { updateProject } from '@/app/_actions/projects';
+import { useRun } from '@/components/ui/toast';
 import { commitOnEnter } from '@/lib/inline-edit';
 import {
   BUILTIN_VIEWS,
@@ -48,13 +49,18 @@ export function ProjectTabs({
   right?: ReactNode;
 }) {
   const router = useRouter();
+  const run = useRun();
   const [name, setName] = useState(project.name);
   const base = `/app/p/${project.key}`;
 
-  const save = async (patch: { name?: string; emoji?: string; color?: string; pinned?: boolean }) => {
-    await updateProject(project.id, patch);
-    router.refresh();
-  };
+  const save = (patch: { name?: string; emoji?: string; color?: string; pinned?: boolean }) =>
+    run(
+      async () => {
+        await updateProject(project.id, patch);
+        router.refresh();
+      },
+      { error: "Couldn't save the project." },
+    );
 
   const goView = (id: ViewId) => router.push(`${base}?view=${id}`, { scroll: false });
   const modeIcon = (id: ViewId) => (modeFor(id) === 'board' ? <Ic.board size={15} /> : <Ic.list size={15} />);

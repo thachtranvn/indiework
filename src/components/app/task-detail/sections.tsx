@@ -225,7 +225,7 @@ export function TaskSubtasks({
   detail: TaskDetail;
   onOpenTask: (t: OpenableTask) => void;
   toggleChild: (childId: string) => void;
-  addChild: (title: string) => Promise<void>;
+  addChild: (title: string) => Promise<boolean | undefined>;
 }) {
   const { task, children } = detail;
   if (task.parentId) return null;
@@ -258,7 +258,7 @@ function CommentRow({
   editComment,
 }: {
   comment: TaskDetail['comments'][number];
-  editComment: (commentId: string, body: string) => Promise<void>;
+  editComment: (commentId: string, body: string) => Promise<boolean | undefined>;
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -270,8 +270,9 @@ function CommentRow({
           <CommentEditor
             value={comment.body}
             onSave={async (body) => {
-              await editComment(comment.id, body);
-              setEditing(false);
+              // Leave edit mode only on a successful save; a failure keeps the
+              // editor open (with the toast) so the edit isn't silently dropped.
+              if (await editComment(comment.id, body)) setEditing(false);
             }}
             onCancel={() => setEditing(false)}
           />
@@ -325,8 +326,8 @@ export function TaskActivity({
   editComment,
 }: {
   comments: TaskDetail['comments'];
-  addComment: (body: string) => Promise<void>;
-  editComment: (commentId: string, body: string) => Promise<void>;
+  addComment: (body: string) => Promise<boolean | undefined>;
+  editComment: (commentId: string, body: string) => Promise<boolean | undefined>;
 }) {
   return (
     <div className="activity">

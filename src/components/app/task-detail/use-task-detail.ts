@@ -22,6 +22,7 @@ import {
   toggleTaskDone,
 } from '@/app/_actions/tasks';
 import { toggledDone } from '@/lib/optimistic';
+import { useRun } from '@/components/ui/toast';
 import type { UpdateTaskInput } from '@/server/validators/task';
 
 export function useTaskDetail({
@@ -35,6 +36,7 @@ export function useTaskDetail({
   initialDetail?: TaskDetail | null;
 }) {
   const router = useRouter();
+  const run = useRun();
   const [detail, setDetail] = useState<TaskDetail | null>(initialDetail);
   // `missing` = the task genuinely no longer exists (fetch resolved to null).
   // `loadError` = the fetch threw (network, auth, or a Server Action version-skew
@@ -86,74 +88,121 @@ export function useTaskDetail({
   }, [fetchDetail, router]);
 
   const patch = useCallback(
-    async (p: UpdateTaskInput) => {
-      if (!detail) return;
-      const updated = await updateTask(detail.task.id, p);
-      setDetail((d) => (d ? { ...d, task: updated } : d));
-      router.refresh();
+    (p: UpdateTaskInput) => {
+      if (!detail) return Promise.resolve(undefined);
+      return run(
+        async () => {
+          const updated = await updateTask(detail.task.id, p);
+          setDetail((d) => (d ? { ...d, task: updated } : d));
+          router.refresh();
+        },
+        { error: "Couldn't save your changes." },
+      );
     },
-    [detail, router],
+    [detail, router, run],
   );
 
   const saveStatusNote = useCallback(
-    async (note: string) => {
-      if (!detail) return;
-      const updated = await setTaskStatusNote(detail.task.id, note);
-      setDetail((d) => (d ? { ...d, task: updated } : d));
-      router.refresh();
+    (note: string) => {
+      if (!detail) return Promise.resolve(undefined);
+      return run(
+        async () => {
+          const updated = await setTaskStatusNote(detail.task.id, note);
+          setDetail((d) => (d ? { ...d, task: updated } : d));
+          router.refresh();
+        },
+        { error: "Couldn't save the status note." },
+      );
     },
-    [detail, router],
+    [detail, router, run],
   );
 
   const addComment = useCallback(
-    async (body: string) => {
-      if (!detail) return;
-      await addTaskComment(detail.task.id, body);
-      const fresh = await fetchDetail();
-      if (fresh) setDetail(fresh);
-      router.refresh();
+    (body: string) => {
+      if (!detail) return Promise.resolve(undefined);
+      return run(
+        async () => {
+          await addTaskComment(detail.task.id, body);
+          const fresh = await fetchDetail();
+          if (fresh) setDetail(fresh);
+          router.refresh();
+          return true as const;
+        },
+        { error: "Couldn't post your comment.", retry: false },
+      );
     },
-    [detail, fetchDetail, router],
+    [detail, fetchDetail, router, run],
   );
 
   const editComment = useCallback(
-    async (commentId: string, body: string) => {
-      if (!detail) return;
-      await editTaskComment(commentId, body);
-      const fresh = await fetchDetail();
-      if (fresh) setDetail(fresh);
-      router.refresh();
+    (commentId: string, body: string) => {
+      if (!detail) return Promise.resolve(undefined);
+      return run(
+        async () => {
+          await editTaskComment(commentId, body);
+          const fresh = await fetchDetail();
+          if (fresh) setDetail(fresh);
+          router.refresh();
+          return true as const;
+        },
+        { error: "Couldn't save your edit." },
+      );
     },
-    [detail, fetchDetail, router],
+    [detail, fetchDetail, router, run],
   );
 
   const addChild = useCallback(
-    async (title: string) => {
-      if (!detail) return;
-      await addSubtask(detail.task.id, title);
-      await reload();
+    (title: string) => {
+      if (!detail) return Promise.resolve(undefined);
+      return run(
+        async () => {
+          await addSubtask(detail.task.id, title);
+          await reload();
+          return true as const;
+        },
+        { error: "Couldn't add the sub-task.", retry: false },
+      );
     },
-    [detail, reload],
+    [detail, reload, run],
   );
 
   const toggleChild = useCallback(
-    async (childId: string) => {
-      // Flip the sub-task circle now (matches the manual-optimistic pattern), then reconcile.
-      setDetail((d) =>
-        d ? { ...d, children: d.children.map((x) => (x.id === childId ? { ...x, ...toggledDone(x.status) } : x)) } : d,
+    (childId: string) => {
+      // Flip the sub-task circle now (manual-optimistic pattern). `toggledDone` is
+      // its own inverse, so the same flip reverts it if the persist fails.
+      const flip = () =>
+        setDetail((d) =>
+          d ? { ...d, children: d.children.map((x) => (x.id === childId ? { ...x, ...toggledDone(x.status) } : x)) } : d,
+        );
+      return run(
+        async () => {
+          flip();
+          try {
+            await toggleTaskDone(childId);
+          } catch (e) {
+            flip(); // the persist failed — revert the circle
+            throw e;
+          }
+          await reload(); // reconcile; a reload failure here means the toggle already stuck
+        },
+        { error: "Couldn't update that sub-task." },
       );
-      await toggleTaskDone(childId);
-      await reload();
     },
-    [reload],
+    [reload, run],
   );
 
-  /** Delete the task. Navigation afterwards is the caller's concern. */
-  const remove = useCallback(async () => {
-    if (!detail) return;
-    await deleteTask(detail.task.id);
-    router.refresh();
-  }, [detail, router]);
+  /** Delete the task. Resolves `true` on success; navigation is the caller's concern. */
+  const remove = useCallback(() => {
+    if (!detail) return Promise.resolve(undefined);
+    return run(
+      async () => {
+        await deleteTask(detail.task.id);
+        router.refresh();
+        return true as const;
+      },
+      { error: "Couldn't delete that task.", retry: false },
+    );
+  }, [detail, router, run]);
 
   return {
     detail,

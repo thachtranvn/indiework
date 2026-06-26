@@ -7,6 +7,7 @@ import { API_KEY_SCOPE, type ApiKeyScope } from '@/lib/domain';
 import { fmtDate } from '@/lib/dates';
 import { updateWorkspace } from '@/app/_actions/workspace';
 import { createApiKey, revokeApiKey } from '@/app/_actions/apikeys';
+import { useRun } from '@/components/ui/toast';
 import { Ic } from '@/components/ui/icons';
 import { UI_FONTS } from '@/lib/fonts';
 import { useUiFont } from '@/lib/use-ui-font';
@@ -122,6 +123,7 @@ function AppearancePane() {
  *  separate from app-wide settings. */
 export function WorkspaceSettingsScreen({ workspace }: { workspace: Workspace | null }) {
   const router = useRouter();
+  const run = useRun();
   if (!workspace) {
     return (
       <div className="settings settings-solo">
@@ -134,10 +136,14 @@ export function WorkspaceSettingsScreen({ workspace }: { workspace: Workspace | 
       </div>
     );
   }
-  const save = async (patch: Parameters<typeof updateWorkspace>[1]) => {
-    await updateWorkspace(workspace.id, patch);
-    router.refresh();
-  };
+  const save = (patch: Parameters<typeof updateWorkspace>[1]) =>
+    run(
+      async () => {
+        await updateWorkspace(workspace.id, patch);
+        router.refresh();
+      },
+      { error: "Couldn't save the workspace." },
+    );
   return (
     <div className="settings settings-solo">
       <div className="settings-main">
@@ -172,6 +178,7 @@ export function WorkspaceSettingsScreen({ workspace }: { workspace: Workspace | 
 
 function ApiKeysPane({ apiKeys }: { apiKeys: ApiKeyPublic[] }) {
   const router = useRouter();
+  const run = useRun();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
   const [scope, setScope] = useState<ApiKeyScope>('read-write');
@@ -181,15 +188,17 @@ function ApiKeysPane({ apiKeys }: { apiKeys: ApiKeyPublic[] }) {
   const submit = async () => {
     if (!name.trim() || busy) return;
     setBusy(true);
-    try {
-      const { key, secret } = await createApiKey(name.trim(), scope);
-      setFreshSecret({ id: key.id, secret });
+    const created = await run(() => createApiKey(name.trim(), scope), {
+      error: "Couldn't create the API key.",
+      retry: false,
+    });
+    if (created) {
+      setFreshSecret({ id: created.key.id, secret: created.secret });
       setName('');
       setCreating(false);
       router.refresh();
-    } finally {
-      setBusy(false);
     }
+    setBusy(false);
   };
 
   return (
@@ -285,10 +294,15 @@ function ApiKeysPane({ apiKeys }: { apiKeys: ApiKeyPublic[] }) {
                     data-danger=""
                     type="button"
                     title="Revoke"
-                    onClick={async () => {
-                      await revokeApiKey(k.id);
-                      router.refresh();
-                    }}
+                    onClick={() =>
+                      run(
+                        async () => {
+                          await revokeApiKey(k.id);
+                          router.refresh();
+                        },
+                        { error: "Couldn't revoke the API key.", retry: false },
+                      )
+                    }
                   >
                     <Ic.trash size={16} />
                   </button>

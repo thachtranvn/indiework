@@ -23,7 +23,7 @@ Backbone + the heart of the app, on the real design system.
 ## Phase 3 — External access + ergonomics
 
 - **REST** `/api/v1/*` adapters (thin over services).
-- **MCP** `/mcp` server + tools. Agent task/project management surface — see [adr/0001-mcp-as-agent-surface.md](adr/0001-mcp-as-agent-surface.md) (MCP chosen over REST; "scope" = registered tool roster; project delete = archive).
+- **MCP** `/mcp` server + tools. Agent task/project management surface — see [adr/0001-mcp-as-agent-surface.md](../adr/0001-mcp-as-agent-surface.md) (MCP chosen over REST; "scope" = registered tool roster; project delete = archive).
 - **⌘K global search/command palette**, full keyboard map.
 - [ ] **Security audit** — chạy sau khi REST/MCP lên (bề mặt tấn công lớn nhất). Phạm vi: auth (password cookie ký + `API_TOKEN` Bearer), authz trên mọi REST/MCP tool, input validation (zod ở mọi boundary), không rò secret trong error/log, rate-limit endpoint, CSRF cho form đổi state, đường file attachment khi storage được nối (hiện deferred). Dùng agent `security-reviewer` + skill `/security-review`. Xem [common/security.md].
 

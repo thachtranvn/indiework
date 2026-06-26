@@ -11,7 +11,7 @@ owner's behalf) **manage tasks and projects**: view/edit/delete tasks, and
 create/edit/delete projects including their milestones and modules.
 
 The architecture is already **"three frontends, one service layer"**
-([scope.md §1](../scope.md)): Web UI (Server Actions), REST `/api/v1`, and MCP
+([scope.md §1](../product/scope.md)): Web UI (Server Actions), REST `/api/v1`, and MCP
 `/mcp` are all thin adapters over `src/server/services/*`. REST and MCP reach the
 **same** business logic, so the choice is *not* about capability — both can do
 everything.
@@ -88,7 +88,7 @@ existing tools in [src/app/mcp/route.ts](../../src/app/mcp/route.ts).
 `requireBearer` ([src/server/auth/token.ts](../../src/server/auth/token.ts))
 validates the static `.ENV` `API_TOKEN` and **ignores scope entirely** — the token
 currently grants full access. Managed `api_keys` with `read·write·read-write`
-scope is **Phase 4** ([roadmap.md](../roadmap.md)). Therefore, until P4, the only
+scope is **Phase 4** ([roadmap.md](../product/roadmap.md)). Therefore, until P4, the only
 risk lever is **which tools are registered** (decisions 3 & 4), not auth-layer
 enforcement. When managed keys land, destructive tools can be gated behind
 `write`/`read-write`.
@@ -111,8 +111,8 @@ enforcement. When managed keys land, destructive tools can be gated behind
 
 ## References
 
-- [scope.md](../scope.md) §1 (three frontends, one service layer), §4 (external access)
-- [roadmap.md](../roadmap.md) — Phase 3 (MCP), Phase 4 (managed `api_keys`)
+- [scope.md](../product/scope.md) §1 (three frontends, one service layer), §4 (external access)
+- [roadmap.md](../product/roadmap.md) — Phase 3 (MCP), Phase 4 (managed `api_keys`)
 - [src/app/mcp/route.ts](../../src/app/mcp/route.ts) — 23 registered tools
 - [mcp.md](../mcp.md) — connecting an MCP client (config snippets + tool reference)
 - `src/server/services/*` — capabilities already implemented

@@ -9,7 +9,7 @@ import {
 import { parseRef, TASK_STATUS, TASK_PRIORITY_RANK, type TaskStatus } from '@/lib/domain';
 import { toTaskDto, type TaskDto } from './dto';
 import { badRequest, notFound } from './errors';
-import { definedKeys } from './util';
+import { definedKeys, positionByOrder } from './util';
 
 /** Task row joined with its project key (for building the ref). */
 function selectWithKey() {
@@ -139,14 +139,13 @@ export const taskService = {
   },
 
   async reorder(ids: string[]): Promise<{ ok: true }> {
-    await db.transaction(async (tx) => {
-      for (let i = 0; i < ids.length; i++) {
-        await tx
-          .update(schema.tasks)
-          .set({ position: i, updatedAt: new Date() })
-          .where(eq(schema.tasks.id, ids[i]));
-      }
-    });
+    // PP-B3: one bulk CASE update, not N sequential per-row updates.
+    if (ids.length > 0) {
+      await db
+        .update(schema.tasks)
+        .set({ position: positionByOrder(schema.tasks.id, ids), updatedAt: new Date() })
+        .where(inArray(schema.tasks.id, ids));
+    }
     return { ok: true };
   },
 

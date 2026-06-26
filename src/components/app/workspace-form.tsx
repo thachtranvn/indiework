@@ -10,10 +10,12 @@ export function WorkspaceForm({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('');
   const [tagline, setTagline] = useState('');
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
     if (!name.trim() || busy) return;
     setBusy(true);
+    setError(null);
     try {
       await createWorkspace({ name: name.trim(), tagline: tagline.trim() || null });
       // New workspace is now active and empty — land on the app home, not a
@@ -21,7 +23,9 @@ export function WorkspaceForm({ onClose }: { onClose: () => void }) {
       router.push('/app');
       router.refresh();
       onClose();
-    } finally {
+    } catch (e) {
+      // Don't fail silently — keep the modal open with the typed values and say why.
+      setError(e instanceof Error ? e.message : 'Could not create workspace');
       setBusy(false);
     }
   };
@@ -53,6 +57,7 @@ export function WorkspaceForm({ onClose }: { onClose: () => void }) {
           placeholder="what this workspace is for"
         />
       </div>
+      {error && <p className="login-err">{error}</p>}
     </Modal>
   );
 }
