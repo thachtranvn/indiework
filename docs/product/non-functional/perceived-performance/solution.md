@@ -173,19 +173,26 @@ is **network-bound, so unmeasured locally** (same-region dev DB is too fast to s
 
 ## 5. Query shape & ordering data
 
-- **Sequential waterfalls (PP-B3).** `taskService.reorder`
-  ([task.service.ts](../../../../src/server/services/task.service.ts)) loops per-row `UPDATE`
-  inside one transaction (N statements one-after-another); module/milestone reorder share the
-  shape. Independent reads/writes should be batched (`Promise.all`) or collapsed into a single
-  statement. Bulk task ops already fan out with `Promise.all` within one action — good; the
-  remaining audit is the service-layer read paths.
-- **Reorder representation (PP-B3 + PP-B4).** Today `position` is a dense integer and a reorder
-  **renumbers the whole list** (`position: i`). When task reorder is actually wired, prefer
-  **fractional indexing / LexoRank** for `position`: a move becomes **one scoped write** to the
-  moved row (a key between its new neighbours) instead of an N-row renumber — paying off as both
-  a smaller query (PP-B3) and a scoped invalidation target (PP-B4). Rebalance keys when
-  precision runs out. Note this is a **PP-B** (cost) optimisation, *not* a PP-W4 correctness fix
-  — ordering is already correct by §2 and by the full-array idempotence of the current reorder.
+- **Sequential waterfalls (PP-B3) — fixed for reorder.** All three reorders (`taskService.reorder`,
+  module, milestone) used to loop per-row `UPDATE` inside a transaction (N statements
+  one-after-another). They now issue **one** bulk
+  `UPDATE … SET position = CASE … END WHERE id IN (ids)` via the shared
+  [`positionByOrder`](../../../../src/server/services/util.ts) helper — queries-per-reorder bounded
+  to **1** regardless of list size. (The index is inlined as an integer *literal*, not a bound
+  param: Postgres can't infer the type of an untyped `$n` inside `CASE … THEN` and rejects the
+  assignment to the integer `position` column — a real bug the int-test caught; `i` is a loop index
+  so inlining is injection-safe.) Covered by [services.int.test.ts](../../../../tests/services.int.test.ts).
+- **Read-path audit — clean.** The other service reads are already bounded: `loadProject`/`loadShell`
+  fan out with `Promise.all`; `assembleTaskDetail` runs its six independent reads concurrently and
+  its one dependent read (`userService.getByIds(authorIds)`) is a single batched `inArray`, not an
+  N+1; `taskService.list` pulls `attachmentCount` via a subquery join (not per-row); `projectService`
+  uses a single `groupBy` for the inbox count; bulk task ops fan out with `Promise.all`. No N+1 or
+  sequential-independent waterfall remains in the service layer.
+- **Reorder representation (future PP-B optimisation).** `position` is still a dense integer, so a
+  reorder rewrites the moved rows' positions (now in one statement). If reorder volume grows, prefer
+  **fractional indexing / LexoRank**: a move becomes a single write to the moved row (a key between
+  its neighbours) with no renumber. A **PP-B** cost optimisation, *not* a PP-W4 correctness fix —
+  ordering is already correct by §2 and the full-array idempotence of the current reorder.
 
 ---
 

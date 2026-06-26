@@ -1,4 +1,4 @@
-import { asc, eq, sql } from 'drizzle-orm';
+import { asc, eq, inArray, sql } from 'drizzle-orm';
 import { db, schema } from '@/server/db';
 import {
   createMilestoneSchema,
@@ -7,7 +7,7 @@ import {
 } from '@/server/validators/milestone';
 import type { MilestoneStatus } from '@/lib/domain';
 import { notFound } from './errors';
-import { definedKeys } from './util';
+import { definedKeys, positionByOrder } from './util';
 
 export const milestoneService = {
   async list(projectId: string) {
@@ -63,14 +63,13 @@ export const milestoneService = {
 
   async reorder(input: unknown) {
     const { ids } = reorderSchema.parse(input);
-    await db.transaction(async (tx) => {
-      for (let i = 0; i < ids.length; i++) {
-        await tx
-          .update(schema.milestones)
-          .set({ position: i, updatedAt: new Date() })
-          .where(eq(schema.milestones.id, ids[i]));
-      }
-    });
+    // PP-B3: one bulk CASE update, not N sequential per-row updates.
+    if (ids.length > 0) {
+      await db
+        .update(schema.milestones)
+        .set({ position: positionByOrder(schema.milestones.id, ids), updatedAt: new Date() })
+        .where(inArray(schema.milestones.id, ids));
+    }
     return { ok: true };
   },
 };

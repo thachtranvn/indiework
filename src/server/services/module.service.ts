@@ -1,9 +1,9 @@
-import { and, asc, eq, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { db, schema } from '@/server/db';
 import { createModuleSchema, updateModuleSchema } from '@/server/validators/module';
 import { reorderSchema } from '@/server/validators/milestone';
 import { notFound } from './errors';
-import { definedKeys } from './util';
+import { definedKeys, positionByOrder } from './util';
 
 export const moduleService = {
   async list(projectId: string) {
@@ -53,14 +53,13 @@ export const moduleService = {
   /** Persist a new order: positions become the index in `ids`. */
   async reorder(input: unknown) {
     const { ids } = reorderSchema.parse(input);
-    await db.transaction(async (tx) => {
-      for (let i = 0; i < ids.length; i++) {
-        await tx
-          .update(schema.modules)
-          .set({ position: i, updatedAt: new Date() })
-          .where(eq(schema.modules.id, ids[i]));
-      }
-    });
+    // PP-B3: one bulk CASE update, not N sequential per-row updates.
+    if (ids.length > 0) {
+      await db
+        .update(schema.modules)
+        .set({ position: positionByOrder(schema.modules.id, ids), updatedAt: new Date() })
+        .where(inArray(schema.modules.id, ids));
+    }
     return { ok: true };
   },
 };

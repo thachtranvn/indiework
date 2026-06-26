@@ -13,8 +13,10 @@
 `loading.tsx` per leaf app segment + dimension-matched skeletons
 ([skeletons.tsx](../../../../src/components/app/skeletons.tsx)); **(#3)** return-row reconcile for
 pure same-surface field edits (scoped no-revalidate actions + a client task mirror —
-[use-reconciled-tasks.ts](../../../../src/lib/use-reconciled-tasks.ts)). Still absent: per-sub-region
-`<Suspense>` inside a page; tag-based read caching (still `force-dynamic`); `reactCompiler: true`.
+[use-reconciled-tasks.ts](../../../../src/lib/use-reconciled-tasks.ts)); **(#4)** reorders collapsed
+to one bulk `CASE` update ([positionByOrder](../../../../src/server/services/util.ts)) + read-path
+N+1 audit. Still absent: per-sub-region `<Suspense>` inside a page; tag-based read caching (still
+`force-dynamic`); live-deploy measurement (PP-R4/PP-B5). `reactCompiler: true`.
 
 ---
 
@@ -62,8 +64,13 @@ pure same-surface field edits (scoped no-revalidate actions + a client task mirr
   not enforced in code.* → design: [solution.md §6](solution.md).
 - [x] **PP-B2** — Connection pooling. **Met:** transaction pooler on `6543` for the app runtime
   (same doc); direct/IPv6 rejected. → design: [solution.md §6](solution.md).
-- [ ] **PP-B3** — No N+1 / sequential waterfall. **Unaudited.** Known: `taskService.reorder` loops
-  per-row `UPDATE`. → design: [solution.md §5](solution.md).
+- [x] **PP-B3** — No N+1 / sequential waterfall. **Met & audited.** All three reorders (task,
+  module, milestone) collapsed from N per-row `UPDATE`s to **one** bulk `CASE` update via
+  [`positionByOrder`](../../../../src/server/services/util.ts) (covered by
+  [services.int.test.ts](../../../../tests/services.int.test.ts), which caught a pg type-cast bug).
+  Read paths audited clean: `loadProject`/`loadShell`/`assembleTaskDetail` fan out with `Promise.all`
+  (one dependent batched `getByIds`, not N+1); `taskService.list` joins `attachmentCount`;
+  `projectService` uses one `groupBy`; bulk ops fan out concurrently. → design: [solution.md §5](solution.md).
 - [~] **PP-B4** — Scoped invalidation. **Implemented; mechanism verified, latency unmeasured.**
   High-frequency pure same-surface field edits (board drag, list checkbox, list bulk
   status/priority/module/milestone) now use **return-row reconcile** — scoped no-revalidate actions
@@ -117,7 +124,8 @@ the deploy doc, so the open, in-repo work, in priority order:
    `<Suspense>` within a page (deferred — needs splitting the monolithic client views).
 3. ~~**Scoped invalidation (PP-B4)**~~ — ✅ **done** (mechanism verified; latency remote-only):
    return-row reconcile for pure same-surface field edits; shell-coupled edits keep `revalidatePath`.
-4. **Query-shape audit (PP-B3)** — N+1 / sequential waterfalls in the service layer; reorder representation.
+4. ~~**Query-shape audit (PP-B3)**~~ — ✅ **done**: reorders collapsed to one bulk `CASE` update;
+   read paths audited clean (no N+1). Fractional-index `position` deferred (YAGNI until volume warrants).
 5. **Measurement (PP-R4, PP-B5, verify PP-W2/W3/W4)** — trace against the real Vercel+Supabase deploy
    so targets are checked with data, not assumed. *(Also worth a smoke-test of PP-F1/F2/F3 on the
    real surfaces against remote latency, to complement the local fault-injection verification.)*
