@@ -100,20 +100,29 @@ authoritative truth after its own write.
 
 ## 3. Reads — stream the shell instead of awaiting data
 
-Write-side optimism cannot touch first paint and navigation (**PP-R**). The design target is to
-decouple the shell from data:
+Write-side optimism cannot touch first paint and navigation (**PP-R**). The shell is decoupled
+from data by **route-level Suspense via `loading.tsx`** — the App Router wraps each segment's
+`page` in a Suspense boundary whose fallback is the segment's `loading.tsx`.
 
-- **Current shape:** every app route is `export const dynamic = 'force-dynamic'` (20 files) and
-  each `page` `await`s its queries before returning, so the shell paints only after the slowest
-  query. There is no `loading.tsx` and no `<Suspense>` in the tree.
-- **Target design:**
-  1. **`loading.tsx` per app segment** → an instant route-level skeleton on navigation
-     (**PP-R2**), via the App Router's automatic Suspense boundary.
-  2. **`<Suspense fallback={<Skeleton/>}>` around each slow data region** so the shell and fast
-     regions paint while slow ones stream in independently (**PP-R1**, **PP-R3**). Hold layout
-     dimensions in the skeleton to keep CLS < 0.1.
-  3. Optionally **PPR / `cacheComponents`** (Next 16) for a static shell + dynamic holes once the
-     boundaries exist.
+- **As built:**
+  1. **`loading.tsx` per leaf app segment** (project view, overview, inbox, all-projects, settings,
+     workspace-settings) renders a structural skeleton at once on navigation (**PP-R2**). Pure
+     redirects (`/app`, `/board`) get none — they resolve before painting. The persistent layout
+     shell stays painted while the page's slow data streams behind the skeleton (**PP-R1**).
+  2. Skeletons ([skeletons.tsx](../../../../src/components/app/skeletons.tsx)) **reuse the real
+     layout container classes** (`.topbar`, `.qcap`, `.scroll-body`, `.section`, `.task-row`,
+     `.ov-vlayout`…) with shimmer bars inside, so the placeholder occupies the same boxes as the
+     real content — holding layout dimensions to keep **CLS** low across the swap. Widths vary
+     deterministically by index (never random — no hydration drift).
+- **Not yet done (the PP-R3 tail):** **per-sub-region** streaming *within* a page — e.g. the task
+  list streaming independently of the project chrome. Each page still loads its data as a unit
+  (`loadProject` is one `Promise.all`), so the whole region appears at once behind its skeleton
+  rather than filling in piece by piece. Splitting it means breaking the monolithic client views
+  (`ProjectView`/`OverviewScreen`) into a fast chrome + a Suspense-wrapped slow region fed by an
+  un-awaited promise. Deferred: same-region DB makes the marginal win small until telemetry shows a
+  page where one slow query dominates (YAGNI).
+- **Optional later:** **PPR / `cacheComponents`** (Next 16) for a static shell + dynamic holes once
+  finer boundaries exist.
 
 These are read-path structural changes, independent of the write loop in §1.
 

@@ -7,10 +7,13 @@
 > a measurement is taken; the requirements file changes only when the bar itself moves.
 
 **Legend:** `[x]` ✅ met · `[~]` 🚧 partial / by-construction-unverified · `[ ]` ⬜ not started
-**Snapshot date:** 2026-06-26 · against `main`. **Failure-feedback layer now shipped** (toast +
-mutation runner — [toast.tsx](../../../../src/components/ui/toast.tsx), [app/error.tsx](../../../../src/app/app/error.tsx)),
-closing the open todo #1. Still absent: `loading.tsx`/`Suspense`/`revalidateTag`
-(20 `force-dynamic` files, 0 `loading.tsx`, 0 `Suspense`, 0 tag-cache; `reactCompiler: true`).
+**Snapshot date:** 2026-06-26 · against `main`. Shipped this pass: **(#1)** failure-feedback layer
+(toast + mutation runner — [toast.tsx](../../../../src/components/ui/toast.tsx),
+[app/error.tsx](../../../../src/app/app/error.tsx)); **(#2)** route-level streaming —
+`loading.tsx` per leaf app segment + dimension-matched skeletons
+([skeletons.tsx](../../../../src/components/app/skeletons.tsx)). Still absent: per-sub-region
+`<Suspense>` inside a page, and `revalidateTag` (still 20 `force-dynamic`, 0 tag-cache;
+`reactCompiler: true`).
 
 ---
 
@@ -32,14 +35,23 @@ closing the open todo #1. Still absent: `loading.tsx`/`Suspense`/`revalidateTag`
 
 ## PP-R — Read & navigation responsiveness
 
-- [ ] **PP-R1** — Shell paints without blocking on data. **Not met:** every app route is
-  `force-dynamic` ([app/page.tsx](../../../../src/app/app/page.tsx)) and `page` components `await`
-  data before returning. → design: [solution.md §3](solution.md).
-- [ ] **PP-R2** — Immediate loading state on navigation. **Not met:** no `loading.tsx` anywhere
-  under `src/app`. → design: [solution.md §3](solution.md).
-- [ ] **PP-R3** — Progressive streaming of slow regions. **Not met:** zero `<Suspense>` in `src`.
+- [x] **PP-R1** — Shell paints without blocking on data. **Met:** the persistent app layout
+  (sidebar/chrome) renders independently of the page; each segment's slow data now streams behind a
+  `loading.tsx` Suspense fallback instead of blocking the shell. (`loadShell` itself is a small
+  same-region read.) → design: [solution.md §3](solution.md).
+- [x] **PP-R2** — Immediate loading state on navigation. **Met:** `loading.tsx` per leaf app
+  segment ([skeletons.tsx](../../../../src/components/app/skeletons.tsx)) — project view, overview,
+  inbox, all-projects, settings, workspace-settings — so a navigation paints a structural skeleton
+  at once, never a blank screen or a frozen copy of the previous view. → design: [solution.md §3](solution.md).
+- [~] **PP-R3** — Progressive streaming of slow regions. **Partial:** each segment streams behind a
+  skeleton that **reuses the real layout container classes** (`.topbar`/`.qcap`/`.scroll-body`/
+  `.task-row`…) so the swap holds layout dimensions (CLS target met by construction). *Not yet
+  done:* per-**sub-region** streaming **within** a page (e.g. task list streaming separately from
+  the project chrome) — pages still load their data as a unit. Deferred (the monolithic client
+  views would need splitting; same-region DB makes it low-priority until measured — YAGNI).
   → design: [solution.md §3](solution.md).
-- [ ] **PP-R4** — LCP < 2.5 s on production target. **Unmeasured.** Trace once PP-R1–R3 land.
+- [ ] **PP-R4** — LCP < 2.5 s on production target. **Unmeasured** (needs the live deploy). Trace
+  once on Vercel+Supabase.
   → design: [solution.md §3](solution.md).
 
 ## PP-B — Server/DB latency budget
@@ -92,8 +104,9 @@ the deploy doc, so the open, in-repo work, in priority order:
 
 1. ~~**Failure feedback (PP-F1, PP-F2, PP-F3)**~~ — ✅ **done** (IW-93): toast + mutation runner +
    slow-save indicator + route error boundary. Closes the ADR 0002 silent-revert gap.
-2. **Streaming reads (PP-R1, PP-R2, PP-R3)** — `loading.tsx` per segment + `<Suspense>` around slow
-   data; the entire read surface optimistic updates cannot touch.
+2. ~~**Streaming reads (PP-R1, PP-R2, PP-R3)**~~ — ✅ **done** (PP-R1/R2 met; PP-R3 partial):
+   `loading.tsx` per leaf segment + dimension-matched skeletons. Remaining: per-sub-region
+   `<Suspense>` within a page (deferred — needs splitting the monolithic client views).
 3. **Scoped invalidation (PP-B4)** — `revalidateTag` or return-row reconcile, so a single edit stops
    triggering a full-layout refetch — and the action queue drains faster (solution.md §2).
 4. **Query-shape audit (PP-B3)** — N+1 / sequential waterfalls in the service layer; reorder representation.
