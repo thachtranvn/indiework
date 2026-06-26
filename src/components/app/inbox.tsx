@@ -1,10 +1,11 @@
 'use client';
 
-import { startTransition, useOptimistic } from 'react';
+import { useOptimistic } from 'react';
 import { useRouter } from 'next/navigation';
 import type { TaskDto } from '@/server/services';
 import { applyTaskOptimistic } from '@/lib/optimistic';
 import { useTaskNav, useOpenTaskKey, taskKey } from '@/lib/task-nav';
+import { useOptimisticRun, useRun } from '@/components/ui/toast';
 import { createTask, toggleTaskDone, assignTaskToProject } from '@/app/_actions/tasks';
 import { QuickCapture } from './quick-capture';
 import { CircleCheck } from '@/components/ui/interactive';
@@ -25,24 +26,21 @@ export function InboxScreen({ tasks, projects }: { tasks: TaskDto[]; projects: P
   const { openTask } = useTaskNav();
   const openKey = useOpenTaskKey();
   const [optimisticTasks, applyOptimistic] = useOptimistic(tasks, applyTaskOptimistic);
+  const runOptimistic = useOptimisticRun(applyOptimistic);
+  const run = useRun();
 
   const add = async (title: string) => {
     // Create needs a server-generated id, so it stays non-optimistic (see ADR 0002).
-    await createTask({ title });
-    router.refresh();
+    const task = await run(() => createTask({ title }), { error: "Couldn't add to the Inbox.", retry: false });
+    if (task) router.refresh();
+    return task; // success signal → the capture field clears only then
   };
   const toggle = (id: string) => {
-    startTransition(async () => {
-      applyOptimistic({ kind: 'toggleDone', id });
-      await toggleTaskDone(id);
-    });
+    runOptimistic({ kind: 'toggleDone', id }, () => toggleTaskDone(id), "Couldn't update that task.");
   };
   const assign = (id: string, projectId: string) => {
     // Assigning to a project removes the task from the Inbox — drop it now.
-    startTransition(async () => {
-      applyOptimistic({ kind: 'remove', ids: [id] });
-      await assignTaskToProject(id, projectId);
-    });
+    runOptimistic({ kind: 'remove', ids: [id] }, () => assignTaskToProject(id, projectId), "Couldn't move that task.");
   };
 
   return (

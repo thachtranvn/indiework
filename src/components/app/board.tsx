@@ -1,6 +1,6 @@
 'use client';
 
-import { startTransition, useMemo, useOptimistic, useState } from 'react';
+import { useMemo, useOptimistic, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { TaskDto } from '@/server/services';
 import {
@@ -15,6 +15,7 @@ import {
 } from '@/lib/grouping';
 import { applyTaskOptimistic } from '@/lib/optimistic';
 import { useTaskNav } from '@/lib/task-nav';
+import { useOptimisticRun, useRun } from '@/components/ui/toast';
 import { createTask, updateTask } from '@/app/_actions/tasks';
 import { PriorityBars, ModuleTag, MilestoneTag, ModuleIcon, StatusChip } from '@/components/ui/bits';
 import { Ic } from '@/components/ui/icons';
@@ -43,6 +44,8 @@ export function BoardView({
   const router = useRouter();
   const { openTask } = useTaskNav();
   const [optimisticTasks, applyOptimistic] = useOptimistic(tasks, applyTaskOptimistic);
+  const runOptimistic = useOptimisticRun(applyOptimistic);
+  const run = useRun();
   const [dragId, setDragId] = useState<string | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
 
@@ -67,16 +70,18 @@ export function BoardView({
     setOverKey(null);
     if (!id) return;
     // Move the card now; the action's revalidatePath re-flows the real data after.
-    startTransition(async () => {
-      applyOptimistic({ kind: 'patch', ids: [id], patch });
-      await updateTask(id, patch);
-    });
+    // On failure React reverts the optimistic move and a toast offers a retry.
+    runOptimistic({ kind: 'patch', ids: [id], patch }, () => updateTask(id, patch), "Couldn't move that card.");
   };
 
   const addTo = async (patch: NewTaskPatch, title: string) => {
     // Create needs a server-generated id/ref, so it stays non-optimistic (see ADR 0002).
-    await createTask({ projectId: project.id, title, ...patch });
-    router.refresh();
+    const task = await run(() => createTask({ projectId: project.id, title, ...patch }), {
+      error: "Couldn't add that card.",
+      retry: false,
+    });
+    if (task) router.refresh();
+    return task; // truthy on success → the add field clears only then (keeps the draft on failure)
   };
 
   const renderColumn = (col: BoardBucket, rowPatch: NewTaskPatch, laneKey: string, list: TaskDto[]) => {
@@ -200,7 +205,7 @@ function BoardCard({
   );
 }
 
-function BoardAdd({ onAdd }: { onAdd: (title: string) => void }) {
+function BoardAdd({ onAdd }: { onAdd: (title: string) => Promise<unknown> | void }) {
   const [editing, setEditing] = useState(false);
   const [v, setV] = useState('');
   if (!editing) {
@@ -210,10 +215,11 @@ function BoardAdd({ onAdd }: { onAdd: (title: string) => void }) {
       </button>
     );
   }
-  const submit = () => {
+  const submit = async () => {
     const t = v.trim();
-    if (t) onAdd(t);
-    setV('');
+    if (!t) return setV('');
+    // Clear only on a successful create; a failed add keeps the typed title.
+    if (await onAdd(t)) setV('');
   };
   return (
     <div className="board-add">

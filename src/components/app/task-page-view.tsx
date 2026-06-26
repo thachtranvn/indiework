@@ -135,8 +135,7 @@ export function TaskPageView({ taskRef, initialDetail }: { taskRef: string; init
           <div className="tp-side-foot">
             <DeleteControl
               onDelete={async () => {
-                await remove();
-                router.push(projectPath ?? '/app');
+                if (await remove()) router.push(projectPath ?? '/app');
               }}
             />
           </div>

@@ -19,6 +19,7 @@ import { previewKind, attachmentDownloadUrl } from '@/lib/attachment-preview';
 import { AttachmentPreview } from './attachment-preview';
 import { commitOnEnter } from '@/lib/inline-edit';
 import { CircleCheck } from '@/components/ui/interactive';
+import { useRun } from '@/components/ui/toast';
 import { Ic } from '@/components/ui/icons';
 
 export function TitleEditor({ value, onSave }: { value: string; onSave: (v: string) => void }) {
@@ -129,6 +130,7 @@ type AttachmentItem = TaskDetail['attachments'][number];
 
 /** Attachments section — uploads go to R2 (or in-memory storage in tests). */
 export function Attachments({ taskId, items, onChanged }: { taskId: string; items: AttachmentItem[]; onChanged: () => Promise<void> }) {
+  const run = useRun();
   const inputRef = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -235,10 +237,15 @@ export function Attachments({ taskId, items, onChanged }: { taskId: string; item
               className="attach-act"
               type="button"
               title="Remove"
-              onClick={async () => {
-                await removeAttachment(a.id);
-                await onChanged();
-              }}
+              onClick={() =>
+                run(
+                  async () => {
+                    await removeAttachment(a.id);
+                    await onChanged();
+                  },
+                  { error: "Couldn't remove that attachment.", retry: false },
+                )
+              }
             >
               <Ic.close size={15} />
             </button>
@@ -287,7 +294,7 @@ export function Attachments({ taskId, items, onChanged }: { taskId: string; item
 }
 
 /** Quiet "+ Add sub-task" that becomes an input; Enter adds and keeps focus. */
-export function InlineSubAdd({ onAdd }: { onAdd: (title: string) => Promise<void> }) {
+export function InlineSubAdd({ onAdd }: { onAdd: (title: string) => Promise<boolean | undefined> }) {
   const [editing, setEditing] = useState(false);
   const [v, setV] = useState('');
   if (!editing) {
@@ -299,10 +306,7 @@ export function InlineSubAdd({ onAdd }: { onAdd: (title: string) => Promise<void
   }
   const submit = async () => {
     const t = v.trim();
-    if (t) {
-      await onAdd(t);
-      setV('');
-    }
+    if (t && (await onAdd(t))) setV(''); // clear only on success; keep the draft on failure
   };
   return (
     <div className="dp-sub-add editing">

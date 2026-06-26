@@ -132,10 +132,15 @@ When adding a new task mutation, decide its tier by the rule above:
   snap-back rather than an explicit error toast. Acceptable for a single-user,
   self-hosted tool with a near-zero failure rate against a local DB; a visible error
   affordance can be layered on later if needed.
+  **Update (2026-06-26):** this affordance has now shipped — the silent revert is paired
+  with an error toast + Retry and a "still saving…" indicator via the mutation runner in
+  [src/components/ui/toast.tsx](../../src/components/ui/toast.tsx), wired across every write
+  surface. See [perceived-performance](../product/non-functional/perceived-performance/solution.md)
+  §7 (PP-F1/F2/F3). The optimistic loop here is unchanged; the runner wraps it.
 
 ## References
 
 - [src/lib/optimistic.ts](../../src/lib/optimistic.ts) — shared reducer + helpers
 - [src/app/_actions/tasks.ts](../../src/app/_actions/tasks.ts) — actions that `revalidatePath`
-- [scope.md](../scope.md) §1 (three frontends, one service layer)
+- [scope.md](../product/scope.md) §1 (three frontends, one service layer)
 - ADR [0001](0001-mcp-as-agent-surface.md) — same "thin adapters over one service layer" shape

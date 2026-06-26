@@ -6,8 +6,9 @@ import { markdownExtensions, getMarkdown, insertMarkdownFromPaste } from './mark
 import { Ic } from '@/components/ui/icons';
 
 export interface CommentComposerProps {
-  /** Append a comment; receives the serialized markdown. Composer clears on resolve. */
-  onSend: (body: string) => Promise<void>;
+  /** Append a comment; receives the serialized markdown. Composer clears only when
+   *  this resolves truthy (success) — a failed send keeps the draft so it isn't lost. */
+  onSend: (body: string) => Promise<boolean | undefined>;
 }
 
 /**
@@ -41,9 +42,12 @@ export function CommentComposerImpl({ onSend }: CommentComposerProps) {
     if (!body) return; // empty doc serializes to whitespace — never send a blank comment
     setBusy(true);
     try {
-      await onSend(body);
-      editor.commands.clearContent();
-      setEmpty(true);
+      // Clear only on a successful send; a failure keeps the draft (the error
+      // surfaces as a toast) so the user never loses what they typed.
+      if (await onSend(body)) {
+        editor.commands.clearContent();
+        setEmpty(true);
+      }
     } finally {
       setBusy(false);
     }

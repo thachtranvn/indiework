@@ -134,8 +134,7 @@ export function DetailPanel({
         <DeleteControl
           key={task.id}
           onDelete={async () => {
-            await remove();
-            onClose();
+            if (await remove()) onClose();
           }}
         />
       </div>

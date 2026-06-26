@@ -8,7 +8,9 @@ export function QuickCapture({
   onAdd,
 }: {
   placeholder?: string;
-  onAdd: (title: string) => Promise<void> | void;
+  /** Returns a truthy value on success; the field clears only then (a failed add
+   *  keeps the typed title rather than discarding it). */
+  onAdd: (title: string) => Promise<unknown> | void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
   const [v, setV] = useState('');
@@ -25,8 +27,8 @@ export function QuickCapture({
     if (!title || busy) return;
     setBusy(true);
     try {
-      await onAdd(title);
-      setV('');
+      // Clear only on a successful add; a failed capture keeps the typed text.
+      if (await onAdd(title)) setV('');
     } finally {
       setBusy(false);
       ref.current?.focus();
