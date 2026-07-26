@@ -918,11 +918,15 @@ function BulkBar({
 /** Widest due-pill label on the page — shared column width for row alignment. */
 function useMaxDueSlotWidth(labels: string[]): number | undefined {
   const [width, setWidth] = useState<number | undefined>(undefined);
+  // Depend on content, not array identity — `dueLabels` is a fresh `[]` whenever
+  // `sections` is rebuilt, and setWidth→render→new labels was an infinite loop (#185).
+  const labelsKey = [...labels].sort().join('\0');
   useLayoutEffect(() => {
-    if (labels.length === 0) {
-      setWidth(undefined);
+    if (!labelsKey) {
+      setWidth((prev) => (prev === undefined ? prev : undefined));
       return;
     }
+    const items = labelsKey.split('\0');
     const el = document.createElement('span');
     el.className = 'meta-pill meta-pill-ghost due-pill';
     el.setAttribute('aria-hidden', 'true');
@@ -930,12 +934,12 @@ function useMaxDueSlotWidth(labels: string[]): number | undefined {
       'position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none;white-space:nowrap';
     document.body.appendChild(el);
     let max = 0;
-    for (const label of labels) {
+    for (const label of items) {
       el.textContent = label;
       max = Math.max(max, Math.ceil(el.getBoundingClientRect().width));
     }
     document.body.removeChild(el);
-    setWidth(max);
-  }, [labels]);
+    setWidth((prev) => (prev === max ? prev : max));
+  }, [labelsKey]);
   return width;
 }
