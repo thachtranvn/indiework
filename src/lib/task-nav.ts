@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { taskPath, refFromPath, projectPathForRef, type OpenableTask } from './task-url';
+import { taskPath, refFromPath, projectPathForRef, taskKey, type OpenableTask } from './task-url';
 
 export { slugify, taskPath, taskFullPath, taskCanonicalUrl, refFromPath, projectPathForRef, taskKey } from './task-url';
 export type { OpenableTask } from './task-url';
@@ -52,7 +52,19 @@ export function useTaskNav() {
     window.history.pushState(null, '', qs ? `${base}?${qs}` : base);
   }, [pathname, params]);
 
-  return { openTask, closeTask };
+  // Clicking the row of the already-open task closes the panel instead of
+  // re-opening the same URL, so a row click reads as a toggle.
+  const toggleTask = useCallback(
+    (task: OpenableTask) => {
+      const fromPath = refFromPath(pathname);
+      const openKey = fromPath ? fromPath.ref : params.get('task');
+      if (openKey && openKey === taskKey(task)) closeTask();
+      else openTask(task);
+    },
+    [pathname, params, openTask, closeTask],
+  );
+
+  return { openTask, closeTask, toggleTask };
 }
 
 /** The key of the currently-open task, read from the path (ref) or `?task=` (uuid). */

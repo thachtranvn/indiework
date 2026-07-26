@@ -162,6 +162,18 @@ export const TASK_PRIORITY_RANK: Record<TaskPriority, number> = {
   urgent: 4,
 };
 
+/** Within-list sink order: open work first, then done, then cancelled. */
+export const TASK_SINK_RANK: Record<TaskStatus, number> = {
+  inbox: 0,
+  backlog: 0,
+  todo: 0,
+  in_progress: 0,
+  in_review: 0,
+  pending: 0,
+  done: 1,
+  cancelled: 2,
+};
+
 export const MILESTONE_STATUS_LABEL: Record<MilestoneStatus, string> = {
   planned: 'Planned',
   active: 'Active',

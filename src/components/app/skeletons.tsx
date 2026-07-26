@@ -49,13 +49,23 @@ function SectionSkeleton({ start, rows }: { start: number; rows: number }) {
   );
 }
 
-/** A capture-bar placeholder matching `.qcap`. */
-function CaptureSkeleton() {
-  return (
+/** A capture-bar placeholder matching `.qcap` / `.qcap-row`. */
+function CaptureSkeleton({ withTools = false }: { withTools?: boolean }) {
+  const bar = (
     <div className="qcap" aria-hidden>
       <div className="qcap-inner">
-        <Bar w={18} h={18} r={5} />
-        <Bar w="40%" h={14} />
+        <Bar w={16} h={16} r={5} />
+        <Bar w="40%" h={12} />
+      </div>
+    </div>
+  );
+  if (!withTools) return bar;
+  return (
+    <div className="qcap-row" aria-hidden>
+      {bar}
+      <div className="qcap-tools">
+        <Bar w={32} h={32} r={8} />
+        <Bar w={32} h={32} r={8} />
       </div>
     </div>
   );
@@ -69,9 +79,8 @@ export function ProjectViewSkeleton() {
         <Bar w={120} h={26} r={8} />
         <Bar w={64} h={26} r={8} />
         <Bar w={64} h={26} r={8} />
-        <Bar w={80} h={26} r={8} style={{ marginLeft: 'auto' }} />
       </div>
-      <CaptureSkeleton />
+      <CaptureSkeleton withTools />
       <div className="scroll-body">
         <SectionSkeleton start={0} rows={4} />
         <SectionSkeleton start={4} rows={3} />

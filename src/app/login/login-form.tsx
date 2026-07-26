@@ -9,13 +9,17 @@ const initial: LoginState = { error: null };
 
 interface LoginFormProps {
   next: string;
-  /** When set, this is the public demo: show + prefill the throwaway credentials. */
+  /** When set, this is the public demo: show the throwaway credentials banner. */
   demoHint?: string;
-  /** Demo admin email — prefilled when demoHint is set. */
+  /** Demo admin email — shown in the demo banner. */
   demoEmail?: string;
+  /** Prefill email (demo throwaway, or local/dev ADMIN_EMAIL). */
+  prefillEmail?: string;
+  /** Prefill password (demo throwaway, or local/dev ADMIN_PASSWORD). */
+  prefillPassword?: string;
 }
 
-export function LoginForm({ next, demoHint, demoEmail }: LoginFormProps) {
+export function LoginForm({ next, demoHint, demoEmail, prefillEmail, prefillPassword }: LoginFormProps) {
   const [state, formAction, pending] = useActionState(login, initial);
 
   return (
@@ -46,7 +50,7 @@ export function LoginForm({ next, demoHint, demoEmail }: LoginFormProps) {
               type="email"
               name="email"
               placeholder="Email"
-              defaultValue={demoEmail}
+              defaultValue={prefillEmail}
               autoFocus
               autoComplete="username"
               aria-label="Email"
@@ -58,7 +62,7 @@ export function LoginForm({ next, demoHint, demoEmail }: LoginFormProps) {
               type="password"
               name="password"
               placeholder="Password"
-              defaultValue={demoHint}
+              defaultValue={prefillPassword}
               autoComplete="current-password"
               aria-label="Password"
               required

@@ -22,7 +22,7 @@ interface ProjectOpt {
 
 export function InboxScreen({ tasks, projects }: { tasks: TaskDto[]; projects: ProjectOpt[] }) {
   const router = useRouter();
-  const { openTask } = useTaskNav();
+  const { toggleTask } = useTaskNav();
   const openKey = useOpenTaskKey();
   const { tasks: optimisticTasks, applyOptimistic, commit } = useReconciledTasks(tasks);
   const runReconcile = useReconcileRun(applyOptimistic, commit);
@@ -69,7 +69,7 @@ export function InboxScreen({ tasks, projects }: { tasks: TaskDto[]; projects: P
               className="task-row"
               data-done={t.done ? '' : undefined}
               data-selected={openKey === taskKey(t) ? '' : undefined}
-              onClick={() => openTask(t)}
+              onClick={() => toggleTask(t)}
               style={{ paddingLeft: 12 }}
             >
               <CircleCheck done={t.done} status={t.status} onToggle={() => toggle(t.id)} />

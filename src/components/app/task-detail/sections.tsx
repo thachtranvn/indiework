@@ -10,18 +10,12 @@
 import { useState } from 'react';
 import type { TaskDetail } from '@/app/_actions/queries';
 import type { OpenableTask } from '@/lib/task-nav';
-import {
-  TASK_STATUS,
-  TASK_STATUS_LABEL,
-  TASK_PRIORITY,
-  TASK_PRIORITY_LABEL,
-  type TaskStatus,
-  type TaskPriority,
-} from '@/lib/domain';
 import { fmtDate, fmtDay, toDateInputValue } from '@/lib/dates';
 import type { UpdateTaskInput } from '@/server/validators/task';
 import { Popover, OptionList } from '@/components/ui/popover';
-import { PriorityBars, ModuleIcon, Progress } from '@/components/ui/bits';
+import { ModuleIcon, PhaseIcon, Progress } from '@/components/ui/bits';
+import { PriorityPicker } from '@/components/ui/priority-picker';
+import { StatusPicker } from '@/components/ui/status-picker';
 import { Ic } from '@/components/ui/icons';
 import { MarkdownView } from '@/components/ui/markdown-view';
 import { CommentComposer } from '@/components/ui/comment-composer';
@@ -61,60 +55,23 @@ export function TaskProperties({
     <div className={layout === 'rail' ? 'prop-rail' : 'prop-grid'}>
       <span className="prop-label">Status</span>
       <span className="prop-val">
-        <Popover
-          width={190}
-          trigger={
-            <button className="prop-control" type="button">
-              <span className="dot" style={{ background: `var(--st-${task.status})` }} />
-              {TASK_STATUS_LABEL[task.status]}
-            </button>
-          }
-        >
-          {(close) => (
-            <OptionList
-              options={TASK_STATUS.map((s) => ({ id: s, label: TASK_STATUS_LABEL[s] }))}
-              value={task.status}
-              onPick={(id) => {
-                patch({ status: id as TaskStatus });
-                close();
-              }}
-              renderOpt={(o) => (
-                <>
-                  <span className="dot" style={{ background: `var(--st-${o.id})` }} />
-                  {o.label}
-                </>
-              )}
-            />
-          )}
-        </Popover>
+        <StatusPicker
+          status={task.status}
+          done={task.done}
+          showLabel
+          triggerClassName="prop-control"
+          onChange={(status) => patch({ status })}
+        />
       </span>
 
       <span className="prop-label">Priority</span>
       <span className="prop-val">
-        <Popover
-          width={180}
-          trigger={
-            <button className="prop-control" type="button">
-              <PriorityBars priority={task.priority} showLabel />
-            </button>
-          }
-        >
-          {(close) => (
-            <OptionList
-              options={TASK_PRIORITY.map((p) => ({ id: p, label: TASK_PRIORITY_LABEL[p] }))}
-              value={task.priority}
-              onPick={(id) => {
-                patch({ priority: id as TaskPriority });
-                close();
-              }}
-              renderOpt={(o) => (
-                <>
-                  <PriorityBars priority={o.id as TaskPriority} /> {o.label}
-                </>
-              )}
-            />
-          )}
-        </Popover>
+        <PriorityPicker
+          priority={task.priority}
+          showLabel
+          triggerClassName="prop-control"
+          onChange={(priority) => patch({ priority })}
+        />
       </span>
 
       <span className="prop-label">Module</span>
@@ -136,12 +93,26 @@ export function TaskProperties({
         >
           {(close) => (
             <OptionList
-              options={[{ id: '', label: 'No module' }, ...modules.map((m) => ({ id: m.id, label: m.name }))]}
+              options={[
+                { id: '', label: 'No module', icon: null as string | null, color: null as string | null },
+                ...modules.map((m) => ({ id: m.id, label: m.name, icon: m.icon ?? null, color: m.color })),
+              ]}
               value={task.moduleId ?? ''}
               onPick={(id) => {
                 patch({ moduleId: id || null });
                 close();
               }}
+              renderOpt={(o) =>
+                o.id === '' ? (
+                  <>
+                    <Ic.close size={15} /> {o.label}
+                  </>
+                ) : (
+                  <>
+                    <ModuleIcon icon={o.icon} color={o.color} size={14} /> {o.label}
+                  </>
+                )
+              }
             />
           )}
         </Popover>
@@ -155,7 +126,7 @@ export function TaskProperties({
             <button className="prop-control" type="button" data-empty={milestoneName ? undefined : ''}>
               {milestoneName ? (
                 <>
-                  <Ic.target size={13} /> {milestoneName}
+                  <PhaseIcon /> {milestoneName}
                 </>
               ) : (
                 'Set milestone'
@@ -171,6 +142,17 @@ export function TaskProperties({
                 patch({ milestoneId: id || null });
                 close();
               }}
+              renderOpt={(o) =>
+                o.id === '' ? (
+                  <>
+                    <Ic.close size={15} /> {o.label}
+                  </>
+                ) : (
+                  <>
+                    <PhaseIcon /> {o.label}
+                  </>
+                )
+              }
             />
           )}
         </Popover>

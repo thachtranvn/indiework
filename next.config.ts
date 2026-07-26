@@ -16,6 +16,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  // Hide the floating Next.js Dev Tools badge (bottom-left). Errors still surface.
+  devIndicators: false,
   experimental: {
     // Match MAX_ATTACHMENT_BYTES (5 MiB) — default 1 MiB rejects uploads before the action runs.
     serverActions: { bodySizeLimit: '5mb' },

@@ -26,8 +26,9 @@ interface ProjectLite {
 
 /**
  * Merged header (v3): project identity inline at the start of the tab strip,
- * then Overview + the views (All issues / Active / Backlog / custom) + add,
- * with a right slot for the Filter / Display buttons.
+ * then Overview + the views (All issues / Active / Backlog / custom) + add.
+ * Filter / Display live on the quick-capture row (see ProjectView), not here —
+ * `right` remains as an optional slot for other surfaces.
  */
 export function ProjectTabs({
   project,
@@ -53,7 +54,7 @@ export function ProjectTabs({
   const [name, setName] = useState(project.name);
   const base = `/app/p/${project.key}`;
 
-  const save = (patch: { name?: string; emoji?: string; color?: string; pinned?: boolean }) =>
+  const save = (patch: { name?: string; emoji?: string; color?: string }) =>
     run(
       async () => {
         await updateProject(project.id, patch);
@@ -78,7 +79,7 @@ export function ProjectTabs({
             })
           }
           triggerClass="tabs-lead-emoji"
-          triggerSize={19}
+          triggerSize={16}
         />
         <input
           className="tabs-lead-name"
@@ -89,17 +90,6 @@ export function ProjectTabs({
           spellCheck={false}
           aria-label="Project name"
         />
-        <button
-          className="tabs-lead-pin"
-          type="button"
-          data-on={project.pinned ? '' : undefined}
-          aria-pressed={project.pinned}
-          title={project.pinned ? 'Unpin project' : 'Pin project'}
-          aria-label={project.pinned ? 'Unpin project' : 'Pin project'}
-          onClick={() => save({ pinned: !project.pinned })}
-        >
-          <Ic.pin size={15} fill={project.pinned ? 'currentColor' : 'none'} />
-        </button>
         <span className="tabs-lead-sep" />
       </div>
 

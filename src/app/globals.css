@@ -2,8 +2,8 @@
 
 /* Map the design tokens' font slots onto the next/font CSS variables. This is
    the single owner of --font-ui; the Appearance picker overrides it live on
-   <html>. Default = Hanken Grotesk (Vietnamese-complete). */
+   <html>. Default = Inter (Vietnamese-complete, matches the redesign). */
 :root {
-  --font-ui: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+  --font-ui: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, 'SFMono-Regular', monospace;
 }

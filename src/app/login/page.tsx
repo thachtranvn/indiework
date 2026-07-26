@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { SESSION_COOKIE, verifySessionValue } from '@/server/auth/session';
 import { safeNext } from '@/server/auth/safe-next';
+import { env } from '@/server/env';
 import { LoginForm } from './login-form';
 
 // Bare word; the root layout's title template renders it as "Unlock · IndieWork".
@@ -29,9 +30,31 @@ export default async function LoginPage({
   // Read at runtime (not NEXT_PUBLIC_*): the same image runs both the real app
   // and the demo, so the demo flag must come from the container's env, not the
   // build. Only the demo container sets DEMO_MODE=true.
-  const demoHint =
-    process.env.DEMO_MODE === 'true' ? (process.env.DEMO_HINT || 'demo') : undefined;
-  const demoEmail =
-    process.env.DEMO_MODE === 'true' ? (process.env.DEMO_EMAIL || 'demo@demo.local') : undefined;
-  return <LoginForm next={target} demoHint={demoHint} demoEmail={demoEmail} />;
+  const isDemo = process.env.DEMO_MODE === 'true';
+  const demoHint = isDemo ? (process.env.DEMO_HINT || 'demo') : undefined;
+  const demoEmail = isDemo ? (process.env.DEMO_EMAIL || 'demo@demo.local') : undefined;
+
+  // Local/dev convenience: prefill the seeded admin credentials so you can
+  // unlock in one click. Never do this in production (or the public demo,
+  // which has its own throwaway hint above).
+  const prefillEmail = isDemo
+    ? demoEmail
+    : env.NODE_ENV === 'development'
+      ? env.ADMIN_EMAIL
+      : undefined;
+  const prefillPassword = isDemo
+    ? demoHint
+    : env.NODE_ENV === 'development'
+      ? env.ADMIN_PASSWORD
+      : undefined;
+
+  return (
+    <LoginForm
+      next={target}
+      demoHint={demoHint}
+      demoEmail={demoEmail}
+      prefillEmail={prefillEmail}
+      prefillPassword={prefillPassword}
+    />
+  );
 }

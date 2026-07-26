@@ -42,3 +42,25 @@ export function dueState(d: Date | string | null | undefined): DueState | null {
   if (days <= 3) return 'soon';
   return 'later';
 }
+
+/** Days from today to due (negative = overdue). */
+export function dueDaysFromToday(d: Date | string | null | undefined): number | null {
+  const dt = toDate(d);
+  if (!dt) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((dt.getTime() - today.getTime()) / 86_400_000);
+}
+
+/** Tooltip for due date: "Due Jul 18, 2026 · in 5 days" / "· 3 days ago" / "· today". */
+export function dueTooltip(d: Date | string | null | undefined): string {
+  const date = fmtDate(d, { month: 'short', day: 'numeric', year: 'numeric' });
+  if (!date) return '';
+  const days = dueDaysFromToday(d);
+  if (days == null) return `Due ${date}`;
+  if (days === 0) return `Due ${date} · today`;
+  if (days === 1) return `Due ${date} · in 1 day`;
+  if (days > 1) return `Due ${date} · in ${days} days`;
+  if (days === -1) return `Due ${date} · 1 day ago`;
+  return `Due ${date} · ${Math.abs(days)} days ago`;
+}

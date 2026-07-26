@@ -39,7 +39,7 @@ export function BoardView({
   onMoveCard: (id: string, patch: NewTaskPatch) => void;
   onAddCard: (patch: NewTaskPatch, title: string) => Promise<TaskDto | undefined>;
 }) {
-  const { openTask } = useTaskNav();
+  const { toggleTask } = useTaskNav();
   const [dragId, setDragId] = useState<string | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
 
@@ -53,8 +53,13 @@ export function BoardView({
   );
 
   const visible = useMemo(
-    () => (cfg.hideDone ? tasks.filter((t) => !t.done && t.status !== 'cancelled') : tasks),
-    [tasks, cfg.hideDone],
+    () =>
+      tasks.filter((t) => {
+        if (cfg.hideDone && t.done) return false;
+        if (cfg.hideCancelled && t.status === 'cancelled') return false;
+        return true;
+      }),
+    [tasks, cfg.hideDone, cfg.hideCancelled],
   );
   const sortFn = sortBoardCards(cfg.ordering);
 
@@ -111,7 +116,7 @@ export function BoardView({
                 setDragId(t.id);
               }}
               onDragEnd={() => setDragId(null)}
-              onOpen={() => openTask(t)}
+              onOpen={() => toggleTask(t)}
             />
           ))}
         </div>

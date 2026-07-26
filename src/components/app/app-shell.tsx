@@ -10,6 +10,22 @@ import { ProjectForm } from './project-form';
 import { WorkspaceForm } from './workspace-form';
 import { CommandPalette } from './command-palette';
 import { Ic } from '@/components/ui/icons';
+import { TipHost } from '@/components/ui/tip-host';
+
+/** Slide-out duration of `.detail-panel` — keep in sync with app.css. */
+const DETAIL_EXIT_MS = 280;
+const SIDEBAR_MIN = 180;
+const SIDEBAR_MAX = 440;
+const SIDEBAR_DEFAULT = 230;
+const DETAIL_MIN = 320;
+const DETAIL_MAX = 640;
+const DETAIL_DEFAULT = 384;
+
+interface OpenPanel {
+  key: string;
+  taskRef: string | null;
+  taskId: string | null;
+}
 
 export function AppShell({ shell, children }: { shell: ShellData; children: ReactNode }) {
   const pathname = usePathname();
@@ -21,22 +37,42 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
   const legacyTaskId = params.get('task');
   const detailKey = taskRef ?? legacyTaskId;
 
-  const [width, setWidth] = useState(256);
-  const [resizing, setResizing] = useState(false);
+  // The panel has to stay mounted while it slides back out, so remember the task
+  // it was showing and drop it once the exit animation (.28s) has finished.
+  const [lastOpen, setLastOpen] = useState<OpenPanel | null>(null);
+  if (detailKey && detailKey !== lastOpen?.key) {
+    setLastOpen({ key: detailKey, taskRef, taskId: legacyTaskId });
+  }
+  const closing = !detailKey && lastOpen !== null;
+  const panel = detailKey ? { taskRef, taskId: legacyTaskId } : lastOpen;
+  useEffect(() => {
+    if (!closing) return;
+    const t = setTimeout(() => setLastOpen(null), DETAIL_EXIT_MS);
+    return () => clearTimeout(t);
+  }, [closing]);
+
+  const [width, setWidth] = useState(SIDEBAR_DEFAULT);
+  const [detailWidth, setDetailWidth] = useState(DETAIL_DEFAULT);
+  const [resizing, setResizing] = useState<'sidebar' | 'detail' | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [showProject, setShowProject] = useState(false);
   const [showWorkspace, setShowWorkspace] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
 
-  // sidebar width + collapsed state persisted to localStorage (iw-*)
+  // sidebar / detail widths + collapsed state persisted to localStorage (iw-*)
   useEffect(() => {
     const v = parseInt(localStorage.getItem('iw-sidebar-w') ?? '', 10);
-    if (v >= 180 && v <= 440) setWidth(v);
+    if (v >= SIDEBAR_MIN && v <= SIDEBAR_MAX) setWidth(v);
+    const d = parseInt(localStorage.getItem('iw-detail-w') ?? '', 10);
+    if (d >= DETAIL_MIN && d <= DETAIL_MAX) setDetailWidth(d);
     setCollapsed(localStorage.getItem('iw-sb-collapsed') === '1');
   }, []);
   useEffect(() => {
     localStorage.setItem('iw-sidebar-w', String(width));
   }, [width]);
+  useEffect(() => {
+    localStorage.setItem('iw-detail-w', String(detailWidth));
+  }, [detailWidth]);
   const toggleCollapsed = useCallback(() => {
     setCollapsed((c) => {
       const next = !c;
@@ -66,11 +102,17 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
 
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    setResizing(true);
+    // Double-click resets — detect here because preventDefault on mousedown
+    // suppresses the native dblclick event.
+    if (e.detail === 2) {
+      setWidth(SIDEBAR_DEFAULT);
+      return;
+    }
+    setResizing('sidebar');
     const left = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect().left;
-    const onMove = (ev: MouseEvent) => setWidth(Math.min(440, Math.max(180, ev.clientX - left)));
+    const onMove = (ev: MouseEvent) => setWidth(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, ev.clientX - left)));
     const onUp = () => {
-      setResizing(false);
+      setResizing(null);
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
@@ -78,13 +120,45 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
     window.addEventListener('mouseup', onUp);
   }, []);
 
+  const startDetailResize = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      if (e.detail === 2) {
+        setDetailWidth(DETAIL_DEFAULT);
+        return;
+      }
+      setResizing('detail');
+      const startX = e.clientX;
+      const startW = detailWidth;
+      const onMove = (ev: MouseEvent) => {
+        // Drag left → wider detail (list shrinks); drag right → narrower.
+        setDetailWidth(Math.min(DETAIL_MAX, Math.max(DETAIL_MIN, startW + (startX - ev.clientX))));
+      };
+      const onUp = () => {
+        setResizing(null);
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    },
+    [detailWidth],
+  );
+
+  const detailOpen = Boolean(detailKey);
+
   return (
     <div
       className="app"
       data-detail={detailKey ? '' : undefined}
-      data-resizing={resizing ? '' : undefined}
+      data-resizing={resizing ?? undefined}
       data-sb-collapsed={collapsed ? '' : undefined}
-      style={{ '--sidebar-w': `${collapsed ? 0 : width}px` } as React.CSSProperties}
+      style={
+        {
+          '--sidebar-w': `${collapsed ? 0 : width}px`,
+          '--detail-panel-w': `${detailWidth}px`,
+        } as React.CSSProperties
+      }
     >
       <Sidebar
         shell={shell}
@@ -93,7 +167,9 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
         onOpenSearch={() => setShowSearch(true)}
         onCollapse={toggleCollapsed}
       />
-      {!collapsed && <div className="col-resizer" onMouseDown={startResize} title="Drag to resize" />}
+      {!collapsed && (
+        <div className="col-resizer" onMouseDown={startResize} title="Drag to resize · double-click to reset" />
+      )}
       {collapsed && (
         <button className="sb-expand" type="button" onClick={toggleCollapsed} title="Expand sidebar" aria-label="Expand sidebar">
           <Ic.list size={18} />
@@ -102,10 +178,25 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
 
       <div className="main-col">{children}</div>
 
-      {/* No key on the panel: switching issues re-fetches in place instead of
-          remounting, so the slide-in animation only plays when opening from
-          closed (not on every issue switch). */}
-      {detailKey && <DetailPanel taskRef={taskRef} taskId={legacyTaskId} onClose={closeTask} />}
+      {/* Detail slot is always the 3rd grid track so --detail-w can animate
+          0↔panel (main shrinks / grows). The panel slides in/out inside the slot at
+          the same rate, so the card moves as one piece instead of being wiped. */}
+      <div
+        className="detail-slot"
+        data-closing={closing ? '' : undefined}
+        aria-hidden={detailKey ? undefined : true}
+      >
+        {panel && (
+          <DetailPanel taskRef={panel.taskRef} taskId={panel.taskId} onClose={closeTask} />
+        )}
+      </div>
+      {detailOpen && (
+        <div
+          className="detail-resizer"
+          onMouseDown={startDetailResize}
+          title="Drag to resize · double-click to reset"
+        />
+      )}
 
       {showProject && (
         <ProjectForm
@@ -115,6 +206,7 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
       )}
       {showWorkspace && <WorkspaceForm onClose={() => setShowWorkspace(false)} />}
       {showSearch && <CommandPalette onClose={() => setShowSearch(false)} />}
+      <TipHost />
     </div>
   );
 }

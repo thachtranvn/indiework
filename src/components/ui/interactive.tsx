@@ -1,48 +1,46 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 import type { TaskStatus } from '@/lib/domain';
 import { Ic } from './icons';
+import { StatusIcon } from './status-icon';
 
 /**
- * Circular checkbox: tick = done, × = cancelled. In-progress shows a pie,
- * in-review a violet 3/4 pie, pending an amber dash (matches the design).
+ * Circular status control. With `onToggle`, acts as a mark-done button; without,
+ * renders a passive mark (for StatusPicker triggers).
  */
 export function CircleCheck({
   done,
   status,
   onToggle,
-  size = 18,
+  size = 16,
 }: {
   done: boolean;
   status: TaskStatus;
   onToggle?: () => void;
   size?: number;
 }) {
-  const cancelled = status === 'cancelled';
-  const inProgress = status === 'in_progress' && !done;
-  const inReview = status === 'in_review' && !done;
-  const pending = status === 'pending' && !done;
+  const effective: TaskStatus = done ? 'done' : status;
+  const Comp = onToggle ? 'button' : 'span';
   return (
-    <button
+    <Comp
       className="circle-check"
-      onClick={(e) => {
-        e.stopPropagation();
-        onToggle?.();
-      }}
-      data-done={done ? '' : undefined}
-      data-cancelled={cancelled && !done ? '' : undefined}
-      data-status={!done && !cancelled ? status : undefined}
+      {...(onToggle
+        ? {
+            type: 'button' as const,
+            onClick: (e: MouseEvent) => {
+              e.stopPropagation();
+              onToggle();
+            },
+            title: done ? 'Mark not done' : 'Mark done',
+            'aria-pressed': done,
+          }
+        : { 'aria-hidden': true as const })}
+      data-st={effective}
       style={{ width: size, height: size }}
-      title={done ? 'Mark not done' : 'Mark done'}
-      aria-pressed={done}
     >
-      {done && <Ic.check size={size - 6} strokeWidth={2.6} />}
-      {cancelled && !done && <Ic.close size={size - 8} strokeWidth={2.4} />}
-      {inProgress && <span className="cc-pie" />}
-      {inReview && <span className="cc-pie cc-review" />}
-      {pending && <span className="cc-pend" />}
-    </button>
+      <StatusIcon status={effective} size={size} />
+    </Comp>
   );
 }
 

@@ -5,9 +5,11 @@ import {
   type TaskStatus,
   type TaskPriority,
 } from '@/lib/domain';
-import { fmtDate, dueState } from '@/lib/dates';
+import { fmtDate, dueState, toDate } from '@/lib/dates';
 import { Ic, iconByName, isEmojiValue } from './icons';
 import { DynamicLucide } from './dyn-icon';
+import { StatusIcon } from './status-icon';
+import type { ReactNode } from 'react';
 
 /**
  * Renders a project/module identity icon from a single stored value:
@@ -64,7 +66,7 @@ export function StatusChip({
 }) {
   return (
     <span className={`chip st-chip ${size === 'sm' ? 'chip-sm' : ''}`} data-st={status}>
-      {showDot && <span className="dot" style={{ background: `var(--st-${status})` }} />}
+      {showDot && <StatusIcon status={status} size={size === 'sm' ? 14 : 16} />}
       {TASK_STATUS_LABEL[status]}
     </span>
   );
@@ -77,22 +79,24 @@ export function PriorityBars({
   priority: TaskPriority;
   showLabel?: boolean;
 }) {
-  if (priority === 'none' && !showLabel) {
-    return (
-      <span className="pri-bars" data-pri="none" title="No priority">
-        <i />
-        <i />
-        <i />
-      </span>
-    );
-  }
-  return (
-    <span className="pri-wrap" title={`Priority: ${TASK_PRIORITY_LABEL[priority]}`}>
+  const mark =
+    priority === 'urgent' ? (
+      // Figma Priority / Urgent — rounded square with bang (exported asset).
+      <img className="pri-urgent" src="/icons/priority-urgent.svg" alt="" width={16} height={16} />
+    ) : (
       <span className="pri-bars" data-pri={priority}>
         <i />
         <i />
         <i />
       </span>
+    );
+
+  return (
+    <span
+      className="pri-wrap"
+      title={priority === 'none' ? 'No priority' : `Priority: ${TASK_PRIORITY_LABEL[priority]}`}
+    >
+      {mark}
       {showLabel && (
         <span className="pri-label" data-pri={priority}>
           {TASK_PRIORITY_LABEL[priority]}
@@ -114,30 +118,77 @@ export function ModuleTag({
   faint?: boolean;
 }) {
   return (
-    <span className="meta-tag" style={faint ? { color: 'var(--text-muted)' } : undefined}>
-      <ModuleIcon icon={icon} color={color} size={13} />
-      {name}
+    <MetaPill
+      icon={<ModuleIcon icon={icon} color={color} size={14} />}
+      label={name}
+      className={`module-pill${faint ? ' meta-pill-faint' : ''}`}
+    />
+  );
+}
+
+/** Marker-pin icon used by phase chips in the redesigned task row. */
+export function PhaseIcon({ size = 14 }: { size?: number }) {
+  return (
+    <span className="phase-icon" style={{ width: size, height: size }}>
+      <img src="/icons/phase-marker.svg" alt="" width={Math.round(size * 0.93)} height={Math.round(size * 0.86)} draggable={false} />
     </span>
   );
 }
 
 export function MilestoneTag({ name }: { name: string }) {
   const short = name.split(' · ')[0];
+  return <MetaPill icon={<PhaseIcon />} label={short} title={name} className="phase-pill" />;
+}
+
+/** Bordered pill used for module / milestone / subtask meta on task rows. */
+export function MetaPill({
+  icon,
+  label,
+  title,
+  className,
+}: {
+  icon?: ReactNode;
+  label: string;
+  title?: string;
+  className?: string;
+}) {
   return (
-    <span className="meta-tag milestone-tag" title={name}>
-      <Ic.target size={12} /> {short}
+    <span className={className ? `meta-pill ${className}` : 'meta-pill'} data-tip={title || undefined}>
+      {icon}
+      <span className="meta-pill-label">{label}</span>
     </span>
   );
 }
 
 export function DuePill({ due, muted }: { due: Date | string | null | undefined; muted?: boolean }) {
   if (!due) return null;
+  const { label, state } = dueLabel(due);
   // A closed task's deadline is just history — never flag it overdue/soon (red/amber).
   return (
-    <span className="meta-tag due-pill" data-due={muted ? undefined : (dueState(due) ?? undefined)}>
-      <Ic.calendar size={12} /> {fmtDate(due)}
+    <span className="meta-pill meta-pill-ghost due-pill" data-due={muted ? undefined : (state ?? undefined)}>
+      <span className="meta-pill-label">{label}</span>
     </span>
   );
+}
+
+/** Due label text as shown on task rows (Today / Tomorrow / Jun 8). */
+export function duePillLabel(due: Date | string | null | undefined): string | null {
+  if (!due) return null;
+  return dueLabel(due).label;
+}
+
+/** Relative due label for task rows: Today / Tomorrow / Jun 8. */
+function dueLabel(due: Date | string): { label: string; state: string | null } {
+  const dt = toDate(due);
+  if (!dt) return { label: fmtDate(due), state: dueState(due) };
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((dt.getTime() - today.getTime()) / 86_400_000);
+  if (days === 0) return { label: 'Today', state: 'today' };
+  if (days === 1) return { label: 'Tomorrow', state: 'tomorrow' };
+  if (days < 0) return { label: fmtDate(due), state: 'overdue' };
+  if (days <= 3) return { label: fmtDate(due), state: 'soon' };
+  return { label: fmtDate(due), state: 'later' };
 }
 
 export function Progress({
@@ -157,5 +208,31 @@ export function Progress({
         style={{ width: `${Math.round(Math.min(1, Math.max(0, value)) * 100)}%` }}
       />
     </span>
+  );
+}
+
+/** Circular progress ring (Figma section-head / subtask pill). */
+export function ProgressRing({ value, size = 14 }: { value: number; size?: number }) {
+  const stroke = 2.25;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const pct = Math.min(1, Math.max(0, value));
+  return (
+    <svg className="progress-ring" width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
+      {pct > 0 && (
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="var(--st-done)"
+          strokeWidth={stroke}
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - pct)}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      )}
+    </svg>
   );
 }

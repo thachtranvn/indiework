@@ -13,7 +13,9 @@ import type { TaskDto } from '@/server/services';
  */
 
 /** The subset of fields an optimistic patch may touch (board drag, bulk edit). */
-export type TaskPatchFields = Partial<Pick<TaskDto, 'status' | 'priority' | 'moduleId' | 'milestoneId' | 'title'>>;
+export type TaskPatchFields = Partial<
+  Pick<TaskDto, 'status' | 'priority' | 'moduleId' | 'milestoneId' | 'title' | 'dueDate'>
+>;
 
 export type OptimisticTaskAction =
   | { kind: 'patch'; ids: readonly string[]; patch: TaskPatchFields }

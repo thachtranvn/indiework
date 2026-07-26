@@ -39,6 +39,7 @@ export const listTasksSchema = z.object({
   moduleId: z.uuid().optional(),
   milestoneId: z.uuid().optional(),
   hideDone: z.coerce.boolean().optional(),
+  hideCancelled: z.coerce.boolean().optional(),
 });
 export type ListTasksInput = z.infer<typeof listTasksSchema>;
 

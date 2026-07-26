@@ -10,6 +10,7 @@ import {
   TASK_STATUS_LABEL,
   TASK_PRIORITY_LABEL,
   TASK_PRIORITY_RANK,
+  TASK_SINK_RANK,
   DEFAULT_STATUS_ORDER,
   BOARD_COLUMNS,
   type TaskStatus,
@@ -61,6 +62,7 @@ export interface Filters {
   /** Milestone ids to keep; `''` matches tasks with no milestone. Empty = no filter. */
   milestoneId: string[];
   hideDone: boolean;
+  hideCancelled: boolean;
   showSubtasks: boolean;
   fields: FieldVis;
 }
@@ -71,6 +73,7 @@ export const DEFAULT_FILTERS: Filters = {
   moduleId: [],
   milestoneId: [],
   hideDone: false,
+  hideCancelled: false,
   showSubtasks: false,
   fields: DEFAULT_FIELDS,
 };
@@ -209,8 +212,8 @@ function groupSpec(
 
 /**
  * Within-group task ordering, shared by list sections and board columns.
- * `priority` is the default smart sort (done sinks, then higher priority, then
- * oldest); `updated`/`created` are the "recents" sorts (most-recent first).
+ * `priority` is the default smart sort (done then cancelled sink, then higher
+ * priority, then oldest); `updated`/`created` are the "recents" sorts (most-recent first).
  */
 export type TaskOrdering = 'priority' | 'updated' | 'created' | 'due' | 'title';
 
@@ -233,7 +236,7 @@ export function taskComparator(ordering: TaskOrdering): (a: TaskDto, b: TaskDto)
     case 'priority':
     default:
       return (a, b) =>
-        Number(a.done) - Number(b.done) ||
+        TASK_SINK_RANK[a.status] - TASK_SINK_RANK[b.status] ||
         TASK_PRIORITY_RANK[b.priority] - TASK_PRIORITY_RANK[a.priority] ||
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   }
@@ -257,7 +260,8 @@ export function buildSections(
     if (filters.priority.length && !filters.priority.includes(t.priority)) return false;
     if (moduleSel.length && !moduleSel.includes(t.moduleId ?? '')) return false;
     if (milestoneSel.length && !milestoneSel.includes(t.milestoneId ?? '')) return false;
-    if (filters.hideDone && (t.done || t.status === 'cancelled')) return false;
+    if (filters.hideDone && t.done) return false;
+    if (filters.hideCancelled && t.status === 'cancelled') return false;
     return true;
   };
   const ptasks = tasks.filter(pass);
@@ -314,6 +318,7 @@ export interface BoardCfg {
   rows: GroupDim; // dimension for swimlanes ('none' = no lanes)
   ordering: BoardOrdering;
   hideDone: boolean;
+  hideCancelled: boolean;
   showEmpty: boolean; // show empty columns/rows
   fields: FieldVis;
 }
@@ -323,6 +328,7 @@ export const DEFAULT_BOARD_CFG: BoardCfg = {
   rows: 'none',
   ordering: 'priority',
   hideDone: false,
+  hideCancelled: false,
   showEmpty: true,
   fields: DEFAULT_FIELDS,
 };

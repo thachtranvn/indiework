@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Popover } from '@/components/ui/popover';
 import { PriorityBars, ModuleIcon } from '@/components/ui/bits';
+import { StatusIcon } from '@/components/ui/status-icon';
 import { Ic } from '@/components/ui/icons';
 import {
   TASK_STATUS,
@@ -44,7 +45,7 @@ function fieldExample(key: FieldKey) {
     case 'milestone':
       return <Ic.target size={13} />;
     case 'status':
-      return <span className="dot" style={{ background: 'var(--st-in_progress)' }} />;
+      return <StatusIcon status="in_progress" size={14} />;
   }
 }
 
@@ -76,6 +77,7 @@ export function DisplayPopover(props: DisplayProps) {
     groupStyle !== 'band' ||
     sort !== 'priority' ||
     filters.hideDone ||
+    filters.hideCancelled ||
     filters.showSubtasks ||
     statusHidden.length > 0 ||
     !filters.fields.taskId ||
@@ -180,8 +182,12 @@ function DisplayBody(props: DisplayProps) {
             <span className="dp-switch" data-on={filters.showSubtasks ? '' : undefined} />
           </button>
           <button className="dp-toggle" type="button" onClick={() => setFilters({ ...filters, hideDone: !filters.hideDone })}>
-            <Ic.eyeOff size={15} /> Hide done & cancelled
+            <Ic.eyeOff size={15} /> Hide done
             <span className="dp-switch" data-on={filters.hideDone ? '' : undefined} />
+          </button>
+          <button className="dp-toggle" type="button" onClick={() => setFilters({ ...filters, hideCancelled: !filters.hideCancelled })}>
+            <Ic.eyeOff size={15} /> Hide cancelled
+            <span className="dp-switch" data-on={filters.hideCancelled ? '' : undefined} />
           </button>
 
           <div className="dp-divider" />
@@ -249,7 +255,7 @@ function GroupOrder({
             <Ic.grip size={13} />
           </span>
           <span className="dp-order-name">
-            <span className="dot" style={{ background: `var(--st-${s})` }} />
+            <StatusIcon status={s} size={14} />
             {TASK_STATUS_LABEL[s]}
           </span>
           <button className="dp-order-eye" type="button" onClick={() => toggleHidden(s)} aria-label={statusHidden.includes(s) ? 'Show group' : 'Hide group'}>
@@ -280,7 +286,13 @@ export function BoardDisplayPopover({
   cfg: BoardCfg;
   setCfg: (patch: Partial<BoardCfg>) => void;
 }) {
-  const dirty = cfg.columns !== 'status' || cfg.rows !== 'none' || cfg.ordering !== 'priority' || cfg.hideDone || !cfg.showEmpty;
+  const dirty =
+    cfg.columns !== 'status' ||
+    cfg.rows !== 'none' ||
+    cfg.ordering !== 'priority' ||
+    cfg.hideDone ||
+    cfg.hideCancelled ||
+    !cfg.showEmpty;
   const colDims = availDims; // columns can't be 'none'
   const setField = (key: FieldKey) => setCfg({ fields: { ...cfg.fields, [key]: !cfg.fields[key] } });
 
@@ -340,8 +352,12 @@ export function BoardDisplayPopover({
         </div>
         <div className="dp-divider" />
         <button className="dp-toggle" type="button" onClick={() => setCfg({ hideDone: !cfg.hideDone })}>
-          <Ic.eyeOff size={15} /> Hide done & cancelled
+          <Ic.eyeOff size={15} /> Hide done
           <span className="dp-switch" data-on={cfg.hideDone ? '' : undefined} />
+        </button>
+        <button className="dp-toggle" type="button" onClick={() => setCfg({ hideCancelled: !cfg.hideCancelled })}>
+          <Ic.eyeOff size={15} /> Hide cancelled
+          <span className="dp-switch" data-on={cfg.hideCancelled ? '' : undefined} />
         </button>
         <button className="dp-toggle" type="button" onClick={() => setCfg({ showEmpty: !cfg.showEmpty })}>
           <Ic.board size={15} /> Show empty columns
@@ -417,7 +433,7 @@ export function FilterPopover({
           <div className="chip-pick">
             {TASK_STATUS.filter((s) => s !== 'inbox').map((s) => (
               <button key={s} className="fchip" data-on={filters.status.includes(s) ? '' : undefined} onClick={() => toggleStatus(s)} type="button">
-                <span className="dot" style={{ background: `var(--st-${s})` }} />
+                <StatusIcon status={s} size={14} />
                 {TASK_STATUS_LABEL[s]}
               </button>
             ))}
@@ -428,8 +444,7 @@ export function FilterPopover({
           <div className="chip-pick">
             {TASK_PRIORITY.map((p) => (
               <button key={p} className="fchip" data-on={filters.priority.includes(p) ? '' : undefined} onClick={() => togglePriority(p)} type="button">
-                <PriorityBars priority={p} />
-                {TASK_PRIORITY_LABEL[p]}
+                <PriorityBars priority={p} showLabel />
               </button>
             ))}
           </div>

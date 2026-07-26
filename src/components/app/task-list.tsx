@@ -46,7 +46,8 @@ import { DisplayPopover, FilterPopover, BoardDisplayPopover } from './display-po
 import { BoardView } from './board';
 import { TaskRow } from './task-row';
 import { QuickCapture } from './quick-capture';
-import { Progress, PriorityBars, ModuleIcon } from '@/components/ui/bits';
+import { PriorityBars, ModuleIcon, duePillLabel, MetaPill, ProgressRing } from '@/components/ui/bits';
+import { StatusIcon } from '@/components/ui/status-icon';
 import { Popover, OptionList } from '@/components/ui/popover';
 import { Ic } from '@/components/ui/icons';
 
@@ -110,7 +111,7 @@ export function ProjectView({
 }) {
   const router = useRouter();
   const params = useSearchParams();
-  const { openTask } = useTaskNav();
+  const { openTask, toggleTask } = useTaskNav();
   const openKey = useOpenTaskKey();
   const viewParam = params.get('view');
   const activeView = (viewParam as ViewId) || DEFAULT_VIEW;
@@ -162,6 +163,7 @@ export function ProjectView({
 
   // Restore/keep list scroll across the open-task remount.
   const scrollRef = useRef<HTMLDivElement>(null);
+  const listViewRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = scrollPositions.get(project.key) ?? 0;
@@ -213,6 +215,47 @@ export function ProjectView({
   );
   const visibleSections = sections.filter((s) => s.tasks.length > 0 || s.keep);
   const anyTasks = sections.some((s) => s.tasks.length > 0);
+  // Measure classic scrollbar gutter so padding-right + gutter = left padding (16px).
+  // Do NOT remeasure on scroll — reading layout + writing --scroll-gutter mid-scroll
+  // thrashs style/layout and feels like hitching.
+  useLayoutEffect(() => {
+    const body = scrollRef.current;
+    const view = listViewRef.current;
+    if (!body || !view || mode === 'board') {
+      view?.style.setProperty('--scroll-gutter', '0px');
+      return;
+    }
+    let last = '';
+    const sync = () => {
+      const next = `${Math.max(0, body.offsetWidth - body.clientWidth)}px`;
+      if (next === last) return;
+      last = next;
+      view.style.setProperty('--scroll-gutter', next);
+    };
+    sync();
+    // Scrollbar can appear after first paint — re-check next frames + on resize.
+    const raf = requestAnimationFrame(() => {
+      sync();
+      requestAnimationFrame(sync);
+    });
+    const ro = new ResizeObserver(sync);
+    ro.observe(body);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, [mode, anyTasks]);
+  const dueLabels = useMemo(() => {
+    const labels = new Set<string>();
+    for (const s of sections) {
+      for (const t of s.subs ? s.subs.flatMap((x) => x.tasks) : s.tasks) {
+        const label = duePillLabel(t.dueDate);
+        if (label) labels.add(label);
+      }
+    }
+    return [...labels];
+  }, [sections]);
+  const dueSlotWidth = useMaxDueSlotWidth(dueLabels);
 
   const moduleMap = useMemo(() => new Map(modules.map((m) => [m.id, m])), [modules]);
   const milestoneMap = useMemo(() => new Map(milestones.map((m) => [m.id, m])), [milestones]);
@@ -271,6 +314,61 @@ export function ProjectView({
     },
     [runOptimistic],
   );
+  const onSetPriority = useCallback(
+    (id: string, priority: TaskPriority) => {
+      window.dispatchEvent(new CustomEvent('iw:task-updated', { detail: { id, patch: { priority } } }));
+      runOptimistic(
+        { kind: 'patch', ids: [id], patch: { priority } },
+        () => updateTask(id, { priority }),
+        "Couldn't update priority.",
+      );
+    },
+    [runOptimistic],
+  );
+  const onSetStatus = useCallback(
+    (id: string, status: TaskStatus) => {
+      window.dispatchEvent(new CustomEvent('iw:task-updated', { detail: { id, patch: { status } } }));
+      runOptimistic(
+        { kind: 'patch', ids: [id], patch: { status } },
+        () => updateTask(id, { status }),
+        "Couldn't update status.",
+      );
+    },
+    [runOptimistic],
+  );
+  const onSetDueDate = useCallback(
+    (id: string, dueDate: Date | null) => {
+      window.dispatchEvent(new CustomEvent('iw:task-updated', { detail: { id, patch: { dueDate } } }));
+      runReconcile(
+        { kind: 'patch', ids: [id], patch: { dueDate } },
+        () => updateTaskScoped(id, { dueDate }),
+        "Couldn't update due date.",
+      );
+    },
+    [runReconcile],
+  );
+  const onSetModule = useCallback(
+    (id: string, moduleId: string | null) => {
+      window.dispatchEvent(new CustomEvent('iw:task-updated', { detail: { id, patch: { moduleId } } }));
+      runReconcile(
+        { kind: 'patch', ids: [id], patch: { moduleId } },
+        () => updateTaskScoped(id, { moduleId }),
+        "Couldn't update module.",
+      );
+    },
+    [runReconcile],
+  );
+  const onSetMilestone = useCallback(
+    (id: string, milestoneId: string | null) => {
+      window.dispatchEvent(new CustomEvent('iw:task-updated', { detail: { id, patch: { milestoneId } } }));
+      runReconcile(
+        { kind: 'patch', ids: [id], patch: { milestoneId } },
+        () => updateTaskScoped(id, { milestoneId }),
+        "Couldn't update milestone.",
+      );
+    },
+    [runReconcile],
+  );
   const onToggleDone = (id: string) => {
     runReconcile({ kind: 'toggleDone', id }, () => toggleTaskDoneScoped(id), "Couldn't update that task.");
   };
@@ -309,46 +407,47 @@ export function ProjectView({
         onRenameView={views.renameView}
         onRemoveView={views.removeView}
         modeFor={views.modeFor}
-        right={
-          <>
-            <FilterPopover
+      />
+      <div className="list-view" ref={listViewRef}>
+      <div className="qcap-row">
+        <QuickCapture placeholder="Add a task…  (it lands in this project)" onAdd={(t) => add(t)} />
+        <div className="qcap-tools">
+          <FilterPopover
+            filters={filters}
+            setFilters={(f) => setDisp((s) => ({ ...s, filters: f }))}
+            modules={modules}
+            milestones={milestones}
+          />
+          {mode === 'board' ? (
+            <BoardDisplayPopover
+              setMode={(m) => views.setMode(activeView, m)}
+              availDims={availDims}
+              cfg={boardCfg}
+              setCfg={(patch) => setBoardCfg((c) => ({ ...c, ...patch }))}
+            />
+          ) : (
+            <DisplayPopover
+              mode={mode}
+              setMode={(m) => views.setMode(activeView, m)}
+              groupBy={effPrimary}
+              setGroupBy={(d) => setDisp((s) => ({ ...s, groupBy: d }))}
+              subGroupBy={effSecondary}
+              setSubGroupBy={(d) => setDisp((s) => ({ ...s, subGroupBy: d }))}
+              groupStyle={disp.groupStyle ?? 'band'}
+              setGroupStyle={(g) => setDisp((s) => ({ ...s, groupStyle: g }))}
+              sort={disp.sort ?? 'priority'}
+              setSort={(o) => setDisp((s) => ({ ...s, sort: o }))}
+              availDims={availDims}
               filters={filters}
               setFilters={(f) => setDisp((s) => ({ ...s, filters: f }))}
-              modules={modules}
-              milestones={milestones}
+              statusOrder={disp.statusOrder}
+              setStatusOrder={(o) => setDisp((s) => ({ ...s, statusOrder: o }))}
+              statusHidden={disp.statusHidden}
+              setStatusHidden={(h) => setDisp((s) => ({ ...s, statusHidden: h }))}
             />
-            {mode === 'board' ? (
-              <BoardDisplayPopover
-                setMode={(m) => views.setMode(activeView, m)}
-                availDims={availDims}
-                cfg={boardCfg}
-                setCfg={(patch) => setBoardCfg((c) => ({ ...c, ...patch }))}
-              />
-            ) : (
-              <DisplayPopover
-                mode={mode}
-                setMode={(m) => views.setMode(activeView, m)}
-                groupBy={effPrimary}
-                setGroupBy={(d) => setDisp((s) => ({ ...s, groupBy: d }))}
-                subGroupBy={effSecondary}
-                setSubGroupBy={(d) => setDisp((s) => ({ ...s, subGroupBy: d }))}
-                groupStyle={disp.groupStyle ?? 'band'}
-                setGroupStyle={(g) => setDisp((s) => ({ ...s, groupStyle: g }))}
-                sort={disp.sort ?? 'priority'}
-                setSort={(o) => setDisp((s) => ({ ...s, sort: o }))}
-                availDims={availDims}
-                filters={filters}
-                setFilters={(f) => setDisp((s) => ({ ...s, filters: f }))}
-                statusOrder={disp.statusOrder}
-                setStatusOrder={(o) => setDisp((s) => ({ ...s, statusOrder: o }))}
-                statusHidden={disp.statusHidden}
-                setStatusHidden={(h) => setDisp((s) => ({ ...s, statusHidden: h }))}
-              />
-            )}
-          </>
-        }
-      />
-      <QuickCapture placeholder="Add a task…  (it lands in this project)" onAdd={(t) => add(t)} />
+          )}
+        </div>
+      </div>
 
       {mode === 'board' ? (
         <BoardView
@@ -370,16 +469,24 @@ export function ProjectView({
                 onToggleCollapse={() => toggleCollapse(section.id)}
                 moduleMap={moduleMap}
                 milestoneMap={milestoneMap}
+                modules={modules}
+                milestones={milestones}
                 childrenMap={childrenMap}
                 showSubtasks={filters.showSubtasks}
                 fields={filters.fields}
                 showModule={effPrimary !== 'module' && effSecondary !== 'module'}
                 showMilestone={effPrimary !== 'milestone' && effSecondary !== 'milestone'}
+                dueSlotWidth={dueSlotWidth}
                 openKey={openKey}
                 selected={selected}
                 selMode={selMode}
-                onOpen={openTask}
+                onOpen={toggleTask}
                 onRename={onRename}
+                onSetPriority={onSetPriority}
+                onSetStatus={onSetStatus}
+                onSetDueDate={onSetDueDate}
+                onSetModule={onSetModule}
+                onSetMilestone={onSetMilestone}
                 onToggleDone={onToggleDone}
                 onToggleSelect={toggleSelect}
                 collapsedSet={collapsed}
@@ -396,7 +503,8 @@ export function ProjectView({
                 filters.priority.length ||
                 (filters.moduleId?.length ?? 0) ||
                 (filters.milestoneId?.length ?? 0) ||
-                filters.hideDone
+                filters.hideDone ||
+                filters.hideCancelled
                   ? 'No tasks match the current filters.'
                   : 'Add your first task in the box above, or press c anywhere.'}
               </p>
@@ -404,6 +512,7 @@ export function ProjectView({
           )}
         </div>
       )}
+      </div>
 
       {selMode && (
         <BulkBar
@@ -463,16 +572,24 @@ function Section({
   onToggleCollapse,
   moduleMap,
   milestoneMap,
+  modules,
+  milestones,
   childrenMap,
   showSubtasks,
   fields,
   showModule,
   showMilestone,
+  dueSlotWidth,
   openKey,
   selected,
   selMode,
   onOpen,
   onRename,
+  onSetPriority,
+  onSetStatus,
+  onSetDueDate,
+  onSetModule,
+  onSetMilestone,
   onToggleDone,
   onToggleSelect,
   collapsedSet,
@@ -484,16 +601,24 @@ function Section({
   onToggleCollapse: () => void;
   moduleMap: Map<string, GroupModule>;
   milestoneMap: Map<string, GroupMilestone>;
+  modules: GroupModule[];
+  milestones: GroupMilestone[];
   childrenMap: Map<string, TaskDto[]>;
   showSubtasks: boolean;
   fields: FieldVis;
   showModule: boolean;
   showMilestone: boolean;
+  dueSlotWidth?: number;
   openKey: string | null;
   selected: Set<string>;
   selMode: boolean;
   onOpen: (task: TaskDto) => void;
   onRename: (id: string, title: string) => void;
+  onSetPriority: (id: string, priority: TaskPriority) => void;
+  onSetStatus: (id: string, status: TaskStatus) => void;
+  onSetDueDate: (id: string, dueDate: Date | null) => void;
+  onSetModule: (id: string, moduleId: string | null) => void;
+  onSetMilestone: (id: string, milestoneId: string | null) => void;
   onToggleDone: (id: string) => void;
   onToggleSelect: (id: string, shift: boolean) => void;
   collapsedSet: Set<string>;
@@ -509,6 +634,8 @@ function Section({
       task={t}
       module={t.moduleId ? moduleMap.get(t.moduleId) : undefined}
       milestone={t.milestoneId ? milestoneMap.get(t.milestoneId) : undefined}
+      modules={modules}
+      milestones={milestones}
       selected={openKey === taskKey(t)}
       checked={selected.has(t.id)}
       selMode={selMode}
@@ -519,9 +646,15 @@ function Section({
       onToggleDone={onToggleDone}
       onOpen={onOpen}
       onRename={onRename}
+      onSetPriority={onSetPriority}
+      onSetStatus={onSetStatus}
+      onSetDueDate={onSetDueDate}
+      onSetModule={onSetModule}
+      onSetMilestone={onSetMilestone}
       onToggleSelect={(shift) => onToggleSelect(t.id, shift)}
       showModule={showModule}
       showMilestone={showMilestone}
+      dueSlotWidth={dueSlotWidth}
     />
   );
 
@@ -533,16 +666,16 @@ function Section({
         </span>
         <SectionHeadIcon section={section} />
         <span className="section-name">{section.name}</span>
-        <span className="section-count">{total}</span>
+        {total > 0 && (
+          <MetaPill
+            icon={<ProgressRing value={done / total} />}
+            label={`${done}/${total}`}
+            title={`${done} of ${total} done`}
+          />
+        )}
         {section.target && (
           <span className="section-target">
             <Ic.calendar size={12} /> {fmtDate(section.target)}
-          </span>
-        )}
-        {total > 0 && (
-          <span className="section-prog">
-            {done} / {total} done
-            <Progress value={done / total} tone={done === total ? 'done' : 'accent'} />
           </span>
         )}
       </div>
@@ -674,10 +807,10 @@ function BulkBar({
               close();
             }}
             renderOpt={(o) => (
-              <>
-                <span className="dot" style={{ background: `var(--st-${o.id})` }} />
+              <span className="status-opt">
+                <StatusIcon status={o.id as TaskStatus} />
                 {o.label}
-              </>
+              </span>
             )}
           />
         )}
@@ -697,11 +830,7 @@ function BulkBar({
               onSetPriority(id as TaskPriority);
               close();
             }}
-            renderOpt={(o) => (
-              <>
-                <PriorityBars priority={o.id as TaskPriority} /> {o.label}
-              </>
-            )}
+            renderOpt={(o) => <PriorityBars priority={o.id as TaskPriority} showLabel />}
           />
         )}
       </Popover>
@@ -784,4 +913,29 @@ function BulkBar({
       </button>
     </div>
   );
+}
+
+/** Widest due-pill label on the page — shared column width for row alignment. */
+function useMaxDueSlotWidth(labels: string[]): number | undefined {
+  const [width, setWidth] = useState<number | undefined>(undefined);
+  useLayoutEffect(() => {
+    if (labels.length === 0) {
+      setWidth(undefined);
+      return;
+    }
+    const el = document.createElement('span');
+    el.className = 'meta-pill meta-pill-ghost due-pill';
+    el.setAttribute('aria-hidden', 'true');
+    el.style.cssText =
+      'position:absolute;left:-9999px;top:0;visibility:hidden;pointer-events:none;white-space:nowrap';
+    document.body.appendChild(el);
+    let max = 0;
+    for (const label of labels) {
+      el.textContent = label;
+      max = Math.max(max, Math.ceil(el.getBoundingClientRect().width));
+    }
+    document.body.removeChild(el);
+    setWidth(max);
+  }, [labels]);
+  return width;
 }

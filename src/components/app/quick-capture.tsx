@@ -39,7 +39,7 @@ export function QuickCapture({
     <div className="qcap">
       <div className="qcap-inner">
         <span className="qcap-plus">
-          <Ic.plus size={18} />
+          <Ic.plus size={16} />
         </span>
         <input
           ref={ref}

@@ -9,7 +9,8 @@
   /* --font-ui is owned by globals.css (the next/font mapping layer) and
      overridden live on <html> by the Appearance picker — see src/lib/fonts.ts. */
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
-  --accent: #3FB984;            /* solo-dev green */
+  --accent: #3FB984;            /* solo-dev green — kept for focus rings / primary buttons */
+  --control: #29292a;           /* dark control fill (checked checkbox) */
   --radius-scale: 1;            /* tweak: 0.5 .. 1.6 */
   --shadow-strength: 1;         /* tweak: 0 .. 1.6 */
   --row-pad-y: 9px;             /* tweak density */
@@ -18,38 +19,40 @@
 
   /* --- derived radii --- */
   --r-xs: calc(4px * var(--radius-scale));
-  --r-sm: calc(7px * var(--radius-scale));
+  --r-sm: calc(8px * var(--radius-scale));
   --r-md: calc(10px * var(--radius-scale));
-  --r-lg: calc(14px * var(--radius-scale));
+  --r-lg: calc(16px * var(--radius-scale));
   --r-xl: calc(20px * var(--radius-scale));
   --r-pill: 999px;
 
-  /* --- accent derivations --- */
+  /* --- accent derivations (neutral selection for light theme; see light block) --- */
   --accent-strong: color-mix(in oklch, var(--accent) 82%, black);
-  --accent-soft: color-mix(in oklch, var(--accent) 14%, white);
-  --accent-softer: color-mix(in oklch, var(--accent) 8%, white);
-  --accent-ink: color-mix(in oklch, var(--accent) 70%, black);
+  --accent-soft: #e5e8eb;
+  --accent-softer: #f3f4f7;
+  --accent-ink: #111828;
   --accent-ring: color-mix(in oklch, var(--accent) 35%, white);
 }
 
-/* ===================== LIGHT (default) ===================== */
+/* ===================== LIGHT (default) — Figma redesign neutrals ===================== */
 :root, [data-theme="light"] {
-  --bg-app: oklch(0.984 0.003 95);     /* sidebar / chrome */
-  --bg-canvas: oklch(0.995 0.001 95);  /* main surface */
+  --bg-app: #f9fafc;            /* canvas behind floating panels */
+  --bg-canvas: #ffffff;         /* main panel surface */
   --bg-surface: #ffffff;
-  --bg-sunken: oklch(0.972 0.003 95);
-  --bg-hover: oklch(0.965 0.004 95);
-  --bg-active: oklch(0.95 0.005 95);
+  --bg-sunken: #f9fafc;
+  --bg-hover: #f9fafc;
+  --bg-active: #e5e8eb;
   --bg-overlay: oklch(0.28 0.01 95 / 0.32);
 
-  --border: oklch(0.918 0.004 95);
-  --border-soft: oklch(0.945 0.003 95);
-  --border-strong: oklch(0.86 0.005 95);
+  --border: #e5e8eb;
+  --border-soft: #e5e8eb;
+  --border-strong: #d1d5dc;
 
-  --text-strong: oklch(0.27 0.012 95);
-  --text: oklch(0.40 0.009 95);
-  --text-muted: oklch(0.575 0.007 95);
-  --text-faint: oklch(0.70 0.005 95);
+  --text-strong: #111828;
+  --text: #4a5565;
+  --text-muted: #6a7282;
+  --text-faint: #99a1af;
+
+  --badge-bg: #d1d5dc;
 
   --shadow-sm: 0 1px 2px oklch(0.3 0.02 95 / calc(0.05 * var(--shadow-strength))),
                0 1px 1px oklch(0.3 0.02 95 / calc(0.04 * var(--shadow-strength)));
@@ -57,8 +60,7 @@
                0 4px 12px oklch(0.3 0.02 95 / calc(0.05 * var(--shadow-strength)));
   --shadow-lg: 0 6px 18px oklch(0.3 0.02 95 / calc(0.08 * var(--shadow-strength))),
                0 18px 48px oklch(0.3 0.02 95 / calc(0.10 * var(--shadow-strength)));
-  --shadow-panel: -8px 0 24px oklch(0.3 0.02 95 / calc(0.07 * var(--shadow-strength))),
-                  -1px 0 0 var(--border);
+  --shadow-panel: none;
 }
 
 /* ===================== DARK ===================== */
@@ -80,6 +82,9 @@
   --text-muted: oklch(0.66 0.008 260);
   --text-faint: oklch(0.52 0.008 260);
 
+  --badge-bg: oklch(0.42 0.01 260);
+  --control: oklch(0.92 0.004 260);
+
   --accent-soft: color-mix(in oklch, var(--accent) 22%, oklch(0.255 0.007 260));
   --accent-softer: color-mix(in oklch, var(--accent) 12%, oklch(0.255 0.007 260));
   --accent-ink: color-mix(in oklch, var(--accent) 55%, white);
@@ -93,29 +98,27 @@
 }
 
 /* ===================== STATUS palette ===================== */
-/* 8 states (v3): In review = violet, Pending = amber; Done/Cancelled cooled.
-   --st-launching (fuchsia) is a project-lifecycle status only, not a task state.
-   --st-danger is a destructive-action red, NOT a status. Legacy --st-blocked
-   is kept as an alias of --st-danger so older rules don't break. */
+/* Figma Status: in-progress #FDC800 · review #2B7FFF · pending #A684FF ·
+   done #00BD7D · cancelled #6A7282. Inbox shares backlog's dashed icon. */
 :root {
-  --st-inbox:       oklch(0.55 0.10 290);
-  --st-inbox-bg:    oklch(0.95 0.03 290);
-  --st-backlog:     oklch(0.55 0.012 250);
-  --st-backlog-bg:  oklch(0.95 0.006 250);
-  --st-todo:        oklch(0.55 0.10 245);
-  --st-todo-bg:     oklch(0.95 0.03 245);
-  --st-in_progress: oklch(0.58 0.12 215);
-  --st-in_progress-bg: oklch(0.95 0.035 215);
+  --st-inbox:       #6a7282;
+  --st-inbox-bg:    #f3f4f7;
+  --st-backlog:     #6a7282;
+  --st-backlog-bg:  #f3f4f7;
+  --st-todo:        #6a7282;
+  --st-todo-bg:     #f3f4f7;
+  --st-in_progress: #fdc800;
+  --st-in_progress-bg: color-mix(in oklch, #fdc800 16%, white);
   --st-launching:   oklch(0.58 0.18 330);
   --st-launching-bg: oklch(0.95 0.05 330);
-  --st-in_review:   oklch(0.56 0.14 305);
-  --st-in_review-bg: oklch(0.95 0.04 305);
-  --st-pending:     oklch(0.64 0.13 73);
-  --st-pending-bg:  oklch(0.95 0.05 78);
-  --st-done:        oklch(0.60 0.10 158);
-  --st-done-bg:     oklch(0.95 0.035 158);
-  --st-cancelled:   oklch(0.62 0.008 250);
-  --st-cancelled-bg: oklch(0.95 0.004 250);
+  --st-in_review:   #2b7fff;
+  --st-in_review-bg: color-mix(in oklch, #2b7fff 14%, white);
+  --st-pending:     #a684ff;
+  --st-pending-bg:  color-mix(in oklch, #a684ff 14%, white);
+  --st-done:        #00bd7d;
+  --st-done-bg:     color-mix(in oklch, #00bd7d 14%, white);
+  --st-cancelled:   #6a7282;
+  --st-cancelled-bg: #f3f4f7;
 
   --st-danger:      oklch(0.58 0.16 32);
   --st-danger-bg:   oklch(0.945 0.04 38);
@@ -147,13 +150,19 @@
 }
 
 /* ===================== PRIORITY palette ===================== */
-/* rising attention; None = neutral */
+/* Figma Priority: idle #e5e8eb · low #6a7282 · medium #2b7fff · high #fdc800 · urgent #ff6467 */
 :root {
+  --pr-idle:   #e5e8eb;
   --pr-none:   var(--text-faint);
-  --pr-low:    oklch(0.62 0.07 230);
-  --pr-medium: oklch(0.66 0.12 90);
-  --pr-high:   oklch(0.64 0.15 55);
-  --pr-urgent: oklch(0.58 0.18 28);
+  --pr-low:    #6a7282;
+  --pr-medium: #2b7fff;
+  --pr-high:   #fdc800;
+  --pr-urgent: #ff6467;
+  --due-today: #ff6467;
+  --due-tomorrow: #fd9900;
+}
+[data-theme="dark"] {
+  --pr-idle: color-mix(in oklch, var(--bg-active) 80%, white 8%);
 }
 
 /* ===================== base ===================== */
@@ -177,7 +186,7 @@ input, textarea, select { font-family: inherit; }
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in oklch, var(--text-faint) 40%, transparent);
+  background: color-mix(in oklch, var(--text-faint) 20%, transparent);
   border-radius: 999px; border: 3px solid transparent; background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover { background: color-mix(in oklch, var(--text-faint) 65%, transparent); background-clip: padding-box; }

@@ -4,14 +4,21 @@ import { useState } from 'react';
 import type { TaskDto } from '@/server/services';
 import type { GroupModule, GroupMilestone, FieldVis } from '@/lib/grouping';
 import { taskKey } from '@/lib/task-nav';
-import { CircleCheck } from '@/components/ui/interactive';
-import { PriorityBars, ModuleTag, MilestoneTag, DuePill, StatusChip } from '@/components/ui/bits';
+import { StatusChip, MetaPill } from '@/components/ui/bits';
+import { DueDatePicker } from '@/components/ui/due-date-picker';
+import { ModulePicker } from '@/components/ui/module-picker';
+import { MilestonePicker } from '@/components/ui/milestone-picker';
+import { PriorityPicker } from '@/components/ui/priority-picker';
+import { StatusPicker } from '@/components/ui/status-picker';
 import { Ic } from '@/components/ui/icons';
+import type { TaskPriority, TaskStatus } from '@/lib/domain';
 
 export function TaskRow({
   task,
   module,
   milestone,
+  modules,
+  milestones,
   selected,
   checked,
   selMode,
@@ -22,13 +29,21 @@ export function TaskRow({
   onToggleDone,
   onOpen,
   onRename,
+  onSetPriority,
+  onSetStatus,
+  onSetDueDate,
+  onSetModule,
+  onSetMilestone,
   onToggleSelect,
   showModule = true,
   showMilestone = true,
+  dueSlotWidth,
 }: {
   task: TaskDto;
   module?: GroupModule;
   milestone?: GroupMilestone;
+  modules: GroupModule[];
+  milestones: GroupMilestone[];
   selected: boolean;
   checked: boolean;
   selMode: boolean;
@@ -39,9 +54,16 @@ export function TaskRow({
   onToggleDone: (id: string) => void;
   onOpen: (task: TaskDto) => void;
   onRename: (id: string, title: string) => void;
+  onSetPriority: (id: string, priority: TaskPriority) => void;
+  onSetStatus: (id: string, status: TaskStatus) => void;
+  onSetDueDate: (id: string, dueDate: Date | null) => void;
+  onSetModule: (id: string, moduleId: string | null) => void;
+  onSetMilestone: (id: string, milestoneId: string | null) => void;
   onToggleSelect: (shift: boolean) => void;
   showModule?: boolean;
   showMilestone?: boolean;
+  /** Width of the shared due column (longest label on the page); omit when no dues. */
+  dueSlotWidth?: number;
 }) {
   const children = childTasks ?? [];
   const subDone = children.filter((c) => c.done).length;
@@ -89,13 +111,25 @@ export function TaskRow({
         {/* Leading priority + ref columns — always visible, kept in flow so the
             status circle and titles line up across every row (matches design). */}
         {fields.priority && (
-          <span className="task-lead-pri">
-            <PriorityBars priority={task.priority} />
+          <span className="task-lead-pri" onClick={(e) => e.stopPropagation()}>
+            <PriorityPicker
+              priority={task.priority}
+              triggerClassName="task-pri-btn"
+              onChange={(priority) => onSetPriority(task.id, priority)}
+            />
           </span>
         )}
         {fields.taskId && task.ref && <span className="task-ref task-ref-lead">{task.ref}</span>}
 
-        <CircleCheck done={task.done} status={task.status} onToggle={() => onToggleDone(task.id)} />
+        <span className="task-lead-status" onClick={(e) => e.stopPropagation()}>
+          <StatusPicker
+            status={task.status}
+            done={task.done}
+            size={16}
+            triggerClassName="task-status-btn"
+            onChange={(status) => onSetStatus(task.id, status)}
+          />
+        </span>
 
         <div className="task-main">
           <div className="task-line">
@@ -125,10 +159,10 @@ export function TaskRow({
                   className="task-title-edit task-reveal"
                   type="button"
                   aria-label="Rename task"
-                  title="Rename"
+                  data-tip="Rename"
                   onClick={startEdit}
                 >
-                  <Ic.edit size={12} />
+                  <Ic.edit size={13} />
                 </button>
               </>
             )}
@@ -144,23 +178,57 @@ export function TaskRow({
         {/* Right meta stays visible (subtask · attachments · tags · due);
             only the status chip is hover-revealed via status-reveal. */}
         <div className="task-meta">
-          {hasChildren && (
-            <span
-              className="subtask-count"
-              data-complete={allDone ? '' : undefined}
-              title={`${subDone} of ${children.length} sub-tasks done`}
-            >
-              <Ic.listTree size={12} /> {subDone}/{children.length}
-            </span>
-          )}
           {task.attachmentCount > 0 && (
-            <span className="attach-count" title={`${task.attachmentCount} attachment${task.attachmentCount === 1 ? '' : 's'}`}>
-              <Ic.paperclip size={12} /> {task.attachmentCount}
-            </span>
+            <MetaPill
+              icon={<Ic.paperclip size={14} />}
+              label={String(task.attachmentCount)}
+              title={`${task.attachmentCount} attachment${task.attachmentCount === 1 ? '' : 's'}`}
+              className="meta-pill-ghost"
+            />
           )}
-          {fields.module && showModule && module && <ModuleTag name={module.name} color={module.color} icon={module.icon} />}
-          {fields.milestone && showMilestone && milestone && <MilestoneTag name={milestone.name} />}
-          {task.dueDate && <DuePill due={task.dueDate} muted={task.done || task.status === 'cancelled'} />}
+          {hasChildren && (
+            <MetaPill
+              icon={<Ic.listTree size={14} />}
+              label={`${subDone}/${children.length}`}
+              title={`${subDone} of ${children.length} sub-tasks done`}
+              className={allDone ? 'meta-pill-complete' : undefined}
+            />
+          )}
+          {fields.module && showModule && module && (
+            <ModulePicker
+              moduleId={task.moduleId}
+              module={module}
+              modules={modules}
+              onChange={(moduleId) => onSetModule(task.id, moduleId)}
+            />
+          )}
+          {fields.milestone && showMilestone && milestone && (
+            <MilestonePicker
+              milestoneId={task.milestoneId}
+              milestone={milestone}
+              milestones={milestones}
+              onChange={(milestoneId) => onSetMilestone(task.id, milestoneId)}
+            />
+          )}
+          {dueSlotWidth != null ? (
+            <span className="task-due-slot" style={{ width: dueSlotWidth }}>
+              {task.dueDate && (
+                <DueDatePicker
+                  due={task.dueDate}
+                  muted={task.done || task.status === 'cancelled'}
+                  onChange={(dueDate) => onSetDueDate(task.id, dueDate)}
+                />
+              )}
+            </span>
+          ) : (
+            task.dueDate && (
+              <DueDatePicker
+                due={task.dueDate}
+                muted={task.done || task.status === 'cancelled'}
+                onChange={(dueDate) => onSetDueDate(task.id, dueDate)}
+              />
+            )
+          )}
           {fields.status && (
             <span className="task-reveal status-reveal">
               <StatusChip status={task.status} size="sm" />

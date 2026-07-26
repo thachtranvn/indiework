@@ -14,10 +14,21 @@ interface PopoverProps {
   className?: string;
 }
 
+/** Gap between trigger and popover; kept clear of the viewport edge. */
+const POP_GAP = 6;
+const POP_EDGE = 24;
+
+interface PopPos {
+  left: number;
+  top?: number;
+  bottom?: number;
+  maxHeight: number;
+}
+
 /** A trigger + portaled, viewport-clamped popover. Closes on outside-click/Esc. */
 export function Popover({ trigger, children, align = 'left', width = 220, className }: PopoverProps) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ left: number; top?: number; bottom?: number } | null>(null);
+  const [pos, setPos] = useState<PopPos | null>(null);
   const btnRef = useRef<HTMLSpanElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
 
@@ -26,14 +37,15 @@ export function Popover({ trigger, children, align = 'left', width = 220, classN
     if (!r) return;
     let left = align === 'right' ? r.right - width : r.left;
     left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
-    const gap = 6;
-    // Prefer opening below the trigger; flip above only when there isn't room.
-    if (r.bottom + gap + 300 > window.innerHeight) {
+    // Prefer below; flip above only when the lower half has less room than above.
+    const spaceBelow = window.innerHeight - r.bottom - POP_GAP - POP_EDGE;
+    const spaceAbove = r.top - POP_GAP - POP_EDGE;
+    if (spaceBelow >= spaceAbove) {
+      setPos({ left, top: r.bottom + POP_GAP, maxHeight: Math.max(80, spaceBelow) });
+    } else {
       // Anchor the popover's BOTTOM edge to the trigger so the gap stays exact
       // regardless of the popover's height (heights vary by option count).
-      setPos({ left, bottom: window.innerHeight - r.top + gap });
-    } else {
-      setPos({ left, top: r.bottom + gap });
+      setPos({ left, bottom: window.innerHeight - r.top + POP_GAP, maxHeight: Math.max(80, spaceAbove) });
     }
   }, [align, width]);
 
@@ -82,7 +94,7 @@ export function Popover({ trigger, children, align = 'left', width = 220, classN
           <div
             ref={popRef}
             className={`popover fade-in ${className ?? ''}`}
-            style={{ left: pos.left, top: pos.top, bottom: pos.bottom, width }}
+            style={{ left: pos.left, top: pos.top, bottom: pos.bottom, width, maxHeight: pos.maxHeight }}
             onClick={(e) => e.stopPropagation()}
           >
             {typeof children === 'function' ? children(() => setOpen(false)) : children}

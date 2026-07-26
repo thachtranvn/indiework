@@ -20,6 +20,7 @@ export async function GET(req: Request) {
       milestoneId: q.get('milestoneId') ?? undefined,
       inbox: bool(q.get('inbox')),
       hideDone: bool(q.get('hideDone')),
+      hideCancelled: bool(q.get('hideCancelled')),
       status: csv(q.get('status')),
       priority: csv(q.get('priority')),
     });

@@ -1,25 +1,30 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
-import { Be_Vietnam_Pro, Plus_Jakarta_Sans, Hanken_Grotesk, IBM_Plex_Mono } from 'next/font/google';
+import { Inter, Be_Vietnam_Pro, Plus_Jakarta_Sans, Hanken_Grotesk, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
 import '@/styles/tokens.css';
 import '@/styles/app.css';
 import '@/styles/screens.css';
 import { FONT_STACK, UI_FONT_DEFAULT, UI_FONT_STORAGE_KEY } from '@/lib/fonts';
 
-// Default UI face — a neutral grotesque with a variable weight axis (so the
-// wordmark's 800 and every UI weight render from one file). Preloaded as the
-// app-wide default.
-const hanken = Hanken_Grotesk({
+// Default UI face — Inter (matches the redesign). Preloaded as the app-wide default.
+const inter = Inter({
   subsets: ['latin', 'latin-ext', 'vietnamese'],
-  variable: '--font-hanken',
+  variable: '--font-inter',
   display: 'swap',
 });
 
 // Alternates offered in App Settings → Appearance. We skip preloading — only the
 // active face is fetched on routes other than Settings. Be Vietnam Pro is a
 // static family, so its weights are pinned (400/500/600/700, plus 800 for the
-// wordmark); Plus Jakarta Sans exposes a variable axis, so one file covers it.
+// wordmark); Plus Jakarta Sans / Hanken expose a variable axis.
+const hanken = Hanken_Grotesk({
+  subsets: ['latin', 'latin-ext', 'vietnamese'],
+  variable: '--font-hanken',
+  display: 'swap',
+  preload: false,
+});
+
 const beVietnamPro = Be_Vietnam_Pro({
   subsets: ['latin', 'latin-ext', 'vietnamese'],
   weight: ['400', '500', '600', '700', '800'],
@@ -65,7 +70,7 @@ const fontBootScript = `(function(){try{var m=${JSON.stringify(FONT_STACK)},v=lo
 )}]);}catch(e){}})();`;
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const fontVars = `${beVietnamPro.variable} ${plusJakarta.variable} ${hanken.variable} ${plexMono.variable}`;
+  const fontVars = `${inter.variable} ${beVietnamPro.variable} ${plusJakarta.variable} ${hanken.variable} ${plexMono.variable}`;
   // The CSP (src/proxy.ts) is nonce-based with 'strict-dynamic', so this inline
   // script only runs if it carries the per-request nonce — read it from the
   // header the proxy set. (This also makes every route render dynamically.)

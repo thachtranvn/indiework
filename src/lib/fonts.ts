@@ -23,15 +23,21 @@ export interface UiFontOption {
   note: string;
 }
 
-export const UI_FONT_DEFAULT = 'Hanken Grotesk';
+export const UI_FONT_DEFAULT = 'Inter';
 export const UI_FONT_STORAGE_KEY = 'iw-ui-font';
 
 export const UI_FONTS: readonly UiFontOption[] = [
   {
+    id: 'Inter',
+    label: 'Inter',
+    stack: 'var(--font-inter), ui-sans-serif, system-ui, sans-serif',
+    tag: 'Default',
+    note: 'UI workhorse · clean, highly legible',
+  },
+  {
     id: 'Hanken Grotesk',
     label: 'Hanken Grotesk',
     stack: 'var(--font-hanken), ui-sans-serif, system-ui, sans-serif',
-    tag: 'Default',
     note: 'Neutral grotesque · crisp, modern',
   },
   {

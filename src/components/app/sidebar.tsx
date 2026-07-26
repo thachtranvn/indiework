@@ -85,7 +85,7 @@ export function Sidebar({
         className="ws-pop-wrap"
         trigger={
           <button className="ws-switch" type="button">
-            <BrandMark size={30} className="ws-mark" />
+            <BrandMark size={28} className="ws-mark" />
             <span className="ws-meta">
               <b>{activeWorkspace?.name ?? 'Workspace'}</b>
               <small>{activeWorkspace?.tagline ?? 'personal projects'}</small>
@@ -136,7 +136,7 @@ export function Sidebar({
       {/* search */}
       <button className="sb-search" type="button" onClick={onOpenSearch}>
         <Ic.search size={15} />
-        <span>Search…</span>
+        <span>Search</span>
         <kbd>⌘K</kbd>
       </button>
 

@@ -6,7 +6,7 @@ import {
   listTasksSchema,
   setStatusNoteSchema,
 } from '@/server/validators/task';
-import { parseRef, TASK_STATUS, TASK_PRIORITY_RANK, type TaskStatus } from '@/lib/domain';
+import { parseRef, TASK_STATUS, TASK_PRIORITY_RANK, TASK_SINK_RANK, type TaskStatus } from '@/lib/domain';
 import { toTaskDto, type TaskDto } from './dto';
 import { badRequest, notFound } from './errors';
 import { definedKeys, positionByOrder } from './util';
@@ -31,10 +31,10 @@ function completedAtFor(status: TaskStatus | undefined): { completedAt?: Date | 
   return { completedAt: status === 'done' ? new Date() : null };
 }
 
-/** done last → higher priority first → older first (matches the design). */
+/** Open work first → done → cancelled → higher priority → older first. */
 function sortTasks(a: TaskDto, b: TaskDto) {
   return (
-    Number(a.done) - Number(b.done) ||
+    TASK_SINK_RANK[a.status] - TASK_SINK_RANK[b.status] ||
     TASK_PRIORITY_RANK[b.priority] - TASK_PRIORITY_RANK[a.priority] ||
     a.createdAt.getTime() - b.createdAt.getTime()
   );
@@ -293,7 +293,8 @@ export const taskService = {
     if (f.milestoneId) conds.push(eq(schema.tasks.milestoneId, f.milestoneId));
     if (f.status?.length) conds.push(inArray(schema.tasks.status, f.status));
     if (f.priority?.length) conds.push(inArray(schema.tasks.priority, f.priority));
-    if (f.hideDone) conds.push(sql`${schema.tasks.status} not in ('done','cancelled')`);
+    if (f.hideDone) conds.push(sql`${schema.tasks.status} <> 'done'`);
+    if (f.hideCancelled) conds.push(sql`${schema.tasks.status} <> 'cancelled'`);
 
     const rows = await db
       .select({
