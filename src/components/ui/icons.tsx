@@ -69,6 +69,26 @@ const make =
     <Cmp size={size} strokeWidth={strokeWidth} absoluteStrokeWidth {...rest} />
   );
 
+/** Filled sidebar toggle from the redesign (Figma sidebar-off). */
+function SidebarIcon({ size = 16, className }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      className={className}
+    >
+      <g transform="translate(0.667 2.667)">
+        <path d="M12 9.33333V10.6667H2.66667V9.33333H12ZM13.3333 8V2.66667C13.3333 1.93029 12.7364 1.33333 12 1.33333H2.66667C1.93029 1.33333 1.33333 1.93029 1.33333 2.66667V8C1.33333 8.73638 1.93029 9.33333 2.66667 9.33333V10.6667C1.19391 10.6667 0 9.47276 0 8V2.66667C0 1.19391 1.19391 4.29504e-08 2.66667 0H12L12.1374 0.00325521C13.5463 0.0747431 14.6667 1.23998 14.6667 2.66667V8L14.6634 8.13737C14.5942 9.5008 13.5008 10.5942 12.1374 10.6634L12 10.6667V9.33333C12.7364 9.33333 13.3333 8.73638 13.3333 8Z" />
+        <path d="M2 2.66667C2 2.29848 2.29848 2 2.66667 2H4.66667C5.03486 2 5.33333 2.29848 5.33333 2.66667V8C5.33333 8.36819 5.03486 8.66667 4.66667 8.66667H2.66667C2.29848 8.66667 2 8.36819 2 8V2.66667Z" />
+      </g>
+    </svg>
+  );
+}
+
 export const Ic = {
   list: make(List),
   board: make(Columns3),
@@ -124,6 +144,7 @@ export const Ic = {
   logout: make(LogOut),
   alert: make(CircleAlert),
   loader: make(LoaderCircle),
+  sidebar: SidebarIcon,
 };
 
 export type IconName = keyof typeof Ic;

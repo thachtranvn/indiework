@@ -24,9 +24,13 @@ interface ProjectLite {
   pinned: boolean;
 }
 
+/** Dispatches the shell toggle — AppShell listens for `iw:toggle-sidebar`. */
+function toggleSidebar() {
+  window.dispatchEvent(new CustomEvent('iw:toggle-sidebar'));
+}
+
 /**
- * Merged header (v3): project identity inline at the start of the tab strip,
- * then Overview + the views (All issues / Active / Backlog / custom) + add.
+ * Merged header (v3): sidebar toggle + project identity + Overview/views + add.
  * Filter / Display live on the quick-capture row (see ProjectView), not here —
  * `right` remains as an optional slot for other surfaces.
  */
@@ -68,67 +72,85 @@ export function ProjectTabs({
 
   return (
     <div className="tabs">
-      <div className="tabs-lead">
-        <IconPicker
-          value={project.emoji ?? '🚀'}
-          color={project.color}
-          onPick={(p) =>
-            save({
-              ...(p.value !== undefined ? { emoji: p.value } : {}),
-              ...(p.color !== undefined ? { color: p.color } : {}),
-            })
-          }
-          triggerClass="tabs-lead-emoji"
-          triggerSize={16}
-        />
-        <input
-          className="tabs-lead-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={commitOnEnter}
-          onBlur={() => name.trim() && name !== project.name && save({ name: name.trim() })}
-          spellCheck={false}
-          aria-label="Project name"
-        />
-        <span className="tabs-lead-sep" />
+      <div className="tabs-sticky">
+        <button
+          className="tabs-sb-toggle"
+          type="button"
+          onClick={toggleSidebar}
+          title="Toggle sidebar"
+          aria-label="Toggle sidebar"
+        >
+          <Ic.sidebar size={16} />
+        </button>
+
+        <span className="tabs-sep" aria-hidden />
+
+        <div className="tabs-lead">
+          <IconPicker
+            value={project.emoji ?? '🚀'}
+            color={project.color}
+            onPick={(p) =>
+              save({
+                ...(p.value !== undefined ? { emoji: p.value } : {}),
+                ...(p.color !== undefined ? { color: p.color } : {}),
+              })
+            }
+            triggerClass="tabs-lead-emoji"
+            triggerSize={16}
+          />
+          <input
+            className="tabs-lead-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={commitOnEnter}
+            onBlur={() => name.trim() && name !== project.name && save({ name: name.trim() })}
+            spellCheck={false}
+            aria-label="Project name"
+          />
+        </div>
       </div>
 
-      <button className="tab" data-active={activeView === 'overview' ? '' : undefined} onClick={() => router.push(`${base}/overview`)} type="button">
-        <Ic.layers size={15} /> Overview
-      </button>
+      <div className="tabs-main">
+        <span className="tabs-sep" aria-hidden />
+        <div className="tabs-nav">
+          <button className="tab" data-active={activeView === 'overview' ? '' : undefined} onClick={() => router.push(`${base}/overview`)} type="button">
+            Overview
+          </button>
 
-      {BUILTIN_VIEWS.map((v) => (
-        <button key={v.id} className="tab" data-active={activeView === v.id ? '' : undefined} onClick={() => goView(v.id)} type="button">
-          {modeIcon(v.id)} {v.label}
-        </button>
-      ))}
+          {BUILTIN_VIEWS.map((v) => (
+            <button key={v.id} className="tab" data-active={activeView === v.id ? '' : undefined} onClick={() => goView(v.id)} type="button">
+              {v.label}
+            </button>
+          ))}
 
-      {customViews.map((v) => (
-        <CustomTab
-          key={v.id}
-          view={v}
-          active={activeView === v.id}
-          icon={modeIcon(v.id)}
-          onOpen={() => goView(v.id)}
-          onRename={(label) => onRenameView(v.id, label)}
-          onRemove={() => {
-            onRemoveView(v.id);
-            if (activeView === v.id) goView(DEFAULT_VIEW);
-          }}
-        />
-      ))}
+          {customViews.map((v) => (
+            <CustomTab
+              key={v.id}
+              view={v}
+              active={activeView === v.id}
+              icon={modeIcon(v.id)}
+              onOpen={() => goView(v.id)}
+              onRename={(label) => onRenameView(v.id, label)}
+              onRemove={() => {
+                onRemoveView(v.id);
+                if (activeView === v.id) goView(DEFAULT_VIEW);
+              }}
+            />
+          ))}
 
-      <button
-        className="tab tab-add"
-        type="button"
-        aria-label="Add view"
-        onClick={() => {
-          const id = onAddView();
-          goView(id);
-        }}
-      >
-        <Ic.plus size={15} />
-      </button>
+          <button
+            className="tab tab-add"
+            type="button"
+            aria-label="Add view"
+            onClick={() => {
+              const id = onAddView();
+              goView(id);
+            }}
+          >
+            <Ic.plus size={16} />
+          </button>
+        </div>
+      </div>
 
       {right && <div className="tabs-right">{right}</div>}
     </div>

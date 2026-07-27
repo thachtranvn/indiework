@@ -1,9 +1,8 @@
 'use client';
 
 import type { GroupModule } from '@/lib/grouping';
-import { ModuleTag, ModuleIcon } from './bits';
+import { ModuleTag, ModuleIcon, NoneMark } from './bits';
 import { Popover, OptionList } from './popover';
-import { Ic } from './icons';
 
 /** Row-level module picker shown from the module chip. */
 export function ModulePicker({
@@ -41,11 +40,11 @@ export function ModulePicker({
           renderOpt={(o) =>
             o.id === '' ? (
               <>
-                <Ic.close size={15} /> {o.label}
+                <NoneMark /> {o.label}
               </>
             ) : (
               <>
-                <ModuleIcon icon={o.icon} color={o.color} size={14} /> {o.label}
+                <ModuleIcon icon={o.icon} color={o.color} size={16} /> {o.label}
               </>
             )
           }

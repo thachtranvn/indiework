@@ -14,6 +14,7 @@ import {
 } from '@/lib/grouping';
 import { useTaskNav } from '@/lib/task-nav';
 import { PriorityBars, ModuleTag, MilestoneTag, ModuleIcon, StatusChip } from '@/components/ui/bits';
+import { StatusIcon } from '@/components/ui/status-icon';
 import { Ic } from '@/components/ui/icons';
 
 /**
@@ -95,6 +96,8 @@ export function BoardView({
         <div className="board-col-head">
           {col.modIcon ? (
             <ModuleIcon icon={col.modIcon} color={col.color} size={14} />
+          ) : col.patch.status ? (
+            <StatusIcon status={col.patch.status} size={14} />
           ) : (
             <span className="dot" style={{ background: col.color ?? 'var(--text-faint)' }} />
           )}
@@ -144,7 +147,13 @@ export function BoardView({
       {lanes.map(({ row, laneTasks }) => (
         <div className="board-swim" key={row.key}>
           <div className="board-swim-head">
-            {row.modIcon ? <ModuleIcon icon={row.modIcon} color={row.color} size={14} /> : <span className="dot" style={{ background: row.color ?? 'var(--text-faint)' }} />}
+            {row.modIcon ? (
+              <ModuleIcon icon={row.modIcon} color={row.color} size={14} />
+            ) : row.patch.status ? (
+              <StatusIcon status={row.patch.status} size={14} />
+            ) : (
+              <span className="dot" style={{ background: row.color ?? 'var(--text-faint)' }} />
+            )}
             <span className="board-swim-name">{row.name}</span>
             <span className="board-col-count">{laneTasks.length}</span>
           </div>

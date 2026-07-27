@@ -9,10 +9,11 @@
      from the right). The sidebar↔main gutter is main-col's margin-left. */
   --detail-w: 0px;
   --detail-panel-w: 384px;
+  --sidebar-panel-w: 230px;
   --shell-gap: 8px;
   display: grid;
-  /* Always 3 tracks so opening the panel animates width (main shrinks) instead
-     of jumping from a 2-column to a 3-column template. */
+  /* Always 3 tracks so opening the panel / collapsing the sidebar animates
+     width (main shrinks / grows) instead of jumping column counts. */
   grid-template-columns: var(--sidebar-w, 230px) minmax(0, 1fr) var(--detail-w);
   height: 100%;
   background: var(--bg-app);
@@ -20,26 +21,24 @@
   position: relative;
   padding: var(--shell-gap) var(--shell-gap) var(--shell-gap) 0;
   column-gap: 0;
-  transition: grid-template-columns .28s cubic-bezier(.22,.61,.36,1);
+  transition:
+    grid-template-columns .2s cubic-bezier(.22,.61,.36,1),
+    padding-left .2s cubic-bezier(.22,.61,.36,1);
 }
 .app[data-detail] {
   --detail-w: calc(var(--shell-gap) + var(--detail-panel-w));
 }
 .app[data-resizing] { transition: none; user-select: none; cursor: col-resize; }
-/* collapsed sidebar: drop the rail column; a floating button re-expands it */
-.app[data-sb-collapsed] {
-  grid-template-columns: minmax(0, 1fr) var(--detail-w);
-  padding-left: var(--shell-gap);
-}
-.app[data-sb-collapsed] .sidebar { display: none; }
+/* collapsed sidebar: track width → 0 (via --sidebar-w); slot clips the slide */
+.app[data-sb-collapsed] { padding-left: var(--shell-gap); }
 .app[data-sb-collapsed] .main-col { margin-left: 0; }
-.sb-collapse { position: absolute; top: 14px; right: 4px; z-index: 2; border: none; background: none;
-  color: var(--text-faint); width: 26px; height: 26px; border-radius: var(--r-sm); display: grid; place-items: center; transition: .12s; }
-.sb-collapse:hover { background: var(--bg-active); color: var(--text-strong); }
-.sb-expand { position: absolute; top: 16px; left: 16px; z-index: 70; border: 1px solid var(--border);
-  background: var(--bg-surface); color: var(--text-muted); width: 34px; height: 34px; border-radius: var(--r-sm);
-  display: grid; place-items: center; box-shadow: var(--shadow-sm); transition: .12s; }
-.sb-expand:hover { color: var(--text-strong); border-color: var(--border-strong); }
+.app[data-sb-collapsed] .sidebar-slot { pointer-events: none; }
+.sb-expand { position: absolute; top: 16px; left: 16px; z-index: 70; border: none;
+  background: var(--bg-surface); color: var(--text-muted); width: 32px; height: 32px; border-radius: 999px;
+  display: grid; place-items: center; transition: .12s; }
+.sb-expand:hover { background: var(--bg-hover); color: var(--text-strong); }
+/* Project tabs already host the toggle — hide the floating expand on those pages. */
+.app:has(.tabs) .sb-expand { display: none; }
 .main-col {
   display: flex; flex-direction: column; min-width: 0;
   margin-left: var(--shell-gap);
@@ -47,6 +46,20 @@
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   overflow: hidden;
+  transition: margin-left .2s cubic-bezier(.22,.61,.36,1);
+}
+.app[data-resizing] .main-col { transition: none; }
+
+/* Sidebar slot: same trick as detail — clips a fixed-width rail while the track
+   grows/shrinks. flex-end keeps the rail stuck to the track's trailing edge so
+   it slides left on collapse instead of wiping. */
+.sidebar-slot {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* Detail slot: clips the fixed-width panel, which slides across it at exactly the
@@ -83,10 +96,9 @@
 .app[data-resizing="detail"] .detail-resizer::after { background: var(--control); }
 
 /* ---------- Sidebar (light, inherits theme tokens) ---------- */
-.sidebar { display: flex; flex-direction: column; padding: 4px 12px 12px; min-height: 0; gap: 0;
-  overflow-y: auto; position: relative; background: transparent; }
-/* nudge the workspace caret left so the collapse button doesn't overlap it */
-.sidebar .ws-switch { padding-right: 30px; }
+.sidebar { display: flex; flex-direction: column; width: var(--sidebar-panel-w, 230px); flex: none;
+  padding: 4px 12px 12px; min-height: 0; height: 100%; gap: 0;
+  overflow-y: auto; position: relative; background: transparent; box-sizing: border-box; }
 
 /* workspace switcher */
 .ws-switch { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 0; border: none;
@@ -262,11 +274,12 @@
 [data-group-style="band"] .section-head { margin: 0; padding: 10px 14px;
   background: var(--accent-softer); border-radius: var(--r-sm); box-shadow: none; }
 [data-group-style="band"] .section-head:hover { background: var(--bg-active); }
-/* B — Rule: no fill, a hairline divider + breathing room above each group */
+/* B — Rule: white sticky fill, a hairline divider + breathing room above each group */
 [data-group-style="rule"] .section { margin-top: 22px; margin-bottom: 6px; }
 [data-group-style="rule"] .section:first-child { margin-top: 0; }
 [data-group-style="rule"] .section-head { margin: 0; padding: 15px 14px 8px;
-  border-top: 1px solid var(--border); border-radius: 0; background: transparent; }
+  border-top: 1px solid var(--border); border-radius: 0; background: var(--bg-surface); }
+[data-group-style="rule"] .section-head:hover { background: var(--bg-hover); }
 [data-group-style="rule"] .section:first-child .section-head { border-top: 0; padding-top: 8px; }
 
 .section-caret { color: var(--text-faint); display: grid; place-items: center; transition: transform .16s; flex: none; }
@@ -302,12 +315,12 @@
   text-overflow: ellipsis; white-space: nowrap; }
 .task-row[data-done] .task-title, .task-row[data-cancelled] .task-title { color: var(--text-faint); font-weight: 500; }
 /* inline rename (IW-9): hover-revealed pencil — same hit area as priority/status */
-.task-title-edit { flex: none; border: none; background: none; color: var(--text-faint);
+.task-title-edit { flex: none; border: 1px solid transparent; background: none; color: var(--text-faint);
   width: 22px; height: 22px; padding: 0; margin: -3px; border-radius: var(--r-xs); cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; line-height: 0;
-  transition: color .12s, background .12s; }
+  transition: color .12s, background .12s, border-color .12s; box-sizing: border-box; }
 .task-title-edit svg { display: block; flex: none; }
-.task-title-edit:hover { color: var(--text-strong); background: var(--bg-surface); }
+.task-title-edit:hover { color: var(--text-strong); background: var(--bg-surface); border-color: var(--border); }
 .task-title-input { flex: 1; min-width: 0; border: none; outline: none; color: var(--text-strong);
   font-weight: 500; font-size: 14px; font-family: inherit; background: var(--bg-hover);
   border-radius: var(--r-sm); padding: 2px 6px; margin: -2px -6px; box-shadow: 0 0 0 2px var(--border-strong); }
@@ -345,8 +358,8 @@
 .task-due-slot { flex: none; display: inline-flex; align-items: center; justify-content: flex-end; }
 .task-due-btn { border: none; background: none; padding: 0; border-radius: var(--r-pill);
   display: inline-flex; align-items: center; cursor: pointer; }
-.task-due-btn .due-pill { pointer-events: none; transition: background .12s; }
-.task-due-btn:hover .due-pill { background: var(--bg-hover); }
+.task-due-btn .due-pill { pointer-events: none; transition: background .12s, border-color .12s; }
+.task-due-btn:hover .due-pill { background: var(--bg-surface); border-color: var(--border); }
 .task-meta-btn { border: none; background: none; padding: 0; border-radius: var(--r-pill);
   display: inline-flex; cursor: pointer; }
 .task-meta-btn .meta-pill { pointer-events: none; transition: background .12s, border-color .12s; }
@@ -407,13 +420,15 @@
 /* leading priority + task-ref columns — kept in flow so the status circle
    and the titles line up across every row */
 .task-lead-pri { display: flex; align-items: center; justify-content: center; width: 16px; flex: none; }
-.task-pri-btn { border: none; background: none; padding: 3px; margin: -3px; border-radius: var(--r-xs);
-  display: grid; place-items: center; color: inherit; cursor: pointer; transition: background .12s; }
-.task-pri-btn:hover { background: var(--bg-surface); }
+.task-pri-btn { border: 1px solid transparent; background: none; padding: 3px; margin: -3px; border-radius: var(--r-xs);
+  display: grid; place-items: center; color: inherit; cursor: pointer;
+  transition: background .12s, border-color .12s; box-sizing: border-box; }
+.task-pri-btn:hover { background: var(--bg-surface); border-color: var(--border); }
 .task-lead-status { display: flex; align-items: center; justify-content: center; flex: none; }
-.task-status-btn { border: none; background: none; padding: 3px; margin: -3px; border-radius: var(--r-xs);
-  display: grid; place-items: center; color: inherit; cursor: pointer; transition: background .12s; }
-.task-status-btn:hover { background: var(--bg-surface); }
+.task-status-btn { border: 1px solid transparent; background: none; padding: 3px; margin: -3px; border-radius: var(--r-xs);
+  display: grid; place-items: center; color: inherit; cursor: pointer;
+  transition: background .12s, border-color .12s; box-sizing: border-box; }
+.task-status-btn:hover { background: var(--bg-surface); border-color: var(--border); }
 .task-status-btn .circle-check { pointer-events: none; }
 .task-ref-lead { width: 60px; flex: none; font: 500 12px/1 var(--font-ui); color: var(--text-faint);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -431,7 +446,7 @@
 .status-icon { display: block; flex: none; box-sizing: border-box; }
 .status-icon[data-st="backlog"] { border: 1.5px dashed #e5e8eb; border-radius: 9px; background: var(--bg-surface); }
 .status-icon[data-st="todo"] { border: 1.5px solid #e5e8eb; border-radius: 9999px; background: var(--bg-surface); }
-.status-opt { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.status-opt { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
 
 /* ---------- bulk action bar ---------- */
 .bulkbar { position: fixed; bottom: 22px; left: calc(var(--sidebar-w, 230px) + (100vw - var(--sidebar-w, 230px)) / 2);
@@ -477,8 +492,8 @@
 .pri-bars[data-pri="medium"] i:nth-child(-n+2) { background: var(--pr-medium); }
 .pri-bars[data-pri="high"] i { background: var(--pr-high); }
 .pri-urgent { width: 16px; height: 16px; flex: none; display: block; }
-.pri-wrap { display: inline-flex; align-items: center; gap: 4px; line-height: 1; }
-.pri-label { font-size: 12px; font-weight: 500; line-height: 1; color: var(--text-strong); }
+.pri-wrap { display: inline-flex; align-items: center; gap: 6px; line-height: 1; }
+.pri-label { font: inherit; color: inherit; line-height: inherit; }
 .pri-label[data-pri="none"] { color: var(--text-faint); }
 .pri-label[data-pri="urgent"] { color: var(--pr-urgent); }
 
@@ -498,10 +513,34 @@
 .popover { position: fixed; z-index: 1000; background: var(--bg-surface); border: 1px solid var(--border);
   border-radius: var(--r-md); box-shadow: var(--shadow-lg); padding: 5px; overflow-y: auto; }
 .opt-list { display: flex; flex-direction: column; gap: 1px; }
-.opt { display: flex; align-items: center; gap: 9px; padding: 7px 9px; border: none; background: none;
-  border-radius: var(--r-sm); color: var(--text); font-size: 13px; font-weight: 500; width: 100%; text-align: left; transition: background .1s; }
+.opt { display: flex; align-items: center; gap: 6px; padding: 6px 9px; border: none; background: none;
+  border-radius: var(--r-sm); color: var(--text-strong); font: 500 13px/1.3 var(--font-ui);
+  width: 100%; text-align: left; transition: background .1s; }
 .opt:hover { background: var(--bg-hover); }
 .opt[data-active] { background: var(--accent-softer); }
+.opt[data-empty] { color: var(--text-faint); }
+/* Nested priority labels inherit the row, except None which stays faint. */
+.opt .pri-label { color: inherit; }
+.opt .pri-label[data-pri="none"] { color: var(--text-faint); }
+/* Leading marks share one 16×16 slot so labels column-align across rows. */
+.opt > .pri-bars,
+.opt > .status-icon,
+.opt > .mod-ic,
+.opt > .phase-icon,
+.opt > .ei-emoji,
+.opt > .dot,
+.opt .status-opt > .status-icon,
+.opt .pri-wrap > .pri-bars,
+.opt .pri-wrap > .pri-urgent {
+  width: 16px; height: 16px; flex: none; box-sizing: border-box;
+}
+.opt > .mod-ic,
+.opt > .phase-icon,
+.opt > .ei-emoji {
+  display: inline-grid; place-items: center;
+}
+.opt > .ei-emoji { font-size: 14px; line-height: 1; }
+.opt > .dot { margin: 0; align-self: center; }
 .pop-label { font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.04em;
   color: var(--text-faint); padding: 7px 9px 4px; }
 

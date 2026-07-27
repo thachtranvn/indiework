@@ -106,6 +106,17 @@ export function PriorityBars({
   );
 }
 
+/** Same three flat ticks as priority "None" — used for No module / No milestone. */
+export function NoneMark() {
+  return (
+    <span className="pri-bars" data-pri="none" aria-hidden>
+      <i />
+      <i />
+      <i />
+    </span>
+  );
+}
+
 export function ModuleTag({
   name,
   color,

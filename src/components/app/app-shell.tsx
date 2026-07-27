@@ -54,7 +54,12 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
   const [width, setWidth] = useState(SIDEBAR_DEFAULT);
   const [detailWidth, setDetailWidth] = useState(DETAIL_DEFAULT);
   const [resizing, setResizing] = useState<'sidebar' | 'detail' | null>(null);
-  const [collapsed, setCollapsed] = useState(false);
+  // Read collapsed eagerly so hydrating a persisted "closed" state doesn't
+  // animate the sidebar shut on first paint.
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('iw-sb-collapsed') === '1';
+  });
   const [showProject, setShowProject] = useState(false);
   const [showWorkspace, setShowWorkspace] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -65,7 +70,6 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
     if (v >= SIDEBAR_MIN && v <= SIDEBAR_MAX) setWidth(v);
     const d = parseInt(localStorage.getItem('iw-detail-w') ?? '', 10);
     if (d >= DETAIL_MIN && d <= DETAIL_MAX) setDetailWidth(d);
-    setCollapsed(localStorage.getItem('iw-sb-collapsed') === '1');
   }, []);
   useEffect(() => {
     localStorage.setItem('iw-sidebar-w', String(width));
@@ -81,7 +85,7 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
     });
   }, []);
 
-  // keyboard: ⌘K search, c quick-capture
+  // keyboard: ⌘K search, c quick-capture; sidebar toggle from ProjectTabs
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
@@ -96,9 +100,14 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
         window.dispatchEvent(new CustomEvent('iw:focus-capture'));
       }
     };
+    const onToggleSidebar = () => toggleCollapsed();
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
+    window.addEventListener('iw:toggle-sidebar', onToggleSidebar);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('iw:toggle-sidebar', onToggleSidebar);
+    };
+  }, [toggleCollapsed]);
 
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -156,23 +165,25 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
       style={
         {
           '--sidebar-w': `${collapsed ? 0 : width}px`,
+          '--sidebar-panel-w': `${width}px`,
           '--detail-panel-w': `${detailWidth}px`,
         } as React.CSSProperties
       }
     >
-      <Sidebar
-        shell={shell}
-        onNewProject={() => setShowProject(true)}
-        onNewWorkspace={() => setShowWorkspace(true)}
-        onOpenSearch={() => setShowSearch(true)}
-        onCollapse={toggleCollapsed}
-      />
+      <div className="sidebar-slot" aria-hidden={collapsed ? true : undefined}>
+        <Sidebar
+          shell={shell}
+          onNewProject={() => setShowProject(true)}
+          onNewWorkspace={() => setShowWorkspace(true)}
+          onOpenSearch={() => setShowSearch(true)}
+        />
+      </div>
       {!collapsed && (
         <div className="col-resizer" onMouseDown={startResize} title="Drag to resize · double-click to reset" />
       )}
       {collapsed && (
         <button className="sb-expand" type="button" onClick={toggleCollapsed} title="Expand sidebar" aria-label="Expand sidebar">
-          <Ic.list size={18} />
+          <Ic.sidebar size={16} />
         </button>
       )}
 

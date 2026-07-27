@@ -125,11 +125,12 @@ export function OptionList<T extends Option>({ options, value, onPick, renderOpt
           key={o.id}
           className="opt"
           data-active={o.id === value ? '' : undefined}
+          data-empty={o.id === '' ? '' : undefined}
           onClick={() => onPick(o.id)}
         >
           {renderOpt ? renderOpt(o) : o.label}
           {o.id === value && (
-            <Ic.check size={15} strokeWidth={2.4} style={{ marginLeft: 'auto', color: 'var(--accent-ink)' }} />
+            <Ic.check size={16} strokeWidth={2.4} style={{ marginLeft: 'auto', color: 'var(--text-strong)' }} />
           )}
         </button>
       ))}

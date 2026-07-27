@@ -46,7 +46,7 @@ import { DisplayPopover, FilterPopover, BoardDisplayPopover } from './display-po
 import { BoardView } from './board';
 import { TaskRow } from './task-row';
 import { QuickCapture } from './quick-capture';
-import { PriorityBars, ModuleIcon, duePillLabel, MetaPill, ProgressRing } from '@/components/ui/bits';
+import { PriorityBars, ModuleIcon, PhaseIcon, NoneMark, duePillLabel, MetaPill, ProgressRing } from '@/components/ui/bits';
 import { StatusIcon } from '@/components/ui/status-icon';
 import { Popover, OptionList } from '@/components/ui/popover';
 import { Ic } from '@/components/ui/icons';
@@ -558,11 +558,12 @@ export function ProjectView({
   );
 }
 
-function SectionHeadIcon({ section }: { section: Sec }) {
-  if (section.modIcon) return <ModuleIcon icon={section.modIcon} color={section.color} size={15} />;
-  if (section.icon === 'cube') return <Ic.cube size={15} />;
-  if (section.icon === 'target') return <Ic.target size={15} />;
-  if (section.icon === 'flag') return <Ic.flag size={15} />;
+function SectionHeadIcon({ section, size = 16 }: { section: Sec; size?: number }) {
+  if (section.modIcon) return <ModuleIcon icon={section.modIcon} color={section.color} size={size} />;
+  if (section.patch.status) return <StatusIcon status={section.patch.status} size={size} />;
+  if (section.icon === 'cube') return <Ic.cube size={size} />;
+  if (section.icon === 'target') return <Ic.target size={size} />;
+  if (section.icon === 'flag') return <Ic.flag size={size} />;
   return <span className="section-dot" style={{ background: section.color ?? 'var(--text-faint)' }} />;
 }
 
@@ -695,11 +696,15 @@ function Section({
                       <span className="subsection-icon">
                         <ModuleIcon icon={sub.modIcon} color={sub.color} size={13} />
                       </span>
+                    ) : sub.patch.status ? (
+                      <span className="subsection-icon">
+                        <StatusIcon status={sub.patch.status} size={14} />
+                      </span>
                     ) : sub.color ? (
                       <span className="section-dot sub" style={{ background: sub.color }} />
                     ) : (
                       <span className="subsection-icon">
-                        <SectionHeadIcon section={sub} />
+                        <SectionHeadIcon section={sub} size={13} />
                       </span>
                     )}
                     <span className="subsection-name">{sub.name}</span>
@@ -808,7 +813,7 @@ function BulkBar({
             }}
             renderOpt={(o) => (
               <span className="status-opt">
-                <StatusIcon status={o.id as TaskStatus} />
+                <StatusIcon status={o.id as TaskStatus} size={16} />
                 {o.label}
               </span>
             )}
@@ -857,11 +862,11 @@ function BulkBar({
               renderOpt={(o) =>
                 o.id === '' ? (
                   <>
-                    <Ic.close size={15} /> {o.label}
+                    <NoneMark /> {o.label}
                   </>
                 ) : (
                   <>
-                    <ModuleIcon icon={o.icon} color={o.color} size={14} /> {o.label}
+                    <ModuleIcon icon={o.icon} color={o.color} size={16} /> {o.label}
                   </>
                 )
               }
@@ -889,11 +894,11 @@ function BulkBar({
               renderOpt={(o) =>
                 o.id === '' ? (
                   <>
-                    <Ic.close size={15} /> {o.label}
+                    <NoneMark /> {o.label}
                   </>
                 ) : (
                   <>
-                    <Ic.target size={14} /> {o.label}
+                    <PhaseIcon size={16} /> {o.label}
                   </>
                 )
               }

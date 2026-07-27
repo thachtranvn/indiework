@@ -1,9 +1,8 @@
 'use client';
 
 import type { GroupMilestone } from '@/lib/grouping';
-import { MilestoneTag, PhaseIcon } from './bits';
+import { MilestoneTag, PhaseIcon, NoneMark } from './bits';
 import { Popover, OptionList } from './popover';
-import { Ic } from './icons';
 
 /** Row-level milestone/phase picker shown from the phase chip. */
 export function MilestonePicker({
@@ -43,11 +42,11 @@ export function MilestonePicker({
           renderOpt={(o) =>
             o.id === '' ? (
               <>
-                <Ic.close size={15} /> {o.label}
+                <NoneMark /> {o.label}
               </>
             ) : (
               <>
-                <PhaseIcon /> {o.label.split(' · ')[0]}
+                <PhaseIcon size={16} /> {o.label}
               </>
             )
           }

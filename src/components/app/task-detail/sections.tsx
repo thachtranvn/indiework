@@ -13,7 +13,7 @@ import type { OpenableTask } from '@/lib/task-nav';
 import { fmtDate, fmtDay, toDateInputValue } from '@/lib/dates';
 import type { UpdateTaskInput } from '@/server/validators/task';
 import { Popover, OptionList } from '@/components/ui/popover';
-import { ModuleIcon, PhaseIcon, Progress } from '@/components/ui/bits';
+import { ModuleIcon, PhaseIcon, Progress, NoneMark } from '@/components/ui/bits';
 import { PriorityPicker } from '@/components/ui/priority-picker';
 import { StatusPicker } from '@/components/ui/status-picker';
 import { Ic } from '@/components/ui/icons';
@@ -59,6 +59,7 @@ export function TaskProperties({
           status={task.status}
           done={task.done}
           showLabel
+          size={14}
           triggerClassName="prop-control"
           onChange={(status) => patch({ status })}
         />
@@ -105,11 +106,11 @@ export function TaskProperties({
               renderOpt={(o) =>
                 o.id === '' ? (
                   <>
-                    <Ic.close size={15} /> {o.label}
+                    <NoneMark /> {o.label}
                   </>
                 ) : (
                   <>
-                    <ModuleIcon icon={o.icon} color={o.color} size={14} /> {o.label}
+                    <ModuleIcon icon={o.icon} color={o.color} size={16} /> {o.label}
                   </>
                 )
               }
@@ -126,7 +127,7 @@ export function TaskProperties({
             <button className="prop-control" type="button" data-empty={milestoneName ? undefined : ''}>
               {milestoneName ? (
                 <>
-                  <PhaseIcon /> {milestoneName}
+                  <PhaseIcon size={14} /> {milestoneName}
                 </>
               ) : (
                 'Set milestone'
@@ -145,11 +146,11 @@ export function TaskProperties({
               renderOpt={(o) =>
                 o.id === '' ? (
                   <>
-                    <Ic.close size={15} /> {o.label}
+                    <NoneMark /> {o.label}
                   </>
                 ) : (
                   <>
-                    <PhaseIcon /> {o.label}
+                    <PhaseIcon size={16} /> {o.label}
                   </>
                 )
               }
@@ -164,7 +165,7 @@ export function TaskProperties({
           width={210}
           trigger={
             <button className="prop-control" type="button" data-empty={task.dueDate ? undefined : ''}>
-              <Ic.calendar size={13} />{' '}
+              <Ic.calendar size={14} />
               {task.dueDate ? fmtDate(task.dueDate, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Set date'}
             </button>
           }

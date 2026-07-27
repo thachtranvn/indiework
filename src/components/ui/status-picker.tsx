@@ -55,7 +55,7 @@ export function StatusPicker({
           }}
           renderOpt={(o) => (
             <span className="status-opt">
-              <StatusIcon status={o.id as TaskStatus} />
+              <StatusIcon status={o.id as TaskStatus} size={16} />
               {o.label}
             </span>
           )}
