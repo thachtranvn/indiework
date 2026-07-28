@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useTaskNav, taskFullPath, taskCanonicalUrl } from '@/lib/task-nav';
 import { MarkdownEditor } from '@/components/ui/markdown-editor';
-import { RefTag, CopyLinkButton } from '@/components/ui/interactive';
+import { CopyLinkButton } from '@/components/ui/interactive';
 import { Ic } from '@/components/ui/icons';
 import { useTaskDetail } from './task-detail/use-task-detail';
 import { TitleEditor, StatusNote, Attachments } from './task-detail/parts';
@@ -30,6 +30,9 @@ export function DetailPanel({
     taskRef,
     taskId,
   });
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const ticketElRef = useRef<HTMLDivElement>(null);
+  const [headMetaVisible, setHeadMetaVisible] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -39,15 +42,33 @@ export function DetailPanel({
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  // Reveal ID + title in the sticky header only after the in-body ticket
+  // identity scrolls out of view.
+  useEffect(() => {
+    const body = bodyRef.current;
+    const ticket = ticketElRef.current;
+    setHeadMetaVisible(false);
+    if (!body || !ticket) return;
+    body.scrollTop = 0;
+    const io = new IntersectionObserver(([entry]) => setHeadMetaVisible(!entry.isIntersecting), {
+      root: body,
+      threshold: 0,
+    });
+    io.observe(ticket);
+    return () => io.disconnect();
+  }, [detail?.task.id]);
+
   if (missing || loadError) {
     return (
       <section className="detail-panel">
         <div className="dp-head">
-          <span className="ref-tag ref-big">{taskRef ?? 'Task'}</span>
-          <span className="spacer" />
-          <button className="icon-btn" onClick={onClose} aria-label="Close">
-            <Ic.close size={18} />
+          <button className="icon-btn" onClick={onClose} aria-label="Close panel">
+            <Ic.chevronRight size={16} />
           </button>
+          <span className="dp-head-divider" aria-hidden />
+          <span className="dp-head-meta" data-visible="">
+            <span className="dp-head-ref">{taskRef ?? 'Task'}</span>
+          </span>
         </div>
         <div className="dp-body">
           {missing ? (
@@ -73,10 +94,11 @@ export function DetailPanel({
     return (
       <section className="detail-panel" aria-busy>
         <div className="dp-head">
-          <span className="spacer" />
-          <button className="icon-btn" onClick={onClose} aria-label="Close">
-            <Ic.close size={18} />
+          <button className="icon-btn" onClick={onClose} aria-label="Close panel">
+            <Ic.chevronRight size={16} />
           </button>
+          <span className="dp-head-divider" aria-hidden />
+          <span className="dp-head-meta" />
         </div>
       </section>
     );
@@ -89,26 +111,35 @@ export function DetailPanel({
   return (
     <section className="detail-panel">
       <div className="dp-head">
-        {displayRef ? <RefTag value={displayRef} big /> : <span className="ref-tag ref-big">Inbox</span>}
-        <span className="spacer" />
-        {fullPath && displayRef && (
-          <CopyLinkButton getUrl={() => taskCanonicalUrl(window.location.origin, displayRef, task.title)} />
-        )}
-        {fullPath && (
-          <Link className="icon-btn" href={fullPath} title="Open as full page" aria-label="Open as full page">
-            <Ic.maximize size={16} />
-          </Link>
-        )}
-        <button className="icon-btn" onClick={onClose} aria-label="Close">
-          <Ic.close size={18} />
+        <button className="icon-btn" onClick={onClose} aria-label="Close panel">
+          <Ic.chevronRight size={16} />
         </button>
+        <span className="dp-head-divider" aria-hidden />
+        <div className="dp-head-meta" data-visible={headMetaVisible ? '' : undefined} aria-hidden={!headMetaVisible}>
+          {displayRef ? <span className="dp-head-ref">{displayRef}</span> : <span className="dp-head-ref">Inbox</span>}
+          <span className="dp-head-meta-divider" aria-hidden />
+          <span className="dp-head-title">{task.title}</span>
+        </div>
+        <div className="dp-head-actions">
+          {fullPath && displayRef && (
+            <CopyLinkButton getUrl={() => taskCanonicalUrl(window.location.origin, displayRef, task.title)} />
+          )}
+          {fullPath && (
+            <Link className="icon-btn" href={fullPath} title="Open as full page" aria-label="Open as full page">
+              <Ic.maximize size={16} />
+            </Link>
+          )}
+        </div>
       </div>
 
-      <div className="dp-body">
+      <div className="dp-body" ref={bodyRef}>
         <ParentLink parent={parent} onOpenTask={openTask} />
 
-        <div className="dp-check-title">
-          <TitleEditor key={task.id} value={task.title} onSave={(title) => patch({ title })} />
+        <div className="dp-ticket" ref={ticketElRef}>
+          {displayRef ? <p className="dp-ticket-ref">{displayRef}</p> : <p className="dp-ticket-ref">Inbox</p>}
+          <div className="dp-check-title">
+            <TitleEditor key={task.id} value={task.title} onSave={(title) => patch({ title })} />
+          </div>
         </div>
 
         <StatusNote key={`note-${task.id}`} value={task.statusNote ?? ''} pending={pending} onSave={saveStatusNote} />

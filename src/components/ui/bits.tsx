@@ -141,7 +141,16 @@ export function ModuleTag({
 export function PhaseIcon({ size = 14 }: { size?: number }) {
   return (
     <span className="phase-icon" style={{ width: size, height: size }}>
-      <img src="/icons/phase-marker.svg" alt="" width={Math.round(size * 0.93)} height={Math.round(size * 0.86)} draggable={false} />
+      <img src="/icons/phase-marker.svg" alt="" width={size} height={size} draggable={false} />
+    </span>
+  );
+}
+
+/** Figma calendar glyph used by due-date controls in the properties rail. */
+export function CalendarIcon({ size = 16 }: { size?: number }) {
+  return (
+    <span className="cal-icon" style={{ width: size, height: size }}>
+      <img src="/icons/calendar.svg" alt="" width={size} height={size} draggable={false} />
     </span>
   );
 }
