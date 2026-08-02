@@ -339,6 +339,7 @@ function MilestonesPanel({
               >
                 <Ic.grip size={14} />
               </span>
+              <ReorderButtons onMove={(d) => drag.move(m.id, d)} />
               <input
                 className="ov-rowname"
                 defaultValue={m.name}
@@ -464,6 +465,7 @@ function ModulesPanel({
               >
                 <Ic.grip size={14} />
               </span>
+              <ReorderButtons onMove={(d) => drag.move(m.id, d)} />
               <IconPicker
                 value={m.icon}
                 color={m.color}
@@ -659,7 +661,36 @@ function useDragReorder<T extends { id: string }>(items: T[], persist: (ids: str
     persist(next);
   };
 
-  return { ordered, dragId, overId, setDragId, setOverId, onDrop, reset };
+  /** One step up (-1) or down (+1) — what {@link ReorderButtons} drives. */
+  const move = (id: string, delta: number) => {
+    const from = order.indexOf(id);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= order.length) return;
+    const next = order.slice();
+    next.splice(to, 0, next.splice(from, 1)[0]);
+    setOrder(next);
+    persist(next);
+  };
+
+  return { ordered, dragId, overId, setDragId, setOverId, onDrop, reset, move };
+}
+
+/**
+ * Touch fallback for the drag grip. HTML5 drag-and-drop never fires on a touch
+ * screen, so without this the order is frozen on a phone. CSS swaps the two:
+ * the grip on fine pointers, these on coarse ones.
+ */
+function ReorderButtons({ onMove }: { onMove: (delta: number) => void }) {
+  return (
+    <span className="ov-move">
+      <button className="ov-move-btn" type="button" aria-label="Move up" onClick={() => onMove(-1)}>
+        <Ic.chevronUp size={14} />
+      </button>
+      <button className="ov-move-btn" type="button" aria-label="Move down" onClick={() => onMove(1)}>
+        <Ic.chevronDown size={14} />
+      </button>
+    </span>
+  );
 }
 
 function TagEditor({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {

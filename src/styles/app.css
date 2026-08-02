@@ -155,6 +155,40 @@
 @keyframes sheetIn { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes sheetOut { from { transform: none; } to { transform: translateY(100%); } }
 
+/* ---------- Hover-reveal on touch ----------
+   The design hides secondary controls until :hover, which a touch device never
+   fires — so they would be permanently unreachable. Revealing them all would
+   just clutter a phone, so this only unhides the ones with no other route:
+
+     .task-select   multi-select has no other entry point
+     .nav-pin       pin/unpin a project
+     .sb-section    the section's add button
+     .attach-act    download / delete an attachment
+     .dp-sub-chev   open a sub-task
+     .tab-x         close a view tab
+     .ov-del        delete a milestone / module
+
+   Deliberately left hidden: `.task-title-edit` (tapping the row opens the task,
+   where the title is editable, and a 13px pencil beside the title is a mis-tap
+   magnet) and `.status-reveal` (the status circle already carries it).
+
+   Drag grips go the other way — revealing one would advertise a gesture that
+   HTML5 drag-and-drop can't deliver on touch, so they are hidden and the
+   overview swaps in ReorderButtons. Board cards need no equivalent: tapping a
+   card opens the sheet, where the column's field is editable directly. */
+@media (pointer: coarse) {
+  .task-select,
+  .nav-item-wrap .nav-pin,
+  .sb-section button,
+  .attach-act,
+  .dp-sub-chev,
+  .tab-x,
+  .ov-del { opacity: 1; }
+
+  .ov-grip { display: none; }
+  .ov-move { display: inline-flex; }
+}
+
 /* ---------- Sidebar (light, inherits theme tokens) ---------- */
 .sidebar { display: flex; flex-direction: column; width: var(--sidebar-panel-w, 230px); flex: none;
   padding: 4px 12px 12px; min-height: 0; height: 100%; gap: 0;

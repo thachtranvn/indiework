@@ -33,7 +33,13 @@ export function TipHost() {
       setState(null);
       setPos(null);
     };
+    // A tap synthesises `mouseover` but no matching `mouseout`, so on a touch
+    // screen a tip would open and then stay parked over the UI until the next
+    // tap somewhere else. Tips are hover sugar over controls that already carry
+    // an aria-label, so touch simply goes without; focus tips are unaffected.
+    const finePointer = window.matchMedia('(pointer: fine)');
     const onOver = (e: MouseEvent) => {
+      if (!finePointer.matches) return;
       const el = (e.target as Element | null)?.closest?.('[data-tip]') as HTMLElement | null;
       if (!el) return;
       if (el === activeRef.current) return;

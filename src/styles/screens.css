@@ -623,6 +623,11 @@
   border-radius: var(--r-xs); transition: opacity .12s, color .12s; }
 .ov-grip:hover { color: var(--text-muted); }
 .ov-grip:active { cursor: grabbing; }
+/* Touch replacement for the grip — swapped in by the coarse-pointer block in app.css. */
+.ov-move { display: none; align-items: center; flex: none; }
+.ov-move-btn { border: none; background: none; color: var(--text-faint); width: 26px; height: 26px;
+  border-radius: var(--r-xs); display: grid; place-items: center; }
+.ov-move-btn:active { background: var(--bg-active); color: var(--text-strong); }
 .ov-mile:hover .ov-grip, .ov-mod:hover .ov-grip { opacity: 1; }
 .ov-mile[data-dragging], .ov-mod[data-dragging] { opacity: .45; }
 .ov-mile[data-dragover], .ov-mod[data-dragover] { border-color: var(--accent-ring);
