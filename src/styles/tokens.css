@@ -17,6 +17,19 @@
   --row-gap: 2px;
   --ui-scale: 1;
 
+  /* --- device insets (need viewport-fit=cover, set in app/layout.tsx) --- */
+  /* Every `position: fixed` element that touches an edge adds the matching
+     inset, otherwise it lands under the notch or the iOS home indicator. */
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+
+  /* Single mobile breakpoint for the whole app. Media queries can't read a
+     custom property, so the 760px literal is repeated at each @media — this
+     declaration is the canonical reference for it. */
+  --bp-mobile: 760px;
+
   /* --- derived radii --- */
   --r-xs: calc(4px * var(--radius-scale));
   --r-sm: calc(8px * var(--radius-scale));
@@ -168,6 +181,13 @@
 /* ===================== base ===================== */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }
+html {
+  /* Kills the grey flash Android/iOS paint over every tapped control. */
+  -webkit-tap-highlight-color: transparent;
+  /* Stops a scroll that reaches the end of the page from turning into a
+     pull-to-refresh or a rubber-band on the document. */
+  overscroll-behavior-y: none;
+}
 body {
   font-family: var(--font-ui);
   background: var(--bg-canvas);
@@ -205,4 +225,21 @@ input, textarea, select { font-family: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+/* ===================== touch base ===================== */
+/* Everything here is a browser-behaviour workaround rather than a design
+   choice, which is why it overrides the component rules outright. Scoped to
+   coarse pointers so the dense mouse-driven layout is untouched. */
+@media (pointer: coarse) {
+  /* iOS Safari force-zooms the page whenever a focused field is under 16px, and
+     never zooms back out. The app's fields are 12.5–13.5px, so every tap into
+     quick-capture, search or a settings field would leave the user zoomed in.
+     `max()` keeps any field that is already larger (e.g. the 27px task title). */
+  input, textarea, select, [contenteditable="true"] {
+    font-size: max(16px, 1em) !important;
+  }
+  /* Removes the double-tap-to-zoom wait on controls (and the 300ms tap delay
+     that comes with it). Text stays selectable — this is buttons only. */
+  button, [role="button"], a, summary, label { touch-action: manipulation; }
 }

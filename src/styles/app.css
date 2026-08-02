@@ -15,7 +15,10 @@
   /* Always 3 tracks so opening the panel / collapsing the sidebar animates
      width (main shrinks / grows) instead of jumping column counts. */
   grid-template-columns: var(--sidebar-w, 230px) minmax(0, 1fr) var(--detail-w);
+  /* dvh tracks the mobile browser's collapsing address bar; 100% is the
+     fallback for engines without dynamic viewport units. */
   height: 100%;
+  height: 100dvh;
   background: var(--bg-app);
   overflow: hidden;
   position: relative;

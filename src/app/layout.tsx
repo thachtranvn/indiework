@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { Inter, Be_Vietnam_Pro, Plus_Jakarta_Sans, Hanken_Grotesk, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
@@ -58,6 +58,22 @@ export const metadata: Metadata = {
   description:
     'A single-user, self-hostable project manager for solo indie developers. Module ⟂ Milestone, Inbox capture, and a service layer behind Web, REST, and MCP.',
   metadataBase: new URL('https://indiework.space'),
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  // Pinch-zoom stays available (never `maximumScale: 1`) — it's an accessibility
+  // affordance, and the coarse-pointer rules in tokens.css already remove the
+  // reasons a user would need to zoom to hit a control.
+  maximumScale: 5,
+  // Lets the layout paint under the notch / home indicator; every fixed element
+  // pays that back with the --safe-* insets (tokens.css).
+  viewportFit: 'cover',
+  // Single value, not a prefers-color-scheme pair: <html> is hard-coded to
+  // data-theme="light", so a dark OS would otherwise tint the system chrome
+  // dark around a light app.
+  themeColor: '#f9fafc',
 };
 
 // Applies the user's saved UI font before first paint, so a reload on any route
