@@ -155,39 +155,6 @@
 @keyframes sheetIn { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes sheetOut { from { transform: none; } to { transform: translateY(100%); } }
 
-/* ---------- Hover-reveal on touch ----------
-   The design hides secondary controls until :hover, which a touch device never
-   fires — so they would be permanently unreachable. Revealing them all would
-   just clutter a phone, so this only unhides the ones with no other route:
-
-     .task-select   multi-select has no other entry point
-     .nav-pin       pin/unpin a project
-     .sb-section    the section's add button
-     .attach-act    download / delete an attachment
-     .dp-sub-chev   open a sub-task
-     .tab-x         close a view tab
-     .ov-del        delete a milestone / module
-
-   Deliberately left hidden: `.task-title-edit` (tapping the row opens the task,
-   where the title is editable, and a 13px pencil beside the title is a mis-tap
-   magnet) and `.status-reveal` (the status circle already carries it).
-
-   Drag grips go the other way — revealing one would advertise a gesture that
-   HTML5 drag-and-drop can't deliver on touch, so they are hidden and the
-   overview swaps in ReorderButtons. Board cards need no equivalent: tapping a
-   card opens the sheet, where the column's field is editable directly. */
-@media (pointer: coarse) {
-  .task-select,
-  .nav-item-wrap .nav-pin,
-  .sb-section button,
-  .attach-act,
-  .dp-sub-chev,
-  .tab-x,
-  .ov-del { opacity: 1; }
-
-  .ov-grip { display: none; }
-  .ov-move { display: inline-flex; }
-}
 
 /* ---------- Sidebar (light, inherits theme tokens) ---------- */
 .sidebar { display: flex; flex-direction: column; width: var(--sidebar-panel-w, 230px); flex: none;
@@ -693,3 +660,53 @@
 .empty-emoji { font-size: 40px; opacity: .9; }
 .empty h3 { margin: 0; font-size: 16px; color: var(--text-strong); font-weight: 620; }
 .empty p { margin: 0; font-size: 13.5px; max-width: 340px; line-height: 1.55; }
+
+/* ============================================================
+   Mobile + touch overrides.
+   Last in the file on purpose: these override the rules above at equal
+   specificity, so they only win by source order. Selectors defined in
+   screens.css are overridden at the end of screens.css for the same reason.
+   ============================================================ */
+
+/* ---------- Hover-reveal on touch ----------
+   The design hides secondary controls until :hover, which a touch device never
+   fires — so they would be permanently unreachable. Revealing them all would
+   just clutter a phone, so this only unhides the ones with no other route:
+   multi-select (no other entry point), the project pin, and the sidebar
+   section's add button.
+
+   Deliberately left hidden: `.task-title-edit` (tapping the row opens the task,
+   where the title is editable, and a 13px pencil beside the title is a mis-tap
+   magnet) and `.status-reveal` (the status circle already carries it). */
+@media (pointer: coarse) {
+  .task-select,
+  .nav-item-wrap .nav-pin,
+  .sb-section button { opacity: 1; }
+}
+
+/* ---------- Rows, chrome and fixed elements on phones ----------
+   Most of this buys horizontal room for the one thing a task row exists to
+   show: its title. On a 390px viewport the fixed columns alone (60px ref +
+   84px reserved status slot + the module/milestone chips) already exceed the
+   width, which squeezed titles down to a single character. */
+@media (max-width: 760px) {
+  .topbar { padding: 10px 12px 0; gap: 8px; }
+  .qcap, .qcap-row { margin: 10px 12px; }
+  /* A keyboard shortcut badge on a device with no keyboard. */
+  .qcap-hint { display: none; }
+
+  .task-row { padding: 9px 12px; gap: 6px; }
+  /* The ref, the phase/module chips and the duplicate status chip are all
+     one tap away in the detail sheet; the title is not. */
+  .task-ref-lead,
+  .task-meta .task-meta-btn,
+  .status-reveal { display: none; }
+
+  /* Fixed chrome sits above the home indicator, and the bulk bar can't centre
+     itself on a sidebar track that no longer exists. */
+  .bulkbar {
+    left: 12px; right: 12px; bottom: calc(12px + var(--safe-b));
+    transform: none; justify-content: center;
+  }
+  .toast-viewport { left: 12px; right: 12px; bottom: calc(12px + var(--safe-b)); }
+}

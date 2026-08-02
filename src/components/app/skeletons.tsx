@@ -10,12 +10,22 @@
  * placeholder occupies the same boxes as the real content — keeping CLS low
  * across the swap (PP-R3).
  *
- * Server components, rendered once as a fallback — widths are varied
- * deterministically by index, never randomly. The one interactive leaf is
- * `NavToggle`, so the drawer stays reachable on mobile while a page loads.
+ * Server components (no interactivity), rendered once as a fallback — widths are
+ * varied deterministically by index, never randomly.
  */
 import type { CSSProperties } from 'react';
-import { NavToggle } from './nav-toggle';
+
+/**
+ * Holds the drawer button's box so the topbar doesn't shift when the real
+ * screen swaps in. Borrows `.nav-toggle` for its size and its mobile-only
+ * `display`, and stays a plain span on purpose: importing the real (client)
+ * NavToggle here would open a client boundary inside a server component, and
+ * the extra chunk Next emits for it loads without a nonce, which the app's
+ * `strict-dynamic` CSP then blocks.
+ */
+function NavToggleSlot() {
+  return <span className="nav-toggle" aria-hidden />;
+}
 
 /** A single shimmer bar. */
 function Bar({ w = '100%', h = 12, r = 6, style }: { w?: number | string; h?: number; r?: number; style?: CSSProperties }) {
@@ -96,7 +106,7 @@ export function InboxSkeleton() {
   return (
     <div className="loading-screen" aria-busy="true" aria-label="Loading inbox…">
       <div className="topbar">
-        <NavToggle />
+        <NavToggleSlot />
         <div className="topbar-title">
           <Bar w={26} h={26} r={7} />
           <Bar w={90} h={22} />
@@ -119,7 +129,7 @@ export function AllProjectsSkeleton() {
   return (
     <div className="loading-screen" aria-busy="true" aria-label="Loading projects…">
       <div className="topbar">
-        <NavToggle />
+        <NavToggleSlot />
         <div className="topbar-title">
           <Bar w={26} h={26} r={7} />
           <Bar w={120} h={22} />

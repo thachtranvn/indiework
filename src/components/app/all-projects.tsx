@@ -147,7 +147,7 @@ function ProjectRow({
       <td className="pt-desc">{p.shortDesc}</td>
       <td className="pt-note">{p.statusNote}</td>
       <td className="pt-num">{p.issues}</td>
-      <td>
+      <td className="pt-tags">
         <div className="pt-tagrow">
           {p.tags.map((t) => (
             <span className="tagchip sm" key={t}>
