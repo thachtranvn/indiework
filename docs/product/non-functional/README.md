@@ -7,5 +7,6 @@ Cross-cutting quality requirements that span every feature (how *well* the produ
 | Requirement | Bundle |
 |-------------|--------|
 | Perceived performance & responsiveness | [`perceived-performance/`](perceived-performance/spec.md) |
+| Mobile & standalone (PWA) | [`mobile/`](mobile/spec.md) |
 | Security | _(planned)_ |
 | Accessibility | _(planned)_ |
