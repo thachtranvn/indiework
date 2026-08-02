@@ -7,6 +7,7 @@ import { useTaskNav, useOpenTaskKey, taskKey } from '@/lib/task-nav';
 import { useOptimisticRun, useReconcileRun, useRun } from '@/components/ui/toast';
 import { createTask, assignTaskToProject, toggleTaskDoneScoped } from '@/app/_actions/tasks';
 import { QuickCapture } from './quick-capture';
+import { NavToggle } from './nav-toggle';
 import { CircleCheck } from '@/components/ui/interactive';
 import { Popover, OptionList } from '@/components/ui/popover';
 import { Ic } from '@/components/ui/icons';
@@ -48,6 +49,7 @@ export function InboxScreen({ tasks, projects }: { tasks: TaskDto[]; projects: P
   return (
     <>
       <div className="topbar">
+        <NavToggle />
         <div className="topbar-title">
           <span className="topbar-emoji">📥</span>
           <h1>Inbox</h1>

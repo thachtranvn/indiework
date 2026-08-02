@@ -98,6 +98,63 @@
 .app[data-resizing="sidebar"] .col-resizer::after,
 .app[data-resizing="detail"] .detail-resizer::after { background: var(--control); }
 
+/* ---------- App shell — phone layout (--bp-mobile) ----------
+   The three tracks collapse to one. Both side panels leave the flow and become
+   overlays — the drawer from the left, the detail sheet from the bottom — so
+   .main-col owns the full viewport and never has to share it with a 384px
+   inspector on a 390px screen. */
+@media (max-width: 760px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    /* Top inset only: the shell has no fixed bottom chrome of its own, and the
+       elements that do (.bulkbar, .toast-viewport) pay their own --safe-b. */
+    padding: var(--safe-t) 0 0;
+  }
+  .app[data-sb-collapsed] { padding-left: 0; }
+  .main-col { margin-left: 0; border: none; border-radius: 0; }
+
+  /* Sidebar → overlay drawer */
+  .sidebar-slot {
+    position: fixed;
+    top: 0; bottom: 0; left: 0;
+    z-index: 900;
+    width: min(300px, 84vw);
+    padding: var(--safe-t) 0 var(--safe-b) var(--safe-l);
+    background: var(--bg-app);
+    border-right: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    transform: translateX(-100%);
+    transition: transform .24s cubic-bezier(.22,.61,.36,1);
+  }
+  .app[data-drawer] .sidebar-slot { transform: none; }
+  .sidebar { width: 100%; }
+  .drawer-scrim { position: fixed; inset: 0; z-index: 890; border: none; padding: 0;
+    background: var(--bg-overlay); animation: fadeIn .2s ease; }
+
+  /* Mouse-only affordances have no touch equivalent, and the drawer replaces
+     the collapse toggle they belong to. */
+  .col-resizer, .detail-resizer, .sb-expand { display: none; }
+
+  /* Detail panel → full-screen sheet. Hidden outright when closed: `inset: 0`
+     would otherwise keep an empty overlay over the list. */
+  .detail-slot { display: none; }
+  .app[data-detail] .detail-slot, .detail-slot[data-closing] {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 920;
+    padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
+    background: var(--bg-surface);
+  }
+  .detail-slot .detail-panel { width: 100%; border: none; border-radius: 0; animation-name: sheetIn; }
+  .detail-slot[data-closing] .detail-panel { animation-name: sheetOut; }
+}
+
+/* A sheet rises from the bottom edge; the desktop panel slides in from the
+   right. Same duration/easing, so DETAIL_EXIT_MS still matches both. */
+@keyframes sheetIn { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes sheetOut { from { transform: none; } to { transform: translateY(100%); } }
+
 /* ---------- Sidebar (light, inherits theme tokens) ---------- */
 .sidebar { display: flex; flex-direction: column; width: var(--sidebar-panel-w, 230px); flex: none;
   padding: 4px 12px 12px; min-height: 0; height: 100%; gap: 0;
@@ -191,6 +248,14 @@
 .sb-foot { margin-top: auto; padding-top: 10px; }
 
 /* ---------- Topbar ---------- */
+/* Drawer trigger for the screens with no project header (Inbox, All projects,
+   Settings). Desktop keeps the sidebar on screen, so it only exists on phones —
+   see the --bp-mobile block in the shell section above. */
+.nav-toggle { display: none; flex: none; width: 36px; height: 36px; border: none; border-radius: var(--r-sm);
+  background: none; color: var(--text-muted); place-items: center; }
+.nav-toggle:hover { background: var(--bg-hover); color: var(--text-strong); }
+@media (max-width: 760px) { .nav-toggle { display: grid; } }
+
 .topbar { display: flex; align-items: center; gap: 12px; padding: 16px 16px 0; }
 .topbar-title { display: flex; align-items: center; gap: 11px; min-width: 0; flex: 1; }
 .topbar-emoji { font-size: 24px; }

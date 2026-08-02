@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { ShellData } from '@/server/load';
 import { useTaskNav, refFromPath } from '@/lib/task-nav';
+import { useIsMobile } from '@/lib/use-media-query';
 import { Sidebar } from './sidebar';
 import { DetailPanel } from './detail-panel';
 import { ProjectForm } from './project-form';
@@ -64,6 +65,22 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
   const [showWorkspace, setShowWorkspace] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
 
+  // On phones the sidebar is an overlay drawer instead of a grid track, so it
+  // needs its own state: `collapsed` is persisted and would otherwise launch the
+  // drawer already open just because the user left the rail expanded on desktop.
+  // Navigating always dismisses it — tracked alongside the path and adjusted
+  // during render (same pattern as `lastOpen` above) rather than in an effect,
+  // so the drawer never paints one frame over the page it just left.
+  const isMobile = useIsMobile();
+  const [drawer, setDrawer] = useState({ open: false, path: pathname });
+  if (drawer.path !== pathname) setDrawer({ open: false, path: pathname });
+  const drawerOpen = drawer.open;
+  const setDrawerOpen = useCallback(
+    (open: boolean | ((prev: boolean) => boolean)) =>
+      setDrawer((d) => ({ ...d, open: typeof open === 'function' ? open(d.open) : open })),
+    [],
+  );
+
   // sidebar / detail widths + collapsed state persisted to localStorage (iw-*)
   useEffect(() => {
     const v = parseInt(localStorage.getItem('iw-sidebar-w') ?? '', 10);
@@ -85,7 +102,14 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
     });
   }, []);
 
-  // keyboard: ⌘K search, c quick-capture; sidebar toggle from ProjectTabs
+  // Same trigger (`iw:toggle-sidebar`, the header button) means "collapse the
+  // rail" on desktop and "open the drawer" on mobile.
+  const toggleNav = useCallback(() => {
+    if (isMobile) setDrawerOpen((o) => !o);
+    else toggleCollapsed();
+  }, [isMobile, toggleCollapsed]);
+
+  // keyboard: ⌘K search, c quick-capture; sidebar toggle from the headers
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
@@ -93,6 +117,7 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
         setShowSearch((s) => !s);
         return;
       }
+      if (e.key === 'Escape') setDrawerOpen(false);
       const el = e.target as HTMLElement | null;
       const typing = !!el && (/input|textarea/i.test(el.tagName) || el.isContentEditable);
       if (e.key === 'c' && !typing && !e.metaKey && !e.ctrlKey) {
@@ -100,14 +125,13 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
         window.dispatchEvent(new CustomEvent('iw:focus-capture'));
       }
     };
-    const onToggleSidebar = () => toggleCollapsed();
     window.addEventListener('keydown', onKey);
-    window.addEventListener('iw:toggle-sidebar', onToggleSidebar);
+    window.addEventListener('iw:toggle-sidebar', toggleNav);
     return () => {
       window.removeEventListener('keydown', onKey);
-      window.removeEventListener('iw:toggle-sidebar', onToggleSidebar);
+      window.removeEventListener('iw:toggle-sidebar', toggleNav);
     };
-  }, [toggleCollapsed]);
+  }, [toggleNav]);
 
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -161,7 +185,11 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
       className="app"
       data-detail={detailKey ? '' : undefined}
       data-resizing={resizing ?? undefined}
-      data-sb-collapsed={collapsed ? '' : undefined}
+      // Collapsing is a desktop-only concept — on mobile the rail is off-canvas
+      // regardless, and honouring a persisted collapse would only disable the
+      // drawer's pointer events.
+      data-sb-collapsed={!isMobile && collapsed ? '' : undefined}
+      data-drawer={drawerOpen ? '' : undefined}
       style={
         {
           '--sidebar-w': `${collapsed ? 0 : width}px`,
@@ -170,7 +198,7 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
         } as React.CSSProperties
       }
     >
-      <div className="sidebar-slot" aria-hidden={collapsed ? true : undefined}>
+      <div className="sidebar-slot" aria-hidden={(isMobile ? !drawerOpen : collapsed) || undefined}>
         <Sidebar
           shell={shell}
           onNewProject={() => setShowProject(true)}
@@ -178,6 +206,14 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
           onOpenSearch={() => setShowSearch(true)}
         />
       </div>
+      {isMobile && drawerOpen && (
+        <button
+          className="drawer-scrim"
+          type="button"
+          onClick={() => setDrawerOpen(false)}
+          aria-label="Close navigation"
+        />
+      )}
       {!collapsed && (
         <div className="col-resizer" onMouseDown={startResize} title="Drag to resize · double-click to reset" />
       )}

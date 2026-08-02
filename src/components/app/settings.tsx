@@ -12,6 +12,7 @@ import { Ic } from '@/components/ui/icons';
 import { UI_FONTS } from '@/lib/fonts';
 import { useUiFont } from '@/lib/use-ui-font';
 import { commitOnEnter } from '@/lib/inline-edit';
+import { NavToggle } from './nav-toggle';
 
 interface Workspace {
   id: string;
@@ -45,6 +46,7 @@ export function SettingsScreen({
   return (
     <div className="settings">
       <nav className="settings-nav">
+        <NavToggle />
         <div className="settings-navlabel">App settings</div>
         {SECTIONS.map(({ id, label, icon }) => {
           const Icon = Ic[icon];
@@ -127,12 +129,13 @@ export function WorkspaceSettingsScreen({ workspace }: { workspace: Workspace | 
   if (!workspace) {
     return (
       <div className="settings settings-solo">
-        <div className="settings-main">
-          <div className="settings-pane">
-            <h1 className="settings-h">Workspace</h1>
-            <p className="settings-sub">No workspace.</p>
-          </div>
+      <div className="settings-main">
+        <div className="settings-pane">
+          <NavToggle />
+          <h1 className="settings-h">Workspace</h1>
+          <p className="settings-sub">No workspace.</p>
         </div>
+      </div>
       </div>
     );
   }
@@ -148,6 +151,7 @@ export function WorkspaceSettingsScreen({ workspace }: { workspace: Workspace | 
     <div className="settings settings-solo">
       <div className="settings-main">
         <div className="settings-pane">
+          <NavToggle />
           <h1 className="settings-h">Workspace</h1>
           <p className="settings-sub">Your workspace identity — the name shows at the top of the sidebar.</p>
           <div className="set-card">

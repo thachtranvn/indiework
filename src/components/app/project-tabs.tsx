@@ -7,6 +7,7 @@ import { Ic } from '@/components/ui/icons';
 import { updateProject } from '@/app/_actions/projects';
 import { useRun } from '@/components/ui/toast';
 import { commitOnEnter } from '@/lib/inline-edit';
+import { toggleSidebar } from './nav-toggle';
 import {
   BUILTIN_VIEWS,
   DEFAULT_VIEW,
@@ -22,11 +23,6 @@ interface ProjectLite {
   emoji: string | null;
   color: string | null;
   pinned: boolean;
-}
-
-/** Dispatches the shell toggle — AppShell listens for `iw:toggle-sidebar`. */
-function toggleSidebar() {
-  window.dispatchEvent(new CustomEvent('iw:toggle-sidebar'));
 }
 
 /**

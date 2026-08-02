@@ -8,6 +8,7 @@ import { unarchiveProject } from '@/app/_actions/projects';
 import { useRun } from '@/components/ui/toast';
 import { Ic } from '@/components/ui/icons';
 import { EntityIcon } from '@/components/ui/bits';
+import { NavToggle } from './nav-toggle';
 
 type Projects = ShellData['projects'];
 
@@ -62,6 +63,7 @@ export function AllProjectsScreen({ projects }: { projects: Projects }) {
   return (
     <>
       <div className="topbar">
+        <NavToggle />
         <div className="topbar-title">
           <span className="topbar-emoji">🗂️</span>
           <h1>All projects</h1>
