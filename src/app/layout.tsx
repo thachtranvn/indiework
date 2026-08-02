@@ -58,6 +58,13 @@ export const metadata: Metadata = {
   description:
     'A single-user, self-hostable project manager for solo indie developers. Module ⟂ Milestone, Inbox capture, and a service layer behind Web, REST, and MCP.',
   metadataBase: new URL('https://indiework.space'),
+  // Emits `mobile-web-app-capable`. Deliberately not `title` / `statusBarStyle`:
+  // those render the apple-prefixed tags, which iOS has treated as legacy since
+  // 11.3 and which make Safari fall back to a manifest-less install that ignores
+  // start_url and scope. The manifest's `display: standalone` plus themeColor
+  // cover both platforms; the apple-touch-icon is still worth setting.
+  appleWebApp: { capable: true },
+  icons: { apple: '/icons/apple-touch-icon.png' },
 };
 
 export const viewport: Viewport = {

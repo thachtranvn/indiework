@@ -22,7 +22,10 @@
   background: var(--bg-app);
   overflow: hidden;
   position: relative;
-  padding: var(--shell-gap) var(--shell-gap) var(--shell-gap) 0;
+  /* max() with the inset rather than a plain gap: installed on a notched device
+     the status bar draws over the page (viewport-fit=cover), and a tablet keeps
+     the three-track layout so the mobile block below never runs for it. */
+  padding: max(var(--shell-gap), var(--safe-t)) var(--shell-gap) var(--shell-gap) 0;
   column-gap: 0;
   transition:
     grid-template-columns .2s cubic-bezier(.22,.61,.36,1),
@@ -110,6 +113,9 @@
        elements that do (.bulkbar, .toast-viewport) pay their own --safe-b. */
     padding: var(--safe-t) 0 0;
   }
+  /* Nothing sits in the left gutter to be pushed aside, but a landscape phone
+     still puts the notch there. */
+  .main-col { padding-left: var(--safe-l); padding-right: var(--safe-r); }
   .app[data-sb-collapsed] { padding-left: 0; }
   .main-col { margin-left: 0; border: none; border-radius: 0; }
 
