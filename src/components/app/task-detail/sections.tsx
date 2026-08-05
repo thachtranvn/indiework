@@ -13,7 +13,7 @@ import type { OpenableTask } from '@/lib/task-nav';
 import { fmtDate, fmtDay, toDateInputValue } from '@/lib/dates';
 import type { UpdateTaskInput } from '@/server/validators/task';
 import { Popover, OptionList } from '@/components/ui/popover';
-import { ModuleIcon, PhaseIcon, Progress, NoneMark } from '@/components/ui/bits';
+import { ModuleIcon, PhaseIcon, CalendarIcon, Progress, NoneMark } from '@/components/ui/bits';
 import { PriorityPicker } from '@/components/ui/priority-picker';
 import { StatusPicker } from '@/components/ui/status-picker';
 import { Ic } from '@/components/ui/icons';
@@ -59,7 +59,7 @@ export function TaskProperties({
           status={task.status}
           done={task.done}
           showLabel
-          size={14}
+          size={16}
           triggerClassName="prop-control"
           onChange={(status) => patch({ status })}
         />
@@ -83,11 +83,14 @@ export function TaskProperties({
             <button className="prop-control" type="button" data-empty={taskModule ? undefined : ''}>
               {taskModule ? (
                 <>
-                  <ModuleIcon icon={taskModule.icon} color={taskModule.color} size={14} />
+                  <ModuleIcon icon={taskModule.icon} color={taskModule.color} size={16} />
                   {taskModule.name}
                 </>
               ) : (
-                'Set module'
+                <>
+                  <Ic.cube size={16} />
+                  Set module
+                </>
               )}
             </button>
           }
@@ -127,10 +130,12 @@ export function TaskProperties({
             <button className="prop-control" type="button" data-empty={milestoneName ? undefined : ''}>
               {milestoneName ? (
                 <>
-                  <PhaseIcon size={14} /> {milestoneName}
+                  <PhaseIcon size={16} /> {milestoneName}
                 </>
               ) : (
-                'Set milestone'
+                <>
+                  <PhaseIcon size={16} /> Set milestone
+                </>
               )}
             </button>
           }
@@ -159,14 +164,14 @@ export function TaskProperties({
         </Popover>
       </span>
 
-      <span className="prop-label">Due date</span>
+      <span className="prop-label">Due Date</span>
       <span className="prop-val">
         <Popover
           width={210}
           trigger={
             <button className="prop-control" type="button" data-empty={task.dueDate ? undefined : ''}>
-              <Ic.calendar size={14} />
-              {task.dueDate ? fmtDate(task.dueDate, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Set date'}
+              <CalendarIcon size={16} />
+              {task.dueDate ? fmtDate(task.dueDate, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Set due date'}
             </button>
           }
         >

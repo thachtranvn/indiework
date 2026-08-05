@@ -81,6 +81,7 @@ export function Popover({ trigger, children, align = 'left', width = 220, classN
       <span
         ref={btnRef}
         className="pop-trigger"
+        data-open={open ? '' : undefined}
         onClick={(e) => {
           e.stopPropagation();
           setOpen((o) => !o);

@@ -33,6 +33,7 @@ export function StatusPicker({
           type="button"
           aria-label={`Status: ${TASK_STATUS_LABEL[status]}`}
           data-tip={`Status: ${TASK_STATUS_LABEL[status]}`}
+          data-st={effective}
         >
           {showLabel ? (
             <span className="status-opt">

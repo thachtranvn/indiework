@@ -28,6 +28,7 @@ export function PriorityPicker({
           type="button"
           aria-label={`Priority: ${TASK_PRIORITY_LABEL[priority]}`}
           data-tip={`Priority: ${TASK_PRIORITY_LABEL[priority]}`}
+          data-empty={priority === 'none' ? '' : undefined}
         >
           <PriorityBars priority={priority} showLabel={showLabel} />
         </button>
