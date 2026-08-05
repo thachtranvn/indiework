@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { ShellData } from '@/server/load';
 import { useTaskNav, refFromPath } from '@/lib/task-nav';
@@ -13,8 +13,9 @@ import { CommandPalette } from './command-palette';
 import { Ic } from '@/components/ui/icons';
 import { TipHost } from '@/components/ui/tip-host';
 
-/** Slide-out duration of `.detail-panel` — keep in sync with app.css. */
-const DETAIL_EXIT_MS = 280;
+/** Slide-out duration of `.detail-panel` — keep in sync with app.css (+ a
+ *  short buffer so iOS doesn't unmount mid-composite). */
+const DETAIL_EXIT_MS = 450;
 const SIDEBAR_MIN = 180;
 const SIDEBAR_MAX = 440;
 const SIDEBAR_DEFAULT = 230;
@@ -39,7 +40,7 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
   const detailKey = taskRef ?? legacyTaskId;
 
   // The panel has to stay mounted while it slides back out, so remember the task
-  // it was showing and drop it once the exit animation (.28s) has finished.
+  // it was showing and drop it once the exit animation (.4s) has finished.
   const [lastOpen, setLastOpen] = useState<OpenPanel | null>(null);
   if (detailKey && detailKey !== lastOpen?.key) {
     setLastOpen({ key: detailKey, taskRef, taskId: legacyTaskId });
@@ -55,12 +56,10 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
   const [width, setWidth] = useState(SIDEBAR_DEFAULT);
   const [detailWidth, setDetailWidth] = useState(DETAIL_DEFAULT);
   const [resizing, setResizing] = useState<'sidebar' | 'detail' | null>(null);
-  // Read collapsed eagerly so hydrating a persisted "closed" state doesn't
-  // animate the sidebar shut on first paint.
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('iw-sb-collapsed') === '1';
-  });
+  // Default matches the server snapshot. Prefs load in useLayoutEffect (before
+  // paint) so a persisted collapse doesn't animate shut, and hydration stays
+  // clean — reading localStorage in useState() mismatched SSR HTML on device.
+  const [collapsed, setCollapsed] = useState(false);
   const [showProject, setShowProject] = useState(false);
   const [showWorkspace, setShowWorkspace] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -82,11 +81,12 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
   );
 
   // sidebar / detail widths + collapsed state persisted to localStorage (iw-*)
-  useEffect(() => {
+  useLayoutEffect(() => {
     const v = parseInt(localStorage.getItem('iw-sidebar-w') ?? '', 10);
     if (v >= SIDEBAR_MIN && v <= SIDEBAR_MAX) setWidth(v);
     const d = parseInt(localStorage.getItem('iw-detail-w') ?? '', 10);
     if (d >= DETAIL_MIN && d <= DETAIL_MAX) setDetailWidth(d);
+    setCollapsed(localStorage.getItem('iw-sb-collapsed') === '1');
   }, []);
   useEffect(() => {
     localStorage.setItem('iw-sidebar-w', String(width));
@@ -183,7 +183,7 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
   return (
     <div
       className="app"
-      data-detail={detailKey ? '' : undefined}
+      data-detail={detailKey || closing ? '' : undefined}
       data-resizing={resizing ?? undefined}
       // Collapsing is a desktop-only concept — on mobile the rail is off-canvas
       // regardless, and honouring a persisted collapse would only disable the

@@ -9,7 +9,7 @@
 
 **Snapshot date:** 2026-08-02 · branch `cursor/mobile-ux-standalone-5ef2`.
 
-Shipped this pass: the shell's phone layout (drawer + bottom sheet), a selective coarse-pointer
+Shipped this pass: the shell's phone layout (drawer + full-screen sheet), a selective coarse-pointer
 reveal with a non-drag reorder fallback, a per-screen responsive pass, and PWA installability.
 Verified against a **production build** in emulated Chrome (see [Verification](#verification)) —
 not on physical hardware, which is the main gap below.
@@ -55,7 +55,8 @@ not on physical hardware, which is the main gap below.
   behaviour. *Todo: tap quick-capture on an iPhone and confirm the scale is unchanged.*
 - [x] **MB-T4** — Pinch-zoom available. `maximumScale: 5`, never 1.
 - [~] **MB-T5** — Immediate taps. `touch-action: manipulation` on controls,
-  `-webkit-tap-highlight-color: transparent`, and tooltips suppressed on coarse pointers.
+  `-webkit-tap-highlight-color: transparent`, tooltips suppressed on coarse pointers, and
+  `:hover` gated behind `@media (hover: hover) and (pointer: fine)` so a tap is a click rather than sticky hover.
   *Todo: confirm no residual highlight on a physical Android device.*
 - [~] **MB-T6** — Scroll stays inside the app. `overscroll-behavior-y: none` on `<html>`.
   *Todo: confirm no pull-to-refresh on Chrome Android.*

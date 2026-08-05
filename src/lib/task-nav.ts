@@ -8,6 +8,25 @@ export { slugify, taskPath, taskFullPath, taskCanonicalUrl, refFromPath, project
 export type { OpenableTask } from './task-url';
 
 /**
+ * iOS home-screen apps show Safari's back/forward chrome as soon as history
+ * grows past one entry. Overlay open/close must `replaceState` there so the
+ * stack stays flat (MB-S2 / MB-S6). Everywhere else `pushState` keeps browser
+ * Back closing the panel. Android standalone keeps push — its system Back
+ * should dismiss the sheet, not leave the app.
+ */
+function writeOverlayUrl(url: string) {
+  const standalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  const ios =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (standalone && ios) window.history.replaceState(null, '', url);
+  else window.history.pushState(null, '', url);
+}
+
+/**
  * Single source of truth for opening/closing the task detail panel.
  *
  * Project tasks (have a `ref`) get a readable, shareable path URL
@@ -34,11 +53,11 @@ export function useTaskNav() {
       const path = task.ref ? taskPath(task.ref, task.title) : null;
       if (path) {
         const qs = sp.toString();
-        window.history.pushState(null, '', qs ? `${path}?${qs}` : path);
+        writeOverlayUrl(qs ? `${path}?${qs}` : path);
         return;
       }
       sp.set('task', task.id);
-      window.history.pushState(null, '', `${pathname}?${sp.toString()}`);
+      writeOverlayUrl(`${pathname}?${sp.toString()}`);
     },
     [pathname, params],
   );
@@ -49,7 +68,7 @@ export function useTaskNav() {
     const qs = sp.toString();
     const fromPath = refFromPath(pathname);
     const base = (fromPath && projectPathForRef(fromPath.ref)) || pathname;
-    window.history.pushState(null, '', qs ? `${base}?${qs}` : base);
+    writeOverlayUrl(qs ? `${base}?${qs}` : base);
   }, [pathname, params]);
 
   // Clicking the row of the already-open task closes the panel instead of

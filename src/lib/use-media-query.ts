@@ -1,38 +1,33 @@
 'use client';
 
-import { useCallback, useMemo, useSyncExternalStore } from 'react';
+import { useLayoutEffect, useState } from 'react';
 
 /** The app's single mobile breakpoint. Mirrors `--bp-mobile` in tokens.css. */
 export const MOBILE_QUERY = '(max-width: 760px)';
 
 /**
- * SSR-safe `matchMedia`. The server snapshot is always `false`, so the markup
- * matches and hydration is clean; the real value arrives on the first render
- * after hydration.
+ * SSR-safe `matchMedia`. Always `false` on the server and the hydrating
+ * client render so markup matches; the real value lands in an effect.
  *
- * Because of that, this is only for behaviour that can settle one frame late
- * (which slot a panel renders into, whether a resizer exists). Anything that
- * must be right in the first painted frame belongs in a CSS media query.
+ * `useSyncExternalStore` is the wrong tool here: React still warns when
+ * `getSnapshot` (phone = true) differs from `getServerSnapshot` (false),
+ * which is exactly the hydration overlay on a real device.
+ *
+ * Only for behaviour that can settle one frame late. Anything that must be
+ * right in the first painted frame belongs in a CSS media query.
  */
 export function useMediaQuery(query: string): boolean {
-  const mql = useMemo(
-    () => (typeof window === 'undefined' ? null : window.matchMedia(query)),
-    [query],
-  );
+  const [matches, setMatches] = useState(false);
 
-  const subscribe = useCallback(
-    (onChange: () => void) => {
-      mql?.addEventListener('change', onChange);
-      return () => mql?.removeEventListener('change', onChange);
-    },
-    [mql],
-  );
+  useLayoutEffect(() => {
+    const mql = window.matchMedia(query);
+    const onChange = () => setMatches(mql.matches);
+    onChange();
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, [query]);
 
-  return useSyncExternalStore(
-    subscribe,
-    () => mql?.matches ?? false,
-    () => false,
-  );
+  return matches;
 }
 
 /** True on phone-width viewports — the shell switches to drawer + sheet here. */

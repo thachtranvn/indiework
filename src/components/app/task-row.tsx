@@ -38,6 +38,7 @@ export function TaskRow({
   showModule = true,
   showMilestone = true,
   dueSlotWidth,
+  flashing,
 }: {
   task: TaskDto;
   module?: GroupModule;
@@ -64,6 +65,7 @@ export function TaskRow({
   showMilestone?: boolean;
   /** Width of the shared due column (longest label on the page); omit when no dues. */
   dueSlotWidth?: number;
+  flashing?: boolean;
 }) {
   const children = childTasks ?? [];
   const subDone = children.filter((c) => c.done).length;
@@ -88,12 +90,14 @@ export function TaskRow({
     <>
       <div
         className="task-row"
+        data-task-id={task.id}
         data-done={task.done ? '' : undefined}
         data-cancelled={task.status === 'cancelled' ? '' : undefined}
         data-selected={selected ? '' : undefined}
         data-checked={checked ? '' : undefined}
         data-selmode={selMode ? '' : undefined}
         data-editing={editing ? '' : undefined}
+        data-flash={flashing ? '' : undefined}
         onClick={() => !editing && onOpen(task)}
       >
         <button

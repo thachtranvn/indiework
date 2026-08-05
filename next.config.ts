@@ -1,4 +1,16 @@
+import os from "node:os";
 import type { NextConfig } from "next";
+
+/** LAN + loopback hosts so a phone on Wi-Fi can load `/_next` and hydrate. */
+function localDevOrigins(): string[] {
+  const origins = new Set<string>(["127.0.0.1"]);
+  for (const addrs of Object.values(os.networkInterfaces())) {
+    for (const addr of addrs ?? []) {
+      if (addr.family === "IPv4" && !addr.internal) origins.add(addr.address);
+    }
+  }
+  return [...origins];
+}
 
 // Static security headers for every response. The Content-Security-Policy is
 // NOT here — it carries a per-request nonce and is emitted by src/proxy.ts.
@@ -16,6 +28,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  // Next 16 blocks cross-origin `/_next` in dev. Desktop `localhost` is fine;
+  // a real phone hits the machine's LAN IP and otherwise never hydrates
+  // (scroll + inputs work, React taps do not).
+  allowedDevOrigins: localDevOrigins(),
   // Hide the floating Next.js Dev Tools badge (bottom-left). Errors still surface.
   devIndicators: false,
   experimental: {

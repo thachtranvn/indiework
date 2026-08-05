@@ -15,6 +15,7 @@ import { ParentLink, TaskProperties, TaskSubtasks, TaskActivity, ConvertToTaskCo
  * and inner sections with the standalone full page; the panel adds only its
  * own chrome: a ref header with an "open full page" link, escape-to-close, and
  * a footer delete. Related-task clicks open a peek overlay (`openTask`).
+ * First open waits for content to paint off-screen, then slides in.
  */
 export function DetailPanel({
   taskRef,
@@ -33,6 +34,8 @@ export function DetailPanel({
   const bodyRef = useRef<HTMLDivElement>(null);
   const ticketElRef = useRef<HTMLDivElement>(null);
   const [headMetaVisible, setHeadMetaVisible] = useState(false);
+  const settled = Boolean(detail || missing || loadError);
+  const [slideIn, setSlideIn] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -41,6 +44,22 @@ export function DetailPanel({
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  // Park off-screen until the first real paint, then slide in — otherwise the
+  // skeleton→content swap (or markdown layout) hits mid-animation and jitters.
+  useEffect(() => {
+    if (!settled || slideIn) return;
+    let alive = true;
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (alive) setSlideIn(true);
+      });
+    });
+    return () => {
+      alive = false;
+      cancelAnimationFrame(frame);
+    };
+  }, [settled, slideIn]);
 
   // Reveal ID + title in the sticky header only after the in-body ticket
   // identity scrolls out of view.
@@ -58,9 +77,11 @@ export function DetailPanel({
     return () => io.disconnect();
   }, [detail?.task.id]);
 
-  if (missing || loadError) {
+  if (!settled) return null;
+
+  if (!detail || missing || loadError) {
     return (
-      <section className="detail-panel">
+      <section className="detail-panel" data-ready={slideIn ? '' : undefined}>
         <div className="dp-head">
           <button className="icon-btn" onClick={onClose} aria-label="Close panel">
             <Ic.chevronRight size={16} />
@@ -90,26 +111,12 @@ export function DetailPanel({
     );
   }
 
-  if (!detail) {
-    return (
-      <section className="detail-panel" aria-busy>
-        <div className="dp-head">
-          <button className="icon-btn" onClick={onClose} aria-label="Close panel">
-            <Ic.chevronRight size={16} />
-          </button>
-          <span className="dp-head-divider" aria-hidden />
-          <span className="dp-head-meta" />
-        </div>
-      </section>
-    );
-  }
-
   const { task, displayRef, parent, comments, attachments } = detail;
   const pending = task.status === 'pending';
   const fullPath = displayRef ? taskFullPath(displayRef, task.title) : null;
 
   return (
-    <section className="detail-panel">
+    <section className="detail-panel" data-ready={slideIn ? '' : undefined}>
       <div className="dp-head">
         <button className="icon-btn" onClick={onClose} aria-label="Close panel">
           <Ic.chevronRight size={16} />

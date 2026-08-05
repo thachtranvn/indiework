@@ -45,7 +45,7 @@ import { ProjectTabs } from './project-tabs';
 import { DisplayPopover, FilterPopover, BoardDisplayPopover } from './display-popover';
 import { BoardView } from './board';
 import { TaskRow } from './task-row';
-import { QuickCapture } from './quick-capture';
+import { QuickCapture, type QuickCaptureHandle } from './quick-capture';
 import { PriorityBars, ModuleIcon, PhaseIcon, NoneMark, duePillLabel, MetaPill, ProgressRing } from '@/components/ui/bits';
 import { StatusIcon } from '@/components/ui/status-icon';
 import { Popover, OptionList } from '@/components/ui/popover';
@@ -79,6 +79,23 @@ interface DisplayState {
 /** Display/filter/board prefs are stored per view, not per project. */
 function viewStorageKey(projectKey: string, viewId: ViewId, kind: 'display' | 'board' | 'collapsed') {
   return `iw-${kind}-${projectKey}-${viewId}`;
+}
+
+const FLASH_MS = 2000;
+
+/** Section + subsection ids that currently contain `taskId` (for expanding collapse). */
+function sectionIdsForTask(sections: Sec[], taskId: string): string[] {
+  const ids: string[] = [];
+  for (const s of sections) {
+    if (s.subs) {
+      for (const sub of s.subs) {
+        if (sub.tasks.some((t) => t.id === taskId)) ids.push(s.id, sub.id);
+      }
+    } else if (s.tasks.some((t) => t.id === taskId)) {
+      ids.push(s.id);
+    }
+  }
+  return ids;
 }
 
 /** One-time migration from pre–per-view keys (`iw-*-<KEY>` → `iw-*-<KEY>-all`). */
@@ -160,6 +177,9 @@ export function ProjectView({
   const [collapsedArr, setCollapsedArr] = useLocalStorage<string[]>(viewStorageKey(project.key, activeView, 'collapsed'), []);
   const collapsed = useMemo(() => new Set(collapsedArr), [collapsedArr]);
   const lastSel = useRef<string | null>(null);
+  const captureRef = useRef<QuickCaptureHandle>(null);
+  const [captureDraft, setCaptureDraft] = useState('');
+  const [flashId, setFlashId] = useState<string | null>(null);
 
   // Restore/keep list scroll across the open-task remount.
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -215,6 +235,22 @@ export function ProjectView({
   );
   const visibleSections = sections.filter((s) => s.tasks.length > 0 || s.keep);
   const anyTasks = sections.some((s) => s.tasks.length > 0);
+
+  useLayoutEffect(() => {
+    if (!flashId) return;
+    const ids = sectionIdsForTask(sections, flashId);
+    const collapsedHit = ids.filter((id) => collapsed.has(id));
+    if (collapsedHit.length > 0) {
+      setCollapsedArr((prev) => prev.filter((k) => !collapsedHit.includes(k)));
+      return;
+    }
+    const root = listViewRef.current;
+    const el = root?.querySelector(`[data-task-id="${CSS.escape(flashId)}"]`);
+    if (!(el instanceof HTMLElement)) return;
+    el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+    const timer = window.setTimeout(() => setFlashId(null), FLASH_MS);
+    return () => window.clearTimeout(timer);
+  }, [flashId, sections, collapsed, setCollapsedArr]);
   // Measure classic scrollbar gutter so padding-right + gutter = left padding (16px).
   // Do NOT remeasure on scroll — reading layout + writing --scroll-gutter mid-scroll
   // thrashs style/layout and feels like hitching.
@@ -296,7 +332,15 @@ export function ProjectView({
       () => createTask({ projectId: project.id, title, ...(captureStatus ? { status: captureStatus } : {}), ...patch }),
       { error: "Couldn't add that task.", retry: false },
     );
-    if (task) router.refresh();
+    if (task) {
+      commit(task);
+      router.refresh();
+    }
+    return task;
+  };
+  const addFromCapture = async (title: string) => {
+    const task = await add(title);
+    if (task) setFlashId(task.id);
     return task;
   };
   // IW-8: adding inside a section opens the new task's detail panel; the top
@@ -410,41 +454,49 @@ export function ProjectView({
       />
       <div className="list-view" ref={listViewRef}>
       <div className="qcap-row">
-        <QuickCapture placeholder="Add a task…  (it lands in this project)" onAdd={(t) => add(t)} />
+        <QuickCapture ref={captureRef} placeholder="Add task..." onAdd={addFromCapture} onDraftChange={setCaptureDraft} />
         <div className="qcap-tools">
-          <FilterPopover
-            filters={filters}
-            setFilters={(f) => setDisp((s) => ({ ...s, filters: f }))}
-            modules={modules}
-            milestones={milestones}
-          />
-          {mode === 'board' ? (
-            <BoardDisplayPopover
-              setMode={(m) => views.setMode(activeView, m)}
-              availDims={availDims}
-              cfg={boardCfg}
-              setCfg={(patch) => setBoardCfg((c) => ({ ...c, ...patch }))}
-            />
+          {captureDraft.trim() ? (
+            <button className="qcap-add" type="button" onClick={() => captureRef.current?.submit()}>
+              Add
+            </button>
           ) : (
-            <DisplayPopover
-              mode={mode}
-              setMode={(m) => views.setMode(activeView, m)}
-              groupBy={effPrimary}
-              setGroupBy={(d) => setDisp((s) => ({ ...s, groupBy: d }))}
-              subGroupBy={effSecondary}
-              setSubGroupBy={(d) => setDisp((s) => ({ ...s, subGroupBy: d }))}
-              groupStyle={disp.groupStyle ?? 'band'}
-              setGroupStyle={(g) => setDisp((s) => ({ ...s, groupStyle: g }))}
-              sort={disp.sort ?? 'priority'}
-              setSort={(o) => setDisp((s) => ({ ...s, sort: o }))}
-              availDims={availDims}
-              filters={filters}
-              setFilters={(f) => setDisp((s) => ({ ...s, filters: f }))}
-              statusOrder={disp.statusOrder}
-              setStatusOrder={(o) => setDisp((s) => ({ ...s, statusOrder: o }))}
-              statusHidden={disp.statusHidden}
-              setStatusHidden={(h) => setDisp((s) => ({ ...s, statusHidden: h }))}
-            />
+            <>
+              <FilterPopover
+                filters={filters}
+                setFilters={(f) => setDisp((s) => ({ ...s, filters: f }))}
+                modules={modules}
+                milestones={milestones}
+              />
+              {mode === 'board' ? (
+                <BoardDisplayPopover
+                  setMode={(m) => views.setMode(activeView, m)}
+                  availDims={availDims}
+                  cfg={boardCfg}
+                  setCfg={(patch) => setBoardCfg((c) => ({ ...c, ...patch }))}
+                />
+              ) : (
+                <DisplayPopover
+                  mode={mode}
+                  setMode={(m) => views.setMode(activeView, m)}
+                  groupBy={effPrimary}
+                  setGroupBy={(d) => setDisp((s) => ({ ...s, groupBy: d }))}
+                  subGroupBy={effSecondary}
+                  setSubGroupBy={(d) => setDisp((s) => ({ ...s, subGroupBy: d }))}
+                  groupStyle={disp.groupStyle ?? 'band'}
+                  setGroupStyle={(g) => setDisp((s) => ({ ...s, groupStyle: g }))}
+                  sort={disp.sort ?? 'priority'}
+                  setSort={(o) => setDisp((s) => ({ ...s, sort: o }))}
+                  availDims={availDims}
+                  filters={filters}
+                  setFilters={(f) => setDisp((s) => ({ ...s, filters: f }))}
+                  statusOrder={disp.statusOrder}
+                  setStatusOrder={(o) => setDisp((s) => ({ ...s, statusOrder: o }))}
+                  statusHidden={disp.statusHidden}
+                  setStatusHidden={(h) => setDisp((s) => ({ ...s, statusHidden: h }))}
+                />
+              )}
+            </>
           )}
         </div>
       </div>
@@ -455,6 +507,7 @@ export function ProjectView({
           milestones={milestones}
           tasks={scoped}
           cfg={boardCfg}
+          flashId={flashId}
           onMoveCard={onMoveCard}
           onAddCard={addCard}
         />
@@ -492,6 +545,7 @@ export function ProjectView({
                 collapsedSet={collapsed}
                 toggleCollapse={toggleCollapse}
                 onAdd={addAndOpen}
+                flashId={flashId}
               />
             ))
           ) : (
@@ -596,6 +650,7 @@ function Section({
   collapsedSet,
   toggleCollapse,
   onAdd,
+  flashId,
 }: {
   section: Sec;
   collapsed: boolean;
@@ -625,6 +680,7 @@ function Section({
   collapsedSet: Set<string>;
   toggleCollapse: (key: string) => void;
   onAdd: (title: string, patch: Sec['patch']) => Promise<unknown> | void;
+  flashId: string | null;
 }) {
   const total = section.tasks.length;
   const done = section.tasks.filter((t) => t.done).length;
@@ -656,6 +712,7 @@ function Section({
       showModule={showModule}
       showMilestone={showMilestone}
       dueSlotWidth={dueSlotWidth}
+      flashing={t.id === flashId}
     />
   );
 

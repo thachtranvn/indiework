@@ -32,6 +32,7 @@ export function BoardView({
   cfg,
   onMoveCard,
   onAddCard,
+  flashId,
 }: {
   modules: GroupModule[];
   milestones: GroupMilestone[];
@@ -39,6 +40,7 @@ export function BoardView({
   cfg: BoardCfg;
   onMoveCard: (id: string, patch: NewTaskPatch) => void;
   onAddCard: (patch: NewTaskPatch, title: string) => Promise<TaskDto | undefined>;
+  flashId?: string | null;
 }) {
   const { toggleTask } = useTaskNav();
   const [dragId, setDragId] = useState<string | null>(null);
@@ -113,6 +115,7 @@ export function BoardView({
               module={t.moduleId ? moduleMap.get(t.moduleId) : undefined}
               milestone={t.milestoneId ? milestoneMap.get(t.milestoneId) : undefined}
               dragging={dragId === t.id}
+              flashing={t.id === flashId}
               onDragStart={(e) => {
                 e.dataTransfer.setData('text/plain', t.id);
                 e.dataTransfer.effectAllowed = 'move';
@@ -170,6 +173,7 @@ function BoardCard({
   module,
   milestone,
   dragging,
+  flashing,
   onDragStart,
   onDragEnd,
   onOpen,
@@ -179,6 +183,7 @@ function BoardCard({
   module?: GroupModule;
   milestone?: GroupMilestone;
   dragging: boolean;
+  flashing?: boolean;
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
   onOpen: () => void;
@@ -190,7 +195,7 @@ function BoardCard({
     (fields.milestone && milestone) ||
     (fields.taskId && task.ref);
   return (
-    <div className="board-card" draggable data-dragging={dragging ? '' : undefined} onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={onOpen}>
+    <div className="board-card" draggable data-task-id={task.id} data-dragging={dragging ? '' : undefined} data-flash={flashing ? '' : undefined} onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={onOpen}>
       <div className="board-card-title">{task.title}</div>
       {hasMeta && (
         <div className="board-card-meta">

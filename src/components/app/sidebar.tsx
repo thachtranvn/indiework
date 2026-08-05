@@ -223,7 +223,8 @@ export function Sidebar({
         >
           <Ic.settings size={16} /> Settings
         </Link>
-        <form action={logout} className="sb-footform">
+        {/* Chrome injects `__gcruniqueid` on forms before hydrate (dev overlay). */}
+        <form action={logout} className="sb-footform" suppressHydrationWarning>
           <button className="sb-footbtn" type="submit">
             <Ic.logout size={16} /> Log out
           </button>

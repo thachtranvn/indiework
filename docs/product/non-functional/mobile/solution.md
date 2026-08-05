@@ -43,15 +43,18 @@ Below the breakpoint, [app.css](../../../../src/styles/app.css) collapses `.app`
 `grid-template-columns: minmax(0, 1fr)` and takes both side panels out of flow:
 
 - **Sidebar → drawer.** `position: fixed`, translated off-canvas, slid in by `.app[data-drawer]`,
-  with a scrim button behind it. The drawer needs state that `collapsed` cannot supply:
+  with a scrim button behind it. While closed it is `pointer-events: none` + `visibility: hidden`
+  — iOS otherwise hit-tests the composited off-canvas layer and swallows taps on the list
+  (scroll and text inputs still work; buttons and rows do not). The drawer needs state that
+  `collapsed` cannot supply:
   `collapsed` is persisted to `localStorage`, so reusing it would launch the drawer already open
   just because the rail was left expanded on a desktop. `AppShell` therefore keeps a separate
   `drawer` state, and suppresses `data-sb-collapsed` entirely on mobile so the collapsed rail's
   `pointer-events: none` can't disable the drawer.
-- **Detail panel → bottom sheet.** `position: fixed; inset: 0`, hidden outright when closed
+- **Detail panel → full-screen sheet.** `position: fixed; inset: 0`, hidden outright when closed
   (`inset: 0` on an empty slot would otherwise park a transparent overlay over the list), and
-  animated with `sheetIn`/`sheetOut` keyframes that share the desktop animation's duration so the
-  existing `DETAIL_EXIT_MS` still matches.
+  animated with the same right→left `translate3d(100vw)` slide as desktop so
+  `DETAIL_EXIT_MS` still matches.
 
 The drawer closes on navigation. That is done by **adjusting state during render** (comparing the
 tracked path with `usePathname()`) rather than in an effect — the same pattern the file already
@@ -98,6 +101,14 @@ Tooltips are suppressed on coarse pointers in
 matching `mouseout`, which left the tip parked over the UI until the next tap elsewhere. The check
 reads a live `MediaQueryList` inside the listener rather than a hook, so a hybrid device tracks
 correctly. Focus-driven tips are untouched.
+
+**No `:hover` paint on touch.** iOS (and some Android browsers) treat the first tap as `:hover`
+and withhold the click whenever hover restyles the target — especially when it reveals
+`opacity: 0` children. A PostCSS step ([postcss-hover-media.mjs](../../../../postcss-hover-media.mjs))
+wraps author `:hover` rules in `@media (hover: hover) and (pointer: fine)` so phones (and iPad
+finger taps) never match them. Mixed selectors are split first, so `[data-open]` /
+`:focus-visible` / `[data-selected]` still apply. Hidden hover-reveals also use
+`pointer-events: none` until they are shown, so an invisible pencil or pin cannot steal the tap.
 
 ### Ordering matters more than specificity here
 

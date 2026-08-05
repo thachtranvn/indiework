@@ -25,7 +25,7 @@
   /* max() with the inset rather than a plain gap: installed on a notched device
      the status bar draws over the page (viewport-fit=cover), and a tablet keeps
      the three-track layout so the mobile block below never runs for it. */
-  padding: max(var(--shell-gap), var(--safe-t)) var(--shell-gap) var(--shell-gap) 0;
+  padding: max(var(--shell-gap), var(--safe-t)) var(--shell-gap) max(var(--shell-gap), var(--safe-b)) 0;
   column-gap: 0;
   transition:
     grid-template-columns .2s cubic-bezier(.22,.61,.36,1),
@@ -70,7 +70,7 @@
 
 /* Detail slot: clips the fixed-width panel, which slides across it at exactly the
    rate the track grows/shrinks — so the card travels as one piece (no wipe) while
-   the list resizes. Keep the .28s timing in sync with .app and DETAIL_EXIT_MS.
+   the list resizes. Keep the transform transition in sync with DETAIL_EXIT_MS.
    Open track is gap+panel; panel is flex-end'd so the leading empty space is the
    gutter (same 8px as top/bottom padding). */
 .detail-slot {
@@ -81,11 +81,17 @@
   display: flex;
   justify-content: flex-end;
 }
-.detail-slot .detail-panel { animation: detailIn .28s cubic-bezier(.22,.61,.36,1); }
+.detail-slot .detail-panel {
+  transform: translate3d(100%, 0, 0);
+  transition: transform .4s cubic-bezier(.32, .72, 0, 1);
+  will-change: transform;
+}
+.detail-slot .detail-panel[data-ready] { transform: translate3d(0, 0, 0); }
 .detail-slot[data-closing] { pointer-events: none; }
-.detail-slot[data-closing] .detail-panel { animation: detailOut .28s cubic-bezier(.22,.61,.36,1) forwards; }
-@keyframes detailIn { from { transform: translateX(100%); } to { transform: none; } }
-@keyframes detailOut { from { transform: none; } to { transform: translateX(100%); } }
+.detail-slot[data-closing] .detail-panel {
+  transform: translate3d(100%, 0, 0);
+  transition-timing-function: ease-out;
+}
 
 /* drag handles — sidebar↔main and main↔detail seams */
 .col-resizer, .detail-resizer {
@@ -103,14 +109,14 @@
 
 /* ---------- App shell — phone layout (--bp-mobile) ----------
    The three tracks collapse to one. Both side panels leave the flow and become
-   overlays — the drawer from the left, the detail sheet from the bottom — so
+   overlays — the drawer from the left, the detail sheet from the right — so
    .main-col owns the full viewport and never has to share it with a 384px
    inspector on a 390px screen. */
 @media (max-width: 760px) {
   .app {
     grid-template-columns: minmax(0, 1fr);
-    /* Top inset only: the shell has no fixed bottom chrome of its own, and the
-       elements that do (.bulkbar, .toast-viewport) pay their own --safe-b. */
+    /* Top inset on the shell; bottom stays 0 so the surface paints under the
+       home indicator. In-flow scroll areas and fixed chrome add --safe-b. */
     padding: var(--safe-t) 0 0;
   }
   /* Nothing sits in the left gutter to be pushed aside, but a landscape phone
@@ -119,7 +125,10 @@
   .app[data-sb-collapsed] { padding-left: 0; }
   .main-col { margin-left: 0; border: none; border-radius: 0; }
 
-  /* Sidebar → overlay drawer */
+  /* Sidebar → overlay drawer.
+     `translateX(-100%)` alone is not enough on iOS: the composited layer still
+     steals taps (scroll and text-input focus can leak through; clicks do not).
+     Keep it inert + hidden until the drawer is actually open. */
   .sidebar-slot {
     position: fixed;
     top: 0; bottom: 0; left: 0;
@@ -130,10 +139,23 @@
     border-right: 1px solid var(--border);
     box-shadow: var(--shadow-lg);
     transform: translateX(-100%);
-    transition: transform .24s cubic-bezier(.22,.61,.36,1);
+    pointer-events: none;
+    visibility: hidden;
+    /* Desktop uses flex-end so the 230px rail sticks to the track's trailing
+       edge on collapse. Here the slot *is* the drawer — start-align and fill. */
+    justify-content: flex-start;
+    transition:
+      transform .24s cubic-bezier(.22,.61,.36,1),
+      visibility 0s linear .24s;
   }
-  .app[data-drawer] .sidebar-slot { transform: none; }
-  .sidebar { width: 100%; }
+  .app[data-drawer] .sidebar-slot {
+    transform: none;
+    pointer-events: auto;
+    visibility: visible;
+    transition: transform .24s cubic-bezier(.22,.61,.36,1), visibility 0s;
+  }
+  /* Two-class selector beats the later `.sidebar { width: 230px }` rule. */
+  .sidebar-slot .sidebar { width: 100%; }
   .drawer-scrim { position: fixed; inset: 0; z-index: 890; border: none; padding: 0;
     background: var(--bg-overlay); animation: fadeIn .2s ease; }
 
@@ -141,26 +163,26 @@
      the collapse toggle they belong to. */
   .col-resizer, .detail-resizer, .sb-expand { display: none; }
 
-  /* Detail panel → full-screen sheet. Hidden outright when closed: `inset: 0`
-     would otherwise keep an empty overlay over the list. */
+  /* Detail panel → full-screen sheet. Slot is transparent so the list stays
+     visible underneath while the opaque panel slides across it. Hidden
+     outright when closed: `inset: 0` would otherwise park an overlay over
+     the list. */
   .detail-slot { display: none; }
   .app[data-detail] .detail-slot, .detail-slot[data-closing] {
-    display: block;
+    display: flex;
     position: fixed;
     inset: 0;
     z-index: 920;
-    padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
-    background: var(--bg-surface);
+    background: transparent;
+    overflow: hidden;
+    pointer-events: none;
   }
-  .detail-slot .detail-panel { width: 100%; border: none; border-radius: 0; animation-name: sheetIn; }
-  .detail-slot[data-closing] .detail-panel { animation-name: sheetOut; }
+  .detail-slot .detail-panel {
+    width: 100%; height: 100%; border: none; border-radius: 0;
+    padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
+    pointer-events: auto;
+  }
 }
-
-/* A sheet rises from the bottom edge; the desktop panel slides in from the
-   right. Same duration/easing, so DETAIL_EXIT_MS still matches both. */
-@keyframes sheetIn { from { transform: translateY(100%); } to { transform: none; } }
-@keyframes sheetOut { from { transform: none; } to { transform: translateY(100%); } }
-
 
 /* ---------- Sidebar (light, inherits theme tokens) ---------- */
 .sidebar { display: flex; flex-direction: column; width: var(--sidebar-panel-w, 230px); flex: none;
@@ -210,8 +232,8 @@
 .sb-section { font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase;
   color: var(--text-faint); padding: 12px 8px 8px; display: flex; align-items: center; justify-content: space-between; }
 .sb-section button { border: none; background: none; color: var(--text-faint); padding: 2px; border-radius: var(--r-xs);
-  display: grid; place-items: center; opacity: 0; transition: .12s; }
-.sb-section:hover button { opacity: 1; }
+  display: grid; place-items: center; opacity: 0; pointer-events: none; transition: .12s; }
+.sb-section:hover button { opacity: 1; pointer-events: auto; }
 .sb-section button:hover { background: var(--bg-active); color: var(--text); }
 
 /* footer */
@@ -244,8 +266,8 @@
 .nav-pin { position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
   border: none; background: none; color: var(--text-muted); width: 22px; height: 22px;
   border-radius: var(--r-sm); display: grid; place-items: center; cursor: pointer;
-  opacity: 0; transition: opacity .12s, background .12s, color .12s; }
-.nav-item-wrap:hover .nav-pin, .nav-pin:focus-visible { opacity: 1; }
+  opacity: 0; pointer-events: none; transition: opacity .12s, background .12s, color .12s; }
+.nav-item-wrap:hover .nav-pin, .nav-pin:focus-visible { opacity: 1; pointer-events: auto; }
 .nav-pin:hover { background: var(--bg-active); color: var(--text-strong); }
 .nav-pin[data-on] { color: var(--text-strong); }
 /* keep the pin from colliding with the issue count on the right edge */
@@ -328,12 +350,26 @@
 .qcap-hint { font: 500 11px/1 var(--font-ui); color: var(--text-faint); background: var(--bg-sunken);
   border: 1px solid var(--border); border-radius: var(--r-xs); padding: 3px 5px; }
 .qcap-tools { display: flex; align-items: center; gap: 6px; flex: none; }
+.qcap-add { height: 32px; padding: 0 14px; border: 1px solid var(--accent); background: var(--accent);
+  color: #fff; font-size: 13px; font-weight: 600; border-radius: var(--r-sm); flex: none;
+  transition: background .12s, border-color .12s; }
+.qcap-add:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+@keyframes task-flash {
+  0%, 100% { background-color: transparent; outline-color: transparent; }
+  14%, 32% { background-color: var(--bg-hover); outline-color: var(--text-strong); }
+  50% { background-color: transparent; outline-color: transparent; }
+  64%, 82% { background-color: var(--bg-hover); outline-color: var(--text-strong); }
+}
+.task-row[data-flash] {
+  outline: 1.5px solid transparent; outline-offset: -1.5px;
+  animation: task-flash 2s ease-in-out;
+}
 
 /* ---------- Scroll body ---------- */
 /* Right inset = left inset: padding-right + scrollbar gutter = 16px. */
 .scroll-body {
   flex: 1; overflow-y: auto; scrollbar-gutter: stable; min-height: 0;
-  padding: 0 16px 60px;
+  padding: 0 16px calc(60px + var(--safe-b));
   padding-right: max(0px, calc(16px - var(--scroll-gutter, 0px)));
 }
 
@@ -453,8 +489,8 @@
 .due-date-menu { padding: 6px; display: flex; flex-direction: column; gap: 8px; }
 /* hover-reveal: only the status chip is hidden until hover; priority, ref,
    tags and due stay visible (matches design) */
-.task-reveal { display: flex; align-items: center; gap: 8px; opacity: 0; transition: opacity .12s; }
-.task-row:hover .task-reveal, .task-row[data-selected] .task-reveal { opacity: 1; }
+.task-reveal { display: flex; align-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity .12s; }
+.task-row:hover .task-reveal, .task-row[data-selected] .task-reveal { opacity: 1; pointer-events: auto; }
 /* fixed-width right slot so the visible meta (tags, due) shares a consistent
    right edge across rows regardless of status-label width */
 .status-reveal { width: 84px; flex: none; justify-content: flex-end; }
@@ -487,8 +523,8 @@
    status circle so the two checkboxes never read as a pair. */
 .task-select { width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--border);
   background: var(--bg-surface); display: grid; place-items: center; color: #fff; padding: 0;
-  opacity: 0; transition: opacity .12s, background .12s, border-color .12s; flex: none; cursor: pointer; }
-.task-row:hover .task-select, .task-row[data-selmode] .task-select, .task-row[data-checked] .task-select { opacity: 1; }
+  opacity: 0; pointer-events: none; transition: opacity .12s, background .12s, border-color .12s; flex: none; cursor: pointer; }
+.task-row:hover .task-select, .task-row[data-selmode] .task-select, .task-row[data-checked] .task-select { opacity: 1; pointer-events: auto; }
 .task-select:hover { border-color: var(--border-strong); }
 .task-row[data-checked] .task-select { background: var(--control); border-color: var(--control); }
 .task-row[data-checked] { background: var(--accent-softer); }
@@ -689,7 +725,14 @@
 @media (pointer: coarse) {
   .task-select,
   .nav-item-wrap .nav-pin,
-  .sb-section button { opacity: 1; }
+  .sb-section button { opacity: 1; pointer-events: auto; }
+
+  /* Pin is no longer hover-revealed, so it can't sit on top of the count. */
+  .nav-item-wrap { display: flex; align-items: center; gap: 2px; }
+  .nav-item-wrap .nav-item { flex: 1; min-width: 0; }
+  .nav-item-wrap .nav-pin {
+    position: static; transform: none; flex: none;
+  }
 }
 
 /* ---------- Rows, chrome and fixed elements on phones ----------
@@ -702,13 +745,24 @@
   .qcap, .qcap-row { margin: 10px 12px; }
   /* A keyboard shortcut badge on a device with no keyboard. */
   .qcap-hint { display: none; }
+  .qcap-inner { height: 40px; }
+  .qcap-tools .icon-tool { width: 40px; height: 40px; }
+  .qcap-add { height: 40px; }
 
-  .task-row { padding: 9px 12px; gap: 6px; }
-  /* The ref, the phase/module chips and the duplicate status chip are all
-     one tap away in the detail sheet; the title is not. */
+  .task-row { padding: 9px 0; gap: 6px; }
+  /* The ref, the phase/module chips, the duplicate status chip and the
+     inline rename pencil are all one tap away in the detail sheet; the
+     title is not. */
   .task-ref-lead,
   .task-meta .task-meta-btn,
-  .status-reveal { display: none; }
+  .status-reveal,
+  .task-title-edit { display: none; }
+
+  /* No reserved due column — chips sit on the right edge, only as wide as
+     their content. `!important` beats the inline measured width from desktop. */
+  .task-meta { margin-left: auto; justify-content: flex-end; }
+  .task-due-slot { width: auto !important; }
+  .task-due-slot:empty { display: none; }
 
   /* Fixed chrome sits above the home indicator, and the bulk bar can't centre
      itself on a sidebar track that no longer exists. */

@@ -25,7 +25,7 @@ export interface ReconciledTasks {
   tasks: TaskDto[];
   /** Paint an optimistic prediction for the duration of a transition (ADR 0002). */
   applyOptimistic: (action: OptimisticTaskAction) => void;
-  /** Commit server-returned row(s) into the mirror — permanent, no refetch (PP-B4). */
+  /** Commit server-returned row(s) into the mirror — update by id, or insert if new (PP-B4). */
   commit: (rows: TaskDto | TaskDto[]) => void;
 }
 
@@ -46,7 +46,18 @@ export function useReconciledTasks(serverTasks: TaskDto[]): ReconciledTasks {
     const list = Array.isArray(rows) ? rows : [rows];
     if (list.length === 0) return;
     const byId = new Map(list.map((r) => [r.id, r]));
-    setTasks((prev) => prev.map((t) => byId.get(t.id) ?? t));
+    setTasks((prev) => {
+      const seen = new Set<string>();
+      const next = prev.map((t) => {
+        const hit = byId.get(t.id);
+        if (hit) seen.add(t.id);
+        return hit ?? t;
+      });
+      for (const row of list) {
+        if (!seen.has(row.id)) next.push(row);
+      }
+      return next;
+    });
   }, []);
 
   return { tasks: optimisticTasks, applyOptimistic, commit };

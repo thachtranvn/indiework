@@ -80,7 +80,9 @@ export function ProjectTabs({
         </button>
 
         <span className="tabs-sep" aria-hidden />
+      </div>
 
+      <div className="tabs-main">
         <div className="tabs-lead">
           <IconPicker
             value={project.emoji ?? '🚀'}
@@ -97,6 +99,8 @@ export function ProjectTabs({
           <input
             className="tabs-lead-name"
             value={name}
+            autoComplete="off"
+            suppressHydrationWarning
             onChange={(e) => setName(e.target.value)}
             onKeyDown={commitOnEnter}
             onBlur={() => name.trim() && name !== project.name && save({ name: name.trim() })}
@@ -104,9 +108,6 @@ export function ProjectTabs({
             aria-label="Project name"
           />
         </div>
-      </div>
-
-      <div className="tabs-main">
         <span className="tabs-sep" aria-hidden />
         <div className="tabs-nav">
           <button className="tab" data-active={activeView === 'overview' ? '' : undefined} onClick={() => router.push(`${base}/overview`)} type="button">

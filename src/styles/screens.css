@@ -7,6 +7,7 @@
   width: var(--detail-panel-w, 384px); flex: none; height: 100%; min-height: 0; overflow: hidden;
   background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-lg);
   display: flex; flex-direction: column;
+  overscroll-behavior: none;
 }
 
 .dp-head { display: flex; align-items: center; gap: 8px; padding: 8px 16px 8px 8px;
@@ -27,7 +28,7 @@
 .icon-btn:hover { background: var(--bg-hover); color: var(--text-strong); }
 .icon-btn[data-danger]:hover { background: var(--st-danger-bg); color: var(--st-danger); }
 
-.dp-body { flex: 1; overflow-y: auto; padding: 16px 18px 40px; }
+.dp-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px 18px 40px; }
 .dp-ticket { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
 .dp-ticket-ref { margin: 0; font: 500 12px/1.2 var(--font-ui); color: var(--text-faint); }
 .dp-check-title { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 0; }
@@ -67,8 +68,8 @@
 .dp-sub-row[data-done] .dp-sub-title { color: var(--text-faint); text-decoration: line-through; }
 .dp-sub-title { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 500; color: var(--text-strong);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dp-sub-chev { color: var(--text-faint); opacity: 0; transition: opacity .12s; flex: none; }
-.dp-sub-row:hover .dp-sub-chev { opacity: 1; }
+.dp-sub-chev { color: var(--text-faint); opacity: 0; pointer-events: none; transition: opacity .12s; flex: none; }
+.dp-sub-row:hover .dp-sub-chev { opacity: 1; pointer-events: auto; }
 .dp-sub-add { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; padding: 7px 10px;
   border: 1px dashed var(--border-strong); background: none; border-radius: var(--r-sm);
   color: var(--text-muted); font-size: 12.5px; font-weight: 530; transition: .12s; cursor: text; width: 100%; }
@@ -89,7 +90,7 @@
 .attach-item { display: flex; align-items: center; gap: 11px; padding: 8px; border: 1px solid var(--border-soft);
   border-radius: var(--r-sm); margin-bottom: 6px; transition: .12s; }
 .attach-item:hover { border-color: var(--border); }
-.attach-item:hover .attach-act { opacity: 1; }
+.attach-item:hover .attach-act { opacity: 1; pointer-events: auto; }
 .attach-tile { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: var(--r-sm);
   color: oklch(0.5 0.12 var(--att-hue, 250)); background: oklch(0.95 0.04 var(--att-hue, 250)); overflow: hidden; }
 .attach-tile[data-image] { color: var(--accent-ink); background: var(--accent-softer); }
@@ -98,7 +99,7 @@
 .attach-name { font-size: 13px; font-weight: 550; color: var(--text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .attach-meta { font: 500 11px/1 var(--font-mono); color: var(--text-faint); }
 .attach-act { border: none; background: none; color: var(--text-faint); display: grid; place-items: center; width: 28px; height: 28px;
-  border-radius: var(--r-sm); flex: none; opacity: 0; transition: .12s; text-decoration: none; }
+  border-radius: var(--r-sm); flex: none; opacity: 0; pointer-events: none; transition: .12s; text-decoration: none; }
 .attach-act:hover:not(:disabled) { background: var(--bg-hover); color: var(--text-strong); }
 .attach-act:disabled { cursor: default; opacity: .35; }
 .attach-drop { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; margin-top: 4px;
@@ -218,7 +219,7 @@
    no footer/buttons — just the bordered editor box reusing .comment-box chrome. */
 .comment-box--edit { margin-top: 0; }
 
-.dp-foot { display: flex; align-items: center; padding: 12px 22px; border-top: 1px solid var(--border-soft); }
+.dp-foot { display: flex; align-items: center; flex: none; padding: 12px 22px; border-top: 1px solid var(--border-soft); }
 .del-btn { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border-soft); background: none;
   color: var(--text-muted); font-size: 13px; font-weight: 530; padding: 7px 12px; border-radius: var(--r-sm); transition: .12s; }
 .del-btn:hover { color: var(--st-danger); border-color: color-mix(in oklch, var(--st-danger) 40%, transparent); background: var(--st-danger-bg); }
@@ -309,6 +310,10 @@
 .board-card { background: var(--bg-surface); border: 1px solid var(--border-soft); border-radius: var(--r-sm);
   padding: 11px 12px; cursor: grab; box-shadow: var(--shadow-sm); transition: .12s; }
 .board-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
+.board-card[data-flash] {
+  outline: 1.5px solid transparent; outline-offset: -1.5px;
+  animation: task-flash 2s ease-in-out;
+}
 .board-card[data-dragging] { opacity: .4; }
 .board-card-title { font-size: 13px; font-weight: 550; color: var(--text-strong); line-height: 1.4; margin-bottom: 9px; }
 .board-card-meta { display: flex; align-items: center; gap: 9px; }
@@ -438,7 +443,7 @@
 .tabs-sep { width: 1px; align-self: stretch; background: var(--accent-softer); border-radius: 999px; flex: none; }
 .tabs-sticky { display: flex; align-items: center; gap: 8px; flex: none; }
 /* merged header: project identity lives at the start of the tab strip (v3) */
-.tabs-lead { display: flex; align-items: center; gap: 0; height: 32px; padding-right: 4px; flex: none; }
+.tabs-lead { display: flex; align-items: center; gap: 0; height: 32px; padding-right: 4px; margin-right: 8px; flex: none; }
 .tabs-lead-emoji { font-size: 16px; line-height: 1; border: none; background: none; padding: 0 8px;
   height: 32px; border-radius: var(--r-sm); display: grid; place-items: center; transition: background .12s; }
 .tabs-lead-emoji:hover { background: var(--accent-softer); }
@@ -449,7 +454,7 @@
 .tabs-lead-name:hover { background: var(--accent-softer); }
 .tabs-lead-name:focus { background: var(--bg-surface); border-color: var(--border-strong); box-shadow: 0 0 0 3px var(--bg-active); }
 /* Divider + scroll strip share one flex child so tabs sit flush against the sep. */
-.tabs-main { display: flex; align-items: stretch; gap: 0; flex: 1; min-width: 0; overflow: hidden; }
+.tabs-main { display: flex; align-items: center; gap: 0; flex: 1; min-width: 0; overflow: hidden; }
 .tabs-nav { display: flex; align-items: center; gap: 1px; flex: 1; min-width: 0; padding-left: 8px;
   overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
 .tabs-nav::-webkit-scrollbar { display: none; }
@@ -469,8 +474,8 @@
   display: grid; place-items: center; background: var(--bg-surface); }
 .tab-add:hover { color: var(--text-strong); background: var(--bg-hover); }
 .tab-x { display: inline-grid; place-items: center; width: 16px; height: 16px; margin: -2px -4px -2px 1px;
-  border-radius: 4px; color: var(--text-faint); opacity: 0; transition: .12s; cursor: pointer; }
-.tab:hover .tab-x, .tab[data-active] .tab-x { opacity: 1; }
+  border-radius: 4px; color: var(--text-faint); opacity: 0; pointer-events: none; transition: .12s; cursor: pointer; }
+.tab:hover .tab-x, .tab[data-active] .tab-x { opacity: 1; pointer-events: auto; }
 .tab-x:hover { background: var(--bg-hover); color: var(--text-strong); }
 /* icon button (Filter / Display triggers next to quick capture) */
 .icon-tool { border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-muted);
@@ -621,8 +626,8 @@
 .ov-state { text-transform: capitalize; }
 .ov-rowmeta { font-size: 11.5px; color: var(--text-faint); white-space: nowrap; min-width: 24px; text-align: right; }
 .ov-swatch { width: 18px; height: 18px; border-radius: var(--r-xs); border: none; flex: none; cursor: pointer; }
-.ov-del { opacity: 0; color: var(--text-faint) !important; flex: none; }
-.ov-row:hover .ov-del, .ov-mile:hover .ov-del { opacity: 1; }
+.ov-del { opacity: 0; pointer-events: none; color: var(--text-faint) !important; flex: none; }
+.ov-row:hover .ov-del, .ov-mile:hover .ov-del { opacity: 1; pointer-events: auto; }
 .ov-del:hover { color: var(--st-danger) !important; }
 .add-row-btn.sm { padding: 8px; font-size: 12.5px; margin-top: 2px; }
 
@@ -1010,7 +1015,7 @@
   .attach-act,
   .dp-sub-chev,
   .tab-x,
-  .ov-del { opacity: 1; }
+  .ov-del { opacity: 1; pointer-events: auto; }
 
   .ov-grip { display: none; }
   .ov-move { display: inline-flex; }
@@ -1019,17 +1024,22 @@
 @media (max-width: 760px) {
   /* Board: one column per screen, snapped, so a swipe lands on a whole column
      instead of parking between two. */
-  .board { padding: 8px 12px 24px; gap: 10px; scroll-snap-type: x mandatory; scroll-padding-left: 12px; }
+  .board { padding: 8px 12px calc(24px + var(--safe-b)); gap: 10px; scroll-snap-type: x mandatory; scroll-padding-left: 12px; }
   .board-col { width: min(84vw, 286px); scroll-snap-align: start; }
   .board-swim-head { padding: 12px 12px 2px; }
 
-  /* Project header: the identity block keeps its room, the view tabs scroll. */
+  /* Project header: lead + view tabs share one swipe; sidebar toggle stays put. */
   .tabs { padding: 6px 8px; gap: 6px; }
-  .tabs-lead-name { max-width: 40vw; }
+  .tabs-main {
+    overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tabs-main::-webkit-scrollbar { display: none; }
+  .tabs-nav { flex: none; overflow: visible; min-width: max-content; }
 
   /* Overview / management columns stack (the 860px and 760px rules above
      already handle the vertical nav); just tighten the gutters. */
-  .mgmt { padding: 8px 12px 60px; }
+  .mgmt { padding: 8px 12px calc(60px + var(--safe-b)); }
 
   /* Settings: the 216px rail becomes a scrolling tab strip above the pane. */
   .settings { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
@@ -1038,19 +1048,19 @@
   .settings-nav::-webkit-scrollbar { display: none; }
   .settings-navlabel { display: none; }
   .settings-navitem { width: auto; flex: none; }
-  .settings-main { padding: 20px 16px 60px; }
+  .settings-main { padding: 20px 16px calc(60px + var(--safe-b)); }
 
   /* All projects: prose columns and tags don't survive a phone width — the
      name and open count are what the row is scanned for. */
-  .ptable-wrap { padding: 12px 12px 60px; }
+  .ptable-wrap { padding: 12px 12px calc(60px + var(--safe-b)); }
   .ptable .pt-desc, .ptable .pt-note, .ptable .pt-tags,
   .ptable th:nth-child(2), .ptable th:nth-child(3), .ptable th.pt-tags { display: none; }
   .pt-name { white-space: normal; }
 
   /* Standalone task page. */
   .tp-bar { padding: 10px 12px; }
-  .tp-grid { padding: 20px 16px 60px; }
-  .tp-empty { padding: 40px 16px; }
+  .tp-grid { padding: 20px 16px calc(60px + var(--safe-b)); }
+  .tp-empty { padding: 40px 16px calc(40px + var(--safe-b)); }
 
   /* Dialogs become near-full-screen sheets: a centred 480px card with 24px of
      scrim around it wastes most of a phone, and dvh keeps the on-screen
@@ -1061,9 +1071,14 @@
   .search-modal { width: 100%; max-height: none; }
   .search-foot { display: none; }
 
-  /* Detail sheet: it owns the full width now, so its gutters can match the
-     rest of the app instead of a 384px card's. */
-  .dp-head { padding: 10px 12px 0; }
+  /* Detail sheet: match the project tabs header (same 32px icon row +
+     symmetric vertical padding) so the chrome lines up. The panel is
+     already full-screen, so "open as full page" is a no-op. */
+  .dp-head { padding: 6px 8px; }
+  .dp-head-actions a.icon-btn { display: none; }
   .dp-body { padding: 12px 14px calc(40px + var(--safe-b)); }
   .dp-foot { padding-bottom: calc(12px + var(--safe-b)); }
+  /* Head/foot are flex chrome, not position:fixed. Without this, iOS starts
+     a pan on them and chains it into .dp-body (or the list underneath). */
+  .dp-head, .dp-foot { touch-action: none; }
 }
