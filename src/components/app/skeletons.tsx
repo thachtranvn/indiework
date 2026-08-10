@@ -191,3 +191,43 @@ export function SettingsSkeleton() {
     </div>
   );
 }
+
+const PROP_ROWS = 5;
+
+/**
+ * Inspector body placeholder — ticket, status note, property grid, description.
+ * Paired with the real `.dp-head` (close stays clickable) so the panel shell is
+ * stable while the task fetch settles; keeps CLS low on the skeleton→content swap.
+ */
+export function DetailPanelSkeleton() {
+  return (
+    <div className="dp-body" aria-hidden>
+      <div className="dp-ticket">
+        <Bar w={72} h={12} />
+        <Bar w="78%" h={22} style={{ marginTop: 4 }} />
+      </div>
+      <div className="status-note" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <Bar w={88} h={11} />
+        <Bar w="92%" h={13} />
+        <Bar w="64%" h={13} />
+      </div>
+      <div className="prop-grid">
+        {Array.from({ length: PROP_ROWS }, (_, k) => (
+          <div key={k} style={{ display: 'contents' }}>
+            <span className="prop-label">
+              <Bar w={52} h={13} />
+            </span>
+            <span className="prop-val">
+              <Bar w={ROW_WIDTHS[k % ROW_WIDTHS.length]} h={28} r={8} />
+            </span>
+          </div>
+        ))}
+      </div>
+      <Bar w={96} h={11} style={{ marginBottom: 10 }} />
+      <Bar w="100%" h={72} r={8} />
+      <Bar w={72} h={11} style={{ marginTop: 26, marginBottom: 10 }} />
+      <Bar w="55%" h={14} />
+      <Bar w="70%" h={14} style={{ marginTop: 10 }} />
+    </div>
+  );
+}

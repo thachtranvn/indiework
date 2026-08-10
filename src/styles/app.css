@@ -28,7 +28,9 @@
   padding: max(var(--shell-gap), var(--safe-t)) var(--shell-gap) max(var(--shell-gap), var(--safe-b)) 0;
   column-gap: 0;
   transition:
-    grid-template-columns .2s cubic-bezier(.22,.61,.36,1),
+    /* linear so the list track and .detail-panel keyframes stay locked
+       (same .2s — see detailIn / DETAIL_EXIT_MS_DESKTOP). */
+    grid-template-columns .2s linear,
     padding-left .2s cubic-bezier(.22,.61,.36,1);
 }
 .app[data-detail] {
@@ -68,11 +70,9 @@
   justify-content: flex-end;
 }
 
-/* Detail slot: clips the fixed-width panel, which slides across it at exactly the
-   rate the track grows/shrinks — so the card travels as one piece (no wipe) while
-   the list resizes. Keep the transform transition in sync with DETAIL_EXIT_MS.
-   Open track is gap+panel; panel is flex-end'd so the leading empty space is the
-   gutter (same 8px as top/bottom padding). */
+/* Detail slot: clips the fixed-width panel. Mount keyframes at the same .2s
+   linear as grid-template-columns so the card and list move as one. Mobile
+   overrides duration/easing for the full-screen sheet. */
 .detail-slot {
   min-width: 0;
   min-height: 0;
@@ -82,15 +82,20 @@
   justify-content: flex-end;
 }
 .detail-slot .detail-panel {
-  transform: translate3d(100%, 0, 0);
-  transition: transform .4s cubic-bezier(.32, .72, 0, 1);
+  animation: detailIn .2s linear both;
   will-change: transform;
 }
-.detail-slot .detail-panel[data-ready] { transform: translate3d(0, 0, 0); }
 .detail-slot[data-closing] { pointer-events: none; }
 .detail-slot[data-closing] .detail-panel {
-  transform: translate3d(100%, 0, 0);
-  transition-timing-function: ease-out;
+  animation: detailOut .2s linear forwards;
+}
+@keyframes detailIn {
+  from { transform: translate3d(100%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+@keyframes detailOut {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(100%, 0, 0); }
 }
 
 /* drag handles — sidebar↔main and main↔detail seams */
@@ -164,11 +169,11 @@
   .col-resizer, .detail-resizer, .sb-expand { display: none; }
 
   /* Detail panel → full-screen sheet. Slot is transparent so the list stays
-     visible underneath while the opaque panel slides across it. Hidden
-     outright when closed: `inset: 0` would otherwise park an overlay over
-     the list. */
-  .detail-slot { display: none; }
-  .app[data-detail] .detail-slot, .detail-slot[data-closing] {
+     visible underneath while the opaque panel slides across it.
+     Keep `display: flex` always (toggle visibility) — flipping display:none→flex
+     prevents mount keyframes from running on WebKit, which left the panel stuck
+     at translate(100%) after data-ready was removed. */
+  .detail-slot {
     display: flex;
     position: fixed;
     inset: 0;
@@ -176,11 +181,21 @@
     background: transparent;
     overflow: hidden;
     pointer-events: none;
+    visibility: hidden;
+  }
+  .app[data-detail] .detail-slot, .detail-slot[data-closing] {
+    visibility: visible;
   }
   .detail-slot .detail-panel {
     width: 100%; height: 100%; border: none; border-radius: 0;
     padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
     pointer-events: auto;
+    /* Same keyframe pattern as desktop; longer for the full-viewport sheet
+       (DETAIL_EXIT_MS_MOBILE). */
+    animation: detailIn .4s cubic-bezier(.32, .72, 0, 1) both;
+  }
+  .detail-slot[data-closing] .detail-panel {
+    animation: detailOut .4s cubic-bezier(.32, .72, 0, 1) forwards;
   }
 }
 

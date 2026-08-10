@@ -13,9 +13,10 @@ import { CommandPalette } from './command-palette';
 import { Ic } from '@/components/ui/icons';
 import { TipHost } from '@/components/ui/tip-host';
 
-/** Slide-out duration of `.detail-panel` — keep in sync with app.css (+ a
- *  short buffer so iOS doesn't unmount mid-composite). */
-const DETAIL_EXIT_MS = 450;
+/** Slide-out durations of `.detail-panel` — keep in sync with app.css.
+ *  Mobile adds a short buffer so iOS doesn't unmount mid-composite. */
+const DETAIL_EXIT_MS_DESKTOP = 200;
+const DETAIL_EXIT_MS_MOBILE = 450;
 const SIDEBAR_MIN = 180;
 const SIDEBAR_MAX = 440;
 const SIDEBAR_DEFAULT = 230;
@@ -40,18 +41,13 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
   const detailKey = taskRef ?? legacyTaskId;
 
   // The panel has to stay mounted while it slides back out, so remember the task
-  // it was showing and drop it once the exit animation (.4s) has finished.
+  // it was showing and drop it once the exit animation has finished.
   const [lastOpen, setLastOpen] = useState<OpenPanel | null>(null);
   if (detailKey && detailKey !== lastOpen?.key) {
     setLastOpen({ key: detailKey, taskRef, taskId: legacyTaskId });
   }
   const closing = !detailKey && lastOpen !== null;
   const panel = detailKey ? { taskRef, taskId: legacyTaskId } : lastOpen;
-  useEffect(() => {
-    if (!closing) return;
-    const t = setTimeout(() => setLastOpen(null), DETAIL_EXIT_MS);
-    return () => clearTimeout(t);
-  }, [closing]);
 
   const [width, setWidth] = useState(SIDEBAR_DEFAULT);
   const [detailWidth, setDetailWidth] = useState(DETAIL_DEFAULT);
@@ -79,6 +75,13 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
       setDrawer((d) => ({ ...d, open: typeof open === 'function' ? open(d.open) : open })),
     [],
   );
+
+  useEffect(() => {
+    if (!closing) return;
+    const ms = isMobile ? DETAIL_EXIT_MS_MOBILE : DETAIL_EXIT_MS_DESKTOP;
+    const t = setTimeout(() => setLastOpen(null), ms);
+    return () => clearTimeout(t);
+  }, [closing, isMobile]);
 
   // sidebar / detail widths + collapsed state persisted to localStorage (iw-*)
   useLayoutEffect(() => {
@@ -183,7 +186,7 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
   return (
     <div
       className="app"
-      data-detail={detailKey || closing ? '' : undefined}
+      data-detail={detailKey ? '' : undefined}
       data-resizing={resizing ?? undefined}
       // Collapsing is a desktop-only concept — on mobile the rail is off-canvas
       // regardless, and honouring a persisted collapse would only disable the
