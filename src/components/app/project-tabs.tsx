@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { updateProject } from '@/app/_actions/projects';
 import { useRun } from '@/components/ui/toast';
 import { commitOnEnter } from '@/lib/inline-edit';
-import { toggleSidebar } from './nav-toggle';
+import { useToggleSidebar } from './nav-toggle';
 import {
   BUILTIN_VIEWS,
   DEFAULT_VIEW,
@@ -52,6 +52,7 @@ export function ProjectTabs({
 }) {
   const router = useRouter();
   const run = useRun();
+  const toggleSidebar = useToggleSidebar();
   const [name, setName] = useState(project.name);
   const base = `/app/p/${project.key}`;
 

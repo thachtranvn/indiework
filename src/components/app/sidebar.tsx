@@ -1,39 +1,45 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { ShellData } from '@/server/load';
-import { PROJECT_STATUS, PROJECT_STATUS_LABEL, type ProjectStatus } from '@/lib/domain';
 import { setActiveWorkspace } from '@/app/_actions/workspace';
-import { updateProject } from '@/app/_actions/projects';
 import { logout } from '@/app/_actions/auth';
 import { useRun } from '@/components/ui/toast';
 import { BrandMark } from '@/components/ui/brand';
+import { Button } from '@/components/ui/button';
 import { Popover } from '@/components/ui/popover';
 import { Ic } from '@/components/ui/icons';
 import { Kbd } from '@/components/ui/kbd';
 import { EntityIcon } from '@/components/ui/bits';
+import { useIsMobile } from '@/lib/use-media-query';
 
 type Projects = ShellData['projects'];
-
-const DEFAULT_COLLAPSED: ReadonlySet<string> = new Set(['done', 'backlog', 'cancelled']);
 
 export function Sidebar({
   shell,
   onNewProject,
   onNewWorkspace,
   onOpenSearch,
+  onClose,
 }: {
   shell: ShellData;
   onNewProject: () => void;
   onNewWorkspace: () => void;
   onOpenSearch: () => void;
+  /** Mobile full-screen sheet close — omitted / unused on desktop. */
+  onClose?: () => void;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const run = useRun();
-  const { workspaces, activeWorkspace, projects, inboxCount } = shell;
+  const isMobile = useIsMobile();
+  // Touch targets on the phone drawer — compact sizes stay for the desktop rail.
+  const chromeBtn = isMobile ? 'md' : 'xs';
+  const railBtn = isMobile ? 'md' : 'sm';
+  const { user, workspaces, activeWorkspace, projects, inboxCount } = shell;
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
   const switchWorkspace = async (id: string) => {
     if (id === activeWorkspace?.id) return;
@@ -50,46 +56,44 @@ export function Sidebar({
     if (pathname.startsWith('/app/p/')) router.push('/app');
     else router.refresh();
   };
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set(DEFAULT_COLLAPSED));
 
-  const groups = useMemo(() => buildGroups(projects), [projects]);
-
-  const togglePin = (id: string, pinned: boolean) =>
-    run(
-      async () => {
-        await updateProject(id, { pinned: !pinned });
-        router.refresh();
-      },
-      { error: "Couldn't update the project." },
-    );
-
-  const toggle = (key: string) =>
+  const toggleSection = (key: string) =>
     setCollapsed((prev) => {
       const next = new Set(prev);
       next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
 
+  const { pinned, others } = useMemo(() => splitProjects(projects), [projects]);
+  const userLabel = user.email ?? user.name;
+  const userInitial = (user.name?.[0] ?? user.email?.[0] ?? '?').toUpperCase();
+
   return (
     <aside className="sidebar">
       {/* workspace switcher */}
-      <Popover
-        align="left"
-        width={232}
-        className="ws-pop-wrap"
-        trigger={
-          <button className="ws-switch" type="button">
-            <BrandMark size={28} className="ws-mark" />
-            <span className="ws-meta">
-              <b>{activeWorkspace?.name ?? 'Workspace'}</b>
-              <small>{activeWorkspace?.tagline ?? 'personal projects'}</small>
-            </span>
-            <span className="ws-caret">
-              <Ic.chevronDown size={15} />
-            </span>
-          </button>
-        }
-      >
+      <div className="ws-row">
+        <Popover
+          align="left"
+          width={232}
+          trigger={
+            <div className="ws-switch">
+              <BrandMark size={28} className="ws-mark" />
+              <span className="ws-meta">
+                <b>{activeWorkspace?.name ?? 'Workspace'}</b>
+                <small>{activeWorkspace?.tagline ?? 'personal projects'}</small>
+              </span>
+              <Button
+                type="button"
+                iconOnly
+                size={railBtn}
+                variant="tertiary"
+                tabIndex={-1}
+                aria-hidden
+                leftIcon={<Ic.chevronSelectorVertical />}
+              />
+            </div>
+          }
+        >
         {(close) => (
           <div className="ws-pop">
             {workspaces.map((w) => (
@@ -125,151 +129,235 @@ export function Sidebar({
             </Link>
           </div>
         )}
-      </Popover>
-
-      {/* search */}
-      <button className="sb-search" type="button" onClick={onOpenSearch}>
-        <Ic.search size={15} />
-        <span>Search</span>
-        <Kbd>⌘K</Kbd>
-      </button>
-
-      {/* inbox */}
-      <Link className="nav-item" href="/app/inbox" data-active={pathname === '/app/inbox' ? '' : undefined}>
-        <span className="nav-icon">
-          <Ic.inbox size={16} />
-        </span>
-        <span className="nav-label">Inbox</span>
-        {inboxCount > 0 && <span className="nav-badge">{inboxCount}</span>}
-      </Link>
-
-      {/* projects */}
-      <div className="sb-section">Projects</div>
-      <div className="sb-scroll">
-        {groups.map((g) => {
-          const isCollapsed = collapsed.has(g.key);
-          return (
-            <div className="sb-group" key={g.key}>
-              <button
-                className="sb-grouplabel"
-                data-collapsed={isCollapsed ? '' : undefined}
-                onClick={() => toggle(g.key)}
-                type="button"
-              >
-                <span className="sb-groupcaret">
-                  <Ic.chevronDown size={12} />
-                </span>
-                {g.key === 'pinned' ? (
-                  <Ic.pin size={12} />
-                ) : (
-                  <span className="dot" style={{ background: `var(--st-${g.statusKey})` }} />
-                )}
-                <span className="sb-grouptxt">{g.label}</span>
-                <span className="sb-groupcount">{g.items.length}</span>
-              </button>
-              {!isCollapsed && (
-                <div className="sb-grouprows">
-                  {g.items.map((p) => {
-                    const href = `/app/p/${p.key}`;
-                    return (
-                      <div className="nav-item-wrap" key={p.id}>
-                        <Link
-                          className="nav-item"
-                          href={href}
-                          data-active={pathname.startsWith(href) ? '' : undefined}
-                        >
-                          <span className="nav-emoji">
-                            <EntityIcon icon={p.emoji} color={p.color} size={13} />
-                          </span>
-                          <span className="nav-label">{p.name}</span>
-                          {p.issues > 0 && (
-                            <span className="nav-badge" data-muted="">
-                              {p.issues}
-                            </span>
-                          )}
-                        </Link>
-                        <button
-                          className="nav-pin"
-                          type="button"
-                          data-on={p.pinned ? '' : undefined}
-                          title={p.pinned ? 'Unpin' : 'Pin'}
-                          aria-label={p.pinned ? `Unpin ${p.name}` : `Pin ${p.name}`}
-                          onClick={() => togglePin(p.id, p.pinned)}
-                        >
-                          <Ic.pin size={13} fill={p.pinned ? 'currentColor' : 'none'} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        <button className="sb-viewall" type="button" onClick={onNewProject}>
-          <Ic.plus size={15} /> New project
-        </button>
-        <Link className="sb-viewall" href="/app/all" data-active={pathname === '/app/all' ? '' : undefined}>
-          <Ic.table size={15} /> All projects
-        </Link>
+        </Popover>
+        {onClose && (
+          <Button
+            className="sb-drawer-close"
+            type="button"
+            iconOnly
+            size={railBtn}
+            variant="tertiary"
+            onClick={onClose}
+            aria-label="Close navigation"
+            leftIcon={<Ic.chevronLeft />}
+          />
+        )}
       </div>
 
-      {/* footer */}
+      {/* search — same chrome as quick-capture (Add task) */}
+      <button className="sb-search qcap-inner" type="button" onClick={onOpenSearch}>
+        <span className="qcap-plus" aria-hidden>
+          <Ic.search size={16} />
+        </span>
+        <span className="sb-search-label">Search</span>
+        <Kbd className="qcap-hint">⌘K</Kbd>
+      </button>
+
+      <div className="sb-scroll">
+        {/* inbox */}
+        <div className="sb-block">
+          <Link className="nav-item" href="/app/inbox" data-active={pathname === '/app/inbox' ? '' : undefined}>
+            <span className="nav-icon">
+              <Ic.inbox size={16} />
+            </span>
+            <span className="nav-label">Inbox</span>
+            {inboxCount > 0 && <span className="nav-badge">{inboxCount}</span>}
+          </Link>
+        </div>
+
+        {pinned.length > 0 && (
+          <>
+            <div className="sb-divider" />
+            <div className="sb-block">
+              <SectionHead
+                label="Pinned"
+                collapsed={collapsed.has('pinned')}
+                onToggle={() => toggleSection('pinned')}
+              />
+              <div
+                className="sb-collapse"
+                data-open={collapsed.has('pinned') ? undefined : ''}
+                inert={collapsed.has('pinned') ? true : undefined}
+              >
+                <div className="sb-collapse-inner">
+                  <div className="sb-grouprows">
+                    {pinned.map((p) => (
+                      <ProjectNavItem key={p.id} project={p} pathname={pathname} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="sb-divider" />
+        <div className="sb-block">
+          <SectionHead
+            label="Projects"
+            collapsed={collapsed.has('projects')}
+            onToggle={() => toggleSection('projects')}
+            action={
+              <Button
+                className="sb-section-action"
+                type="button"
+                iconOnly
+                size={chromeBtn}
+                variant="tertiary"
+                aria-label="New project"
+                title="New project"
+                onClick={onNewProject}
+                leftIcon={<Ic.plus />}
+              />
+            }
+          />
+          <div
+            className="sb-collapse"
+            data-open={collapsed.has('projects') ? undefined : ''}
+            inert={collapsed.has('projects') ? true : undefined}
+          >
+            <div className="sb-collapse-inner">
+              <div className="sb-grouprows">
+                {others.map((p) => (
+                  <ProjectNavItem key={p.id} project={p} pathname={pathname} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="sb-divider" />
+        <div className="sb-block">
+          <SectionHead
+            label="Admin"
+            collapsed={collapsed.has('admin')}
+            onToggle={() => toggleSection('admin')}
+          />
+          <div
+            className="sb-collapse"
+            data-open={collapsed.has('admin') ? undefined : ''}
+            inert={collapsed.has('admin') ? true : undefined}
+          >
+            <div className="sb-collapse-inner">
+              <Link
+                className="nav-item"
+                href="/app/design-system"
+                data-active={pathname.startsWith('/app/design-system') ? '' : undefined}
+              >
+                <span className="nav-icon">
+                  <Ic.layers size={16} />
+                </span>
+                <span className="nav-label">Design System</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* user footer + account menu */}
       <div className="sb-foot">
-        <Link
-          className="sb-footbtn"
-          href="/app/design-system"
-          data-active={pathname === '/app/design-system' ? '' : undefined}
-        >
-          <Ic.layers size={16} /> Design System
-        </Link>
-        <Link
-          className="sb-footbtn"
-          href="/app/settings"
-          data-active={pathname === '/app/settings' ? '' : undefined}
-        >
-          <Ic.settings size={16} /> Settings
-        </Link>
-        {/* Chrome injects `__gcruniqueid` on forms before hydrate (dev overlay). */}
-        <form action={logout} className="sb-footform" suppressHydrationWarning>
-          <button className="sb-footbtn" type="submit">
-            <Ic.logout size={16} /> Log out
-          </button>
-        </form>
+        <div className="sb-user">
+          <span className="sb-avatar" aria-hidden>
+            {userInitial}
+          </span>
+          <span className="sb-user-email">{userLabel}</span>
+          <Popover
+            align="right"
+            width={180}
+            trigger={
+              <Button
+                className="sb-icon-btn"
+                type="button"
+                iconOnly
+                size={chromeBtn}
+                variant="tertiary"
+                aria-label="Account menu"
+                leftIcon={<Ic.dotsHorizontal />}
+              />
+            }
+          >
+            {(close) => (
+              <div className="ws-pop">
+                <Link
+                  className="ws-action"
+                  href="/app/settings"
+                  onClick={close}
+                  data-active={pathname === '/app/settings' ? '' : undefined}
+                >
+                  <Ic.settings size={15} /> Settings
+                </Link>
+                {/* Chrome injects `__gcruniqueid` on forms before hydrate (dev overlay). */}
+                <form action={logout} className="sb-menuform" suppressHydrationWarning>
+                  <button className="ws-action" type="submit">
+                    <Ic.logout size={15} /> Log out
+                  </button>
+                </form>
+              </div>
+            )}
+          </Popover>
+        </div>
       </div>
     </aside>
   );
 }
 
-type Group = { key: string; label: string; statusKey: string; items: Projects };
+/** Section head — label + chevron, optional tertiary action (Figma 56:2559). */
+function SectionHead({
+  label,
+  collapsed,
+  onToggle,
+  action,
+}: {
+  label: string;
+  collapsed: boolean;
+  onToggle: () => void;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="sb-section">
+      <div className="sb-section-inner">
+        <button
+          className="sb-section-toggle"
+          type="button"
+          data-collapsed={collapsed ? '' : undefined}
+          aria-expanded={!collapsed}
+          onClick={onToggle}
+        >
+          <span className="sb-section-label">{label}</span>
+          <span className="sb-section-caret" aria-hidden>
+            <Ic.chevronDown size={14} />
+          </span>
+        </button>
+        {action}
+      </div>
+    </div>
+  );
+}
 
-function buildGroups(projects: Projects): Group[] {
-  const pinned = projects.filter((p) => p.pinned);
-  const groups: Group[] = [];
-  if (pinned.length) groups.push({ key: 'pinned', label: 'Pinned', statusKey: 'todo', items: pinned });
+/** Renders a single project row in the sidebar nav. */
+function ProjectNavItem({
+  project: p,
+  pathname,
+}: {
+  project: Projects[number];
+  pathname: string;
+}) {
+  const href = `/app/p/${p.key}`;
+  return (
+    <Link className="nav-item" href={href} data-active={pathname.startsWith(href) ? '' : undefined}>
+      <span className="nav-icon">
+        <EntityIcon icon={p.emoji} color={p.color} size={16} />
+      </span>
+      <span className="nav-label">{p.name}</span>
+      {p.issues > 0 && <span className="nav-badge">{p.issues}</span>}
+    </Link>
+  );
+}
 
-  // map project lifecycle status → the status palette key used for the dot.
-  const dotKey: Record<ProjectStatus, string> = {
-    active: 'in_progress',
-    launching: 'launching',
-    planned: 'todo',
-    paused: 'blocked',
-    done: 'done',
-    backlog: 'backlog',
-    cancelled: 'cancelled',
+/** Splits projects into pinned and everything else (unpinned). */
+function splitProjects(projects: Projects): { pinned: Projects; others: Projects } {
+  return {
+    pinned: projects.filter((p) => p.pinned),
+    others: projects.filter((p) => !p.pinned),
   };
-
-  for (const status of PROJECT_STATUS) {
-    const items = projects.filter((p) => !p.pinned && p.status === status);
-    if (items.length) {
-      groups.push({
-        key: status,
-        label: PROJECT_STATUS_LABEL[status],
-        statusKey: dotKey[status],
-        items,
-      });
-    }
-  }
-  return groups;
 }

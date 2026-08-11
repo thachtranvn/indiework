@@ -119,65 +119,87 @@
    inspector on a 390px screen. */
 @media (max-width: 760px) {
   .app {
+    /* One cell — overlays (sidebar / detail) share it with main instead of
+       each taking their own auto-row. A stretched sidebar-slot row +
+       overflow:hidden on .app pushed .main-col below the fold and ate all taps. */
     grid-template-columns: minmax(0, 1fr);
-    /* Top inset on the shell; bottom stays 0 so the surface paints under the
-       home indicator. In-flow scroll areas and fixed chrome add --safe-b. */
+    grid-template-rows: minmax(0, 1fr);
     padding: var(--safe-t) 0 0;
   }
-  /* Nothing sits in the left gutter to be pushed aside, but a landscape phone
-     still puts the notch there. */
+  .sidebar-slot,
+  .detail-slot,
+  .main-col,
+  .col-resizer,
+  .detail-resizer,
+  .sb-expand {
+    grid-column: 1;
+    grid-row: 1;
+  }
   .main-col { padding-left: var(--safe-l); padding-right: var(--safe-r); }
   .app[data-sb-collapsed] { padding-left: 0; }
-  .main-col { margin-left: 0; border: none; border-radius: 0; }
+  .main-col { margin-left: 0; border: none; border-radius: 0; min-height: 0; }
 
-  /* Sidebar → overlay drawer.
-     `translateX(-100%)` alone is not enough on iOS: the composited layer still
-     steals taps (scroll and text-input focus can leak through; clicks do not).
-     Keep it inert + hidden until the drawer is actually open. */
+  /* Sidebar → full-screen sheet. Hidden with display:none while shut so it
+     cannot steal iOS taps (pointer-events:none is not enough for descendants). */
   .sidebar-slot {
     position: fixed;
-    top: 0; bottom: 0; left: 0;
+    inset: 0;
     z-index: 900;
-    width: min(300px, 84vw);
-    padding: var(--safe-t) 0 var(--safe-b) var(--safe-l);
-    background: var(--bg-app);
-    border-right: 1px solid var(--border);
-    box-shadow: var(--shadow-lg);
-    transform: translateX(-100%);
-    pointer-events: none;
-    visibility: hidden;
-    /* Desktop uses flex-end so the 230px rail sticks to the track's trailing
-       edge on collapse. Here the slot *is* the drawer — start-align and fill. */
+    width: auto;
+    height: auto;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    overflow: hidden;
+    display: none;
     justify-content: flex-start;
-    transition:
-      transform .24s cubic-bezier(.22,.61,.36,1),
-      visibility 0s linear .24s;
+    pointer-events: none;
   }
-  .app[data-drawer] .sidebar-slot {
-    transform: none;
-    pointer-events: auto;
+  .sidebar-slot[data-open],
+  .sidebar-slot[data-closing] {
+    display: flex;
     visibility: visible;
-    transition: transform .24s cubic-bezier(.22,.61,.36,1), visibility 0s;
+    pointer-events: auto;
   }
-  /* Two-class selector beats the later `.sidebar { width: 230px }` rule. */
-  .sidebar-slot .sidebar { width: 100%; }
-  .drawer-scrim { position: fixed; inset: 0; z-index: 890; border: none; padding: 0;
-    background: var(--bg-overlay); animation: fadeIn .2s ease; }
+  .sidebar-slot .sidebar {
+    width: 100%;
+    height: 100%;
+    max-height: 100dvh;
+    background: var(--bg-secondary);
+    padding: var(--safe-t) max(16px, var(--safe-r)) var(--safe-b) max(16px, var(--safe-l));
+    box-sizing: border-box;
+    transform: translate3d(-100%, 0, 0);
+    pointer-events: none;
+  }
+  .sidebar-slot[data-open] .sidebar {
+    pointer-events: auto;
+    animation: drawerIn .4s cubic-bezier(.32, .72, 0, 1) both;
+  }
+  .sidebar-slot[data-closing] .sidebar {
+    pointer-events: none;
+    animation: drawerOut .4s cubic-bezier(.32, .72, 0, 1) forwards;
+  }
+  @keyframes drawerIn {
+    from { transform: translate3d(-100%, 0, 0); }
+    to { transform: translate3d(0, 0, 0); }
+  }
+  @keyframes drawerOut {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(-100%, 0, 0); }
+  }
+  .drawer-scrim { display: none; }
 
-  /* Mouse-only affordances have no touch equivalent, and the drawer replaces
-     the collapse toggle they belong to. */
   .col-resizer, .detail-resizer, .sb-expand { display: none; }
 
-  /* Detail panel → full-screen sheet. Slot is transparent so the list stays
-     visible underneath while the opaque panel slides across it.
-     Keep `display: flex` always (toggle visibility) — flipping display:none→flex
-     prevents mount keyframes from running on WebKit, which left the panel stuck
-     at translate(100%) after data-ready was removed. */
+  /* Detail panel → full-screen sheet. */
   .detail-slot {
     display: flex;
     position: fixed;
     inset: 0;
     z-index: 920;
+    width: auto;
+    height: auto;
     background: transparent;
     overflow: hidden;
     pointer-events: none;
@@ -190,8 +212,6 @@
     width: 100%; height: 100%; border: none; border-radius: 0;
     padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
     pointer-events: auto;
-    /* Same keyframe pattern as desktop; longer for the full-viewport sheet
-       (DETAIL_EXIT_MS_MOBILE). */
     animation: detailIn .4s cubic-bezier(.32, .72, 0, 1) both;
   }
   .detail-slot[data-closing] .detail-panel {
@@ -201,12 +221,15 @@
 
 /* ---------- Sidebar (light, inherits theme tokens) ---------- */
 .sidebar { display: flex; flex-direction: column; width: var(--sidebar-panel-w, 230px); flex: none;
-  padding: 4px 12px 12px; min-height: 0; height: 100%; gap: 0;
-  overflow-y: auto; position: relative; background: transparent; box-sizing: border-box; }
+  padding: 0 8px 12px 12px; min-height: 0; height: 100%; gap: 0;
+  overflow: hidden; position: relative; background: transparent; box-sizing: border-box; }
+.ws-row, .sb-search, .sb-foot { flex: none; }
+.sb-scroll { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
 
 /* workspace switcher */
 .ws-switch { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 0; border: none;
-  background: none; border-radius: var(--r-sm); color: var(--text-primary); text-align: left; transition: background .12s; }
+  background: none; border-radius: var(--r-sm); color: var(--text-primary); text-align: left;
+  cursor: pointer; transition: background .12s; }
 .ws-switch:hover { background: var(--bg-active); }
 .ws-brand { width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center;
   background: #505052; color: #fff; flex: none; }
@@ -216,8 +239,26 @@
 .ws-meta { flex: 1; min-width: 0; }
 .ws-meta b { display: block; font-size: 12px; color: var(--text-primary); font-weight: 500;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ws-meta small { display: block; font-size: 10px; color: var(--text-primary); font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ws-caret { color: var(--text-placeholder); display: grid; place-items: center; flex: none; }
+.ws-meta small { display: block; font-size: 10px; color: var(--text-secondary); font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 32px icon hit-target matching Figma sidebar-button (desktop rail); mobile uses
+   the Button size axis (sm → 36) so drop the override below --bp-mobile. */
+.sb-icon-btn.iw-btn[data-icon-only] { width: 32px; height: 32px; }
+@media (max-width: 760px) {
+  .sb-icon-btn.iw-btn[data-icon-only] {
+    width: var(--iw-btn-h);
+    min-width: var(--iw-btn-h);
+    height: var(--iw-btn-h);
+  }
+}
+.ws-switch .iw-btn { pointer-events: none; flex: none; }
+/* Hide close control on desktop — beats later .iw-btn { display } in screens.css */
+button.sb-drawer-close.iw-btn { display: none; }
+@media (max-width: 760px) {
+  button.sb-drawer-close.iw-btn { display: inline-flex; flex: none; }
+}
+.ws-row { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; }
+.ws-row > .pop-trigger { flex: 1; min-width: 0; display: flex; width: 100%; }
+.ws-row > .pop-trigger .ws-switch { width: 100%; }
 
 /* workspace popover (portaled → light surface) */
 .ws-pop { display: flex; flex-direction: column; gap: 1px; }
@@ -234,60 +275,130 @@
 .ws-action svg { color: var(--text-placeholder); flex: none; }
 .ws-action:hover { background: var(--bg-hover); color: var(--text-primary); }
 
-/* search trigger */
-.sb-search { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 8px 7px 10px; margin: 12px 0;
-  border: 1px solid var(--border); background: var(--bg-surface); border-radius: var(--r-sm);
-  color: var(--text-placeholder); font-size: 12px; font-weight: 400; transition: .12s; }
-.sb-search:hover { border-color: var(--border-strong); color: var(--text-quaternary); }
-.sb-search svg { flex: none; }
-.sb-search span { flex: 1; text-align: left; }
+/* search trigger — visual chrome from `.qcap-inner` (Add task); layout-only here */
+.sb-search {
+  width: 100%;
+  margin: 12px 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+}
+.sb-search-label {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-placeholder);
+}
+.sb-search:hover { border-color: var(--border-strong); }
+.sb-search:hover .sb-search-label,
+.sb-search:hover .qcap-plus { color: var(--text-quaternary); }
+.sb-search:focus-visible {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px var(--bg-active);
+}
 
-.sb-section { font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase;
-  color: var(--text-placeholder); padding: 12px 8px 8px; display: flex; align-items: center; justify-content: space-between; }
-.sb-section button { border: none; background: none; color: var(--text-placeholder); padding: 2px; border-radius: var(--r-xs);
-  display: grid; place-items: center; opacity: 0; pointer-events: none; transition: .12s; }
-.sb-section:hover button { opacity: 1; pointer-events: auto; }
-.sb-section button:hover { background: var(--bg-active); color: var(--text-primary); }
+/* Section head — Figma nav-item/section-head (56:2559) */
+.sb-section { display: flex; align-items: center; min-height: 40px; padding: 8px 4px 8px 8px;
+  overflow: clip; width: 100%; box-sizing: border-box; }
+.sb-section-inner { display: flex; flex: 1; align-items: center; justify-content: space-between;
+  gap: 8px; min-width: 0; }
+.sb-section-toggle { display: flex; flex: 1; align-items: center; gap: 4px; min-width: 0;
+  border: none; background: none; padding: 0; cursor: pointer; text-align: left; color: var(--text-primary); }
+.sb-section-label { font-size: 12px; font-weight: 600; text-transform: uppercase; line-height: normal;
+  white-space: nowrap; color: var(--text-primary); }
+.sb-section-caret { display: grid; place-items: center; flex: none; color: var(--fg-secondary);
+  transition: transform .22s cubic-bezier(.22,.61,.36,1); }
+.sb-section-toggle[data-collapsed] .sb-section-caret { transform: rotate(-90deg); }
+/* Plus / section action — hover-reveal (Projects) */
+.sb-section-action { opacity: 0; pointer-events: none; transition: opacity .12s; }
+.sb-section:hover .sb-section-action,
+.sb-section:focus-within .sb-section-action { opacity: 1; pointer-events: auto; }
 
-/* footer */
-.sb-foot { margin-top: auto; padding-top: 8px; }
-.sb-footform { display: contents; }
-.sb-footbtn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 9px; border: none; background: none;
-  border-radius: var(--r-sm); color: var(--text-quaternary); font-size: 12px; font-weight: 500; transition: .12s; }
-.sb-footbtn svg { color: var(--text-placeholder); }
-.sb-footbtn:hover { background: var(--bg-hover); color: var(--text-primary); }
-.sb-footbtn[data-active] { background: var(--bg-active); color: var(--text-primary); }
-.sb-footbtn[data-active] svg { color: var(--text-primary); }
+/* Collapse panel — height via grid, items fade/slide in */
+.sb-collapse { display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows .22s cubic-bezier(.22,.61,.36,1); }
+.sb-collapse[data-open] { grid-template-rows: 1fr; }
+.sb-collapse:not([data-open]) { pointer-events: none; }
+.sb-collapse-inner { overflow: hidden; min-height: 0; }
+.sb-collapse .nav-item { opacity: 0; transform: translateY(-6px);
+  transition: opacity .16s ease, transform .22s cubic-bezier(.22,.61,.36,1),
+    background .12s, border-color .12s; }
+.sb-collapse[data-open] .nav-item { opacity: 1; transform: translateY(0); }
+.sb-collapse[data-open] .nav-item:nth-child(1) { transition-delay: 0ms; }
+.sb-collapse[data-open] .nav-item:nth-child(2) { transition-delay: 25ms; }
+.sb-collapse[data-open] .nav-item:nth-child(3) { transition-delay: 50ms; }
+.sb-collapse[data-open] .nav-item:nth-child(4) { transition-delay: 75ms; }
+.sb-collapse[data-open] .nav-item:nth-child(5) { transition-delay: 100ms; }
+.sb-collapse[data-open] .nav-item:nth-child(n+6) { transition-delay: 120ms; }
+@media (prefers-reduced-motion: reduce) {
+  .sb-collapse, .sb-collapse .nav-item, .sb-section-caret { transition: none; }
+}
 
-.nav-item { display: flex; align-items: center; gap: 6px; padding: 7px 8px; border-radius: var(--r-sm);
-  border: none; background: none; color: var(--text-primary); width: 100%; text-align: left; font-size: 12px;
-  font-weight: 500; cursor: pointer; transition: background .12s; position: relative; }
-.nav-item:hover { background: var(--bg-hover); }
-.nav-item[data-active] { background: var(--bg-active); color: var(--text-primary); font-weight: 500; }
+.sb-divider { height: 0; border: none; border-top: 1px solid var(--border); margin: 0; width: 100%; }
+.sb-block { padding-bottom: 12px; }
+/* Collapsed: drop block footer padding so the section head sits evenly
+   between the dividers (matches the 8px vertical padding on `.sb-section`). */
+.sb-block:has(> .sb-collapse:not([data-open])) { padding-bottom: 0; }
+
+/* footer — user row + account menu */
+.sb-foot { margin-top: auto; }
+.sb-user { display: flex; align-items: center; gap: 6px; width: 100%; padding: 7px 0 7px 8px; border-radius: var(--r-sm);
+  min-width: 0; }
+@media (max-width: 760px) {
+  .sb-foot { padding-bottom: 8px; }
+  .sb-user { padding-left: 0; padding-right: 0; }
+}
+.sb-avatar { width: 24px; height: 24px; border-radius: 9999px; flex: none; display: grid; place-items: center;
+  background: var(--bg-active); color: var(--text-primary); font-size: 10px; font-weight: 600; }
+.sb-user-email { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 12px; font-weight: 500; color: var(--text-primary); }
+.sb-menuform { display: contents; }
+
+.nav-item { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 8px;
+  border-radius: var(--r-sm); border: 1px solid transparent; background: transparent;
+  color: var(--text-primary); width: 100%; text-align: left; font-size: 12px; font-weight: 500;
+  cursor: pointer; box-sizing: border-box; transition: background .12s, border-color .12s; position: relative; }
+/* Hover — bg-tertiary + outline-primary (skip when selected); data-hover forces the state in demos */
+.nav-item[data-hover],
+.nav-item:hover:not([data-active]) { background: var(--bg-tertiary); border-color: var(--outline-primary); }
+/* Selected — bg-quaternary */
+.nav-item[data-active] { background: var(--bg-quaternary); border-color: transparent; }
 .nav-item[data-active]::before { display: none; }
-.nav-emoji { font-size: 14px; width: 16px; text-align: center; flex: none; display: grid; place-items: center; }
-.nav-icon { color: var(--text-quaternary); display: grid; place-items: center; width: 16px; flex: none; }
-.nav-item[data-active] .nav-icon { color: var(--text-primary); }
+.nav-icon {
+  --ei-size: 14px;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--fg-secondary);
+  line-height: 0;
+  overflow: hidden;
+}
+.nav-icon svg { width: 16px; height: 16px; }
 .nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nav-badge { font-size: 10px; font-weight: 500; background: var(--badge-bg); color: var(--text-primary);
-  border-radius: 999px; min-width: 16px; min-height: 16px; padding: 2px 4px; display: grid; place-items: center; line-height: 1; }
-.nav-badge[data-muted] { background: var(--badge-bg); color: var(--text-primary); }
+/* Idle / hover badge — bg-quaternary + text-primary */
+.nav-badge { font-size: 12px; font-weight: 500; line-height: 12px; background: var(--bg-quaternary);
+  color: var(--text-primary); border-radius: 999px; min-width: 16px; min-height: 16px;
+  padding: 3px 6px; display: grid; place-items: center; box-sizing: border-box; }
+/* Selected badge — bg-neutral-inverse + text-inverse */
+.nav-item[data-active] .nav-badge { background: var(--bg-neutral-inverse); color: var(--text-inverse); }
+@media (max-width: 760px) {
+  .nav-item { height: 44px; gap: 12px; }
+  .nav-label { font-size: 14px; }
+  .nav-badge { font-size: 14px; line-height: 14px; }
+  .nav-icon {
+    --ei-size: 16px;
+    width: 20px;
+    height: 20px;
+  }
+  .nav-icon svg { width: 20px; height: 20px; }
+}
 .proj-color { width: 9px; height: 9px; border-radius: 3px; flex: none; }
 
-/* project row + hover-reveal pin toggle */
-.nav-item-wrap { position: relative; }
-.nav-pin { position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
-  border: none; background: none; color: var(--text-quaternary); width: 22px; height: 22px;
-  border-radius: var(--r-sm); display: grid; place-items: center; cursor: pointer;
-  opacity: 0; pointer-events: none; transition: opacity .12s, background .12s, color .12s; }
-.nav-item-wrap:hover .nav-pin, .nav-pin:focus-visible { opacity: 1; pointer-events: auto; }
-.nav-pin:hover { background: var(--bg-active); color: var(--text-primary); }
-.nav-pin[data-on] { color: var(--text-primary); }
-/* keep the pin from colliding with the issue count on the right edge */
-.nav-item-wrap:hover .nav-badge, .nav-item-wrap:focus-within .nav-badge { visibility: hidden; }
-
 .sb-sub { padding-left: 8px; }
-.sb-foot { margin-top: auto; padding-top: 10px; }
 
 /* ---------- Topbar ---------- */
 /* Drawer trigger for the screens with no project header (Inbox, All projects,
@@ -494,11 +605,19 @@ span.nav-toggle { width: 36px; height: 36px; border-radius: var(--r-sm); }
    silence it so the row's instant tooltip (below) is the only one shown. */
 .task-pri-btn > * { pointer-events: none; }
 
-/* Instant tooltips for `[data-tip]` — rendered by TipHost (fixed + clamped). */
-.iw-tip { position: fixed; z-index: 2000; padding: 4px 8px; border-radius: var(--r-xs);
-  background: var(--text-primary); color: var(--bg-surface); font-size: 11px; font-weight: 500;
-  line-height: 1.3; white-space: nowrap; pointer-events: none; max-width: calc(100vw - 16px);
-  box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; }
+/* Instant tooltips for `[data-tip]` — rendered by TipHost (fixed + clamped).
+   `.iw-tip-static` is the same chrome for always-visible gallery samples. */
+.iw-tip {
+  position: fixed; z-index: 2000; padding: 4px 8px; border-radius: var(--r-xs);
+  background: var(--bg-neutral-inverse); color: var(--text-white);
+  font: 500 11px/1.3 var(--font-ui);
+  white-space: nowrap; pointer-events: none; max-width: calc(100vw - 16px);
+  box-sizing: border-box; overflow: hidden; text-overflow: ellipsis;
+}
+.iw-tip-static {
+  position: relative; left: auto; top: auto; z-index: auto;
+  visibility: visible; display: inline-block; max-width: 280px;
+}
 .due-date-menu { padding: 6px; display: flex; flex-direction: column; gap: 8px; }
 /* hover-reveal: only the status chip is hidden until hover; priority, ref,
    tags and due stay visible (matches design) */
@@ -729,23 +848,14 @@ span.nav-toggle { width: 36px; height: 36px; border-radius: var(--r-sm); }
    The design hides secondary controls until :hover, which a touch device never
    fires — so they would be permanently unreachable. Revealing them all would
    just clutter a phone, so this only unhides the ones with no other route:
-   multi-select (no other entry point), the project pin, and the sidebar
-   section's add button.
+   multi-select (no other entry point) and the Projects section plus.
 
    Deliberately left hidden: `.task-title-edit` (tapping the row opens the task,
    where the title is editable, and a 13px pencil beside the title is a mis-tap
    magnet) and `.status-reveal` (the status circle already carries it). */
 @media (pointer: coarse) {
   .task-select,
-  .nav-item-wrap .nav-pin,
-  .sb-section button { opacity: 1; pointer-events: auto; }
-
-  /* Pin is no longer hover-revealed, so it can't sit on top of the count. */
-  .nav-item-wrap { display: flex; align-items: center; gap: 2px; }
-  .nav-item-wrap .nav-item { flex: 1; min-width: 0; }
-  .nav-item-wrap .nav-pin {
-    position: static; transform: none; flex: none;
-  }
+  .sb-section-action { opacity: 1; pointer-events: auto; }
 }
 
 /* ---------- Rows, chrome and fixed elements on phones ----------

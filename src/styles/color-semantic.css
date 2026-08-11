@@ -4,67 +4,68 @@
    https://www.figma.com/design/dI13xv1ppDMMTwTAbfuDvU/Foundations?node-id=18-141
 
    Names mirror Figma: text/* · foreground/* · background/* · outline/*
-   Light values = Foundations file. Dark text values keep prior app dark theme.
+   Light values alias primitives so scale updates flow through.
+   Dark text values keep prior app dark theme (hex until dark primitives exist).
    ============================================================ */
 
 :root {
   /* --- text --- */
-  --text-primary: #111827;
-  --text-secondary: #374151;
-  --text-tertiary: #4b5563;
-  --text-quaternary: #9ca3af;
-  --text-placeholder: #6b7280;
-  --text-inverse: #ffffff;
-  --text-white: #ffffff;
-  --text-brand: #1570ef;
-  --text-error: #dc2626;
-  --text-success: #16a34a;
-  --text-warning: #ca8a04;
-  --text-disabled: #d1d5db;
+  --text-primary: var(--gray-900);
+  --text-secondary: var(--gray-700);
+  --text-tertiary: var(--gray-600);
+  --text-quaternary: var(--gray-400);
+  --text-placeholder: var(--gray-500);
+  --text-inverse: var(--white);
+  --text-white: var(--white);
+  --text-brand: var(--brand-600);
+  --text-error: var(--red-600);
+  --text-success: var(--green-600);
+  --text-warning: var(--yellow-600);
+  --text-disabled: var(--gray-300);
 
   /* --- foreground (icons / marks) --- */
-  --fg-primary: #111827;
-  --fg-secondary: #374151;
-  --fg-tertiary: #4b5563;
-  --fg-white: #ffffff;
-  --fg-brand: #1570ef;
-  --fg-negative: #ef4444;
-  --fg-positive: #22c55e;
-  --fg-warning: #eab308;
+  --fg-primary: var(--gray-900);
+  --fg-secondary: var(--gray-700);
+  --fg-tertiary: var(--gray-600);
+  --fg-white: var(--white);
+  --fg-brand: var(--brand-600);
+  --fg-negative: var(--red-500);
+  --fg-positive: var(--green-500);
+  --fg-warning: var(--yellow-500);
 
   /* --- background --- */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f9fafb;
-  --bg-tertiary: #f3f4f6;
-  --bg-quaternary: #e5e7eb;
-  --bg-disabled: #f3f4f6;
-  --bg-neutral-inverse: #030712;
-  --bg-brand-primary: #eff8ff;
-  --bg-brand-secondary: #d1e9ff;
-  --bg-brand-solid: #1570ef;
-  --bg-negative-primary: #fef2f2;
-  --bg-negative-secondary: #fee2e2;
-  --bg-negative-solid: #ef4444;
-  --bg-positive-primary: #f0fdf4;
-  --bg-positive-secondary: #dcfce7;
-  --bg-positive-solid: #22c55e;
-  --bg-warning-primary: #fefce8;
-  --bg-warning-secondary: #fef9c3;
-  --bg-warning-solid: #eab308;
+  --bg-primary: var(--white);
+  --bg-secondary: var(--gray-50);
+  --bg-tertiary: var(--gray-100);
+  --bg-quaternary: var(--gray-200);
+  --bg-disabled: var(--gray-100);
+  --bg-neutral-inverse: var(--gray-950);
+  --bg-brand-primary: var(--brand-50);
+  --bg-brand-secondary: var(--brand-100);
+  --bg-brand-solid: var(--brand-600);
+  --bg-negative-primary: var(--red-50);
+  --bg-negative-secondary: var(--red-100);
+  --bg-negative-solid: var(--red-500);
+  --bg-positive-primary: var(--green-50);
+  --bg-positive-secondary: var(--green-100);
+  --bg-positive-solid: var(--green-500);
+  --bg-warning-primary: var(--yellow-50);
+  --bg-warning-secondary: var(--yellow-100);
+  --bg-warning-solid: var(--yellow-500);
 
   /* --- outline --- */
-  --outline-primary: #e5e7eb;
-  --outline-secondary: #e5e7eb;
-  --outline-tertiary: #d1d5db;
-  --outline-disabled: #e5e7eb;
-  --outline-brand-primary: #b2ddff;
-  --outline-brand-secondary: #84caff;
-  --outline-negative-primary: #fecaca;
-  --outline-negative-secondary: #fca5a5;
-  --outline-positive-primary: #86efac;
-  --outline-positive-secondary: #4ade80;
-  --outline-warning-primary: #fde047;
-  --outline-warning-secondary: #facc15;
+  --outline-primary: var(--gray-200);
+  --outline-secondary: var(--gray-200);
+  --outline-tertiary: var(--gray-300);
+  --outline-disabled: var(--gray-200);
+  --outline-brand-primary: var(--brand-200);
+  --outline-brand-secondary: var(--brand-300);
+  --outline-negative-primary: var(--red-200);
+  --outline-negative-secondary: var(--red-300);
+  --outline-positive-primary: var(--green-300);
+  --outline-positive-secondary: var(--green-400);
+  --outline-warning-primary: var(--yellow-300);
+  --outline-warning-secondary: var(--yellow-400);
 }
 
 [data-theme="dark"] {

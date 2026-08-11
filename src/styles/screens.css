@@ -504,7 +504,7 @@ a.iw-btn[aria-disabled] { pointer-events: none; cursor: not-allowed; }
 .login-demo b { color: var(--text-primary); font-family: var(--font-mono); font-weight: 600; }
 
 /* ============================================================
-   Sidebar — status groups + pin + view all
+   Sidebar — project lists + view all
    ============================================================ */
 .sb-scroll { display: flex; flex-direction: column; gap: 1px; flex: 1; min-height: 0; overflow-y: auto; }
 .sb-group { margin-bottom: 2px; }
@@ -1010,7 +1010,7 @@ a.iw-btn[aria-disabled] { pointer-events: none; cursor: not-allowed; }
 .settings-navlabel { font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.04em;
   color: var(--text-placeholder); padding: 4px 10px 10px; }
 .settings-navitem { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: none;
-  background: none; border-radius: var(--r-sm); color: var(--text-primary); font-size: 13.5px; font-weight: 540; text-align: left; transition: .12s; white-space: nowrap; }
+  background: none; border-radius: var(--r-sm); color: var(--text-primary); font-size: 13.5px; font-weight: 540; text-align: left; transition: .12s; white-space: nowrap; text-decoration: none; cursor: pointer; box-sizing: border-box; }
 .settings-navitem svg { color: var(--text-quaternary); flex: none; }
 .settings-navitem:hover { background: var(--bg-hover); color: var(--text-primary); }
 .settings-navitem[data-active] { background: var(--bg-active); color: var(--text-primary); font-weight: 600; }
@@ -1177,6 +1177,10 @@ a.iw-btn[aria-disabled] { pointer-events: none; cursor: not-allowed; }
   grid-template-columns: 56px minmax(120px, 0.85fr) 88px minmax(0, 1.6fr);
   gap: 10px; align-items: center; padding: 8px 12px;
 }
+.ds-color-table[data-primitive] .ds-color-head,
+.ds-color-table[data-primitive] .ds-color-row {
+  grid-template-columns: 56px minmax(110px, 0.75fr) minmax(100px, 0.7fr) 88px minmax(0, 1.4fr);
+}
 .ds-color-head {
   background: var(--bg-sunken); border-bottom: 1px solid var(--border-soft);
   font-size: 10.5px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.04em;
@@ -1185,20 +1189,22 @@ a.iw-btn[aria-disabled] { pointer-events: none; cursor: not-allowed; }
 .ds-color-row + .ds-color-row { border-top: 1px solid var(--border-soft); }
 .ds-color-row:hover { background: var(--bg-hover); }
 .ds-color-swatch-cell { display: flex; align-items: center; }
-.ds-color-var, .ds-color-hex {
+.ds-color-var, .ds-color-hex, .ds-color-primitive {
   font: 500 12px/1.3 var(--font-mono); color: var(--text-primary);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.ds-color-hex { color: var(--text-quaternary); }
+.ds-color-hex, .ds-color-primitive { color: var(--text-quaternary); }
 .ds-color-desc { font-size: 12.5px; color: var(--text-quaternary); line-height: 1.35; }
 .ds-frame[data-viewport="mobile"] .ds-color-head,
-.ds-frame[data-viewport="mobile"] .ds-color-row {
+.ds-frame[data-viewport="mobile"] .ds-color-row,
+.ds-frame[data-viewport="mobile"] .ds-color-table[data-primitive] .ds-color-head,
+.ds-frame[data-viewport="mobile"] .ds-color-table[data-primitive] .ds-color-row {
   grid-template-columns: 40px minmax(0, 1fr);
   gap: 8px;
 }
-.ds-frame[data-viewport="mobile"] .ds-color-head span:nth-child(3),
-.ds-frame[data-viewport="mobile"] .ds-color-head span:nth-child(4),
+.ds-frame[data-viewport="mobile"] .ds-color-head span:nth-child(n+3),
 .ds-frame[data-viewport="mobile"] .ds-color-hex,
+.ds-frame[data-viewport="mobile"] .ds-color-primitive,
 .ds-frame[data-viewport="mobile"] .ds-color-desc { display: none; }
 .ds-radius-sample {
   width: 48px; height: 48px; border: 1.5px solid var(--border-strong);

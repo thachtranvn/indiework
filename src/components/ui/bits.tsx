@@ -31,8 +31,10 @@ export function EntityIcon({
 }) {
   if (!icon) return <span className="dot" style={{ background: color ?? 'var(--text-placeholder)' }} />;
   if (isEmojiValue(icon)) {
+    // `--ei-size` lets wrappers (e.g. .nav-icon) pin glyph size without fighting
+    // the inline fallback. Default keeps the old size+2 optical match to Lucide.
     return (
-      <span className="ei-emoji" style={{ fontSize: size + 2 }}>
+      <span className="ei-emoji" style={{ fontSize: `var(--ei-size, ${size + 2}px)` }}>
         {icon}
       </span>
     );

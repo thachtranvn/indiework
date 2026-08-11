@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } fro
 import { usePathname, useSearchParams } from 'next/navigation';
 import type { ShellData } from '@/server/load';
 import { useTaskNav, refFromPath } from '@/lib/task-nav';
-import { useIsMobile } from '@/lib/use-media-query';
+import { MOBILE_QUERY, useIsMobile } from '@/lib/use-media-query';
 import { Sidebar } from './sidebar';
 import { DetailPanel } from './detail-panel';
 import { ProjectForm } from './project-form';
@@ -13,11 +13,13 @@ import { CommandPalette } from './command-palette';
 import { Ic } from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
 import { TipHost } from '@/components/ui/tip-host';
+import { NavToggleProvider } from './nav-toggle';
 
 /** Slide-out durations of `.detail-panel` — keep in sync with app.css.
  *  Mobile adds a short buffer so iOS doesn't unmount mid-composite. */
 const DETAIL_EXIT_MS_DESKTOP = 200;
 const DETAIL_EXIT_MS_MOBILE = 450;
+const DRAWER_EXIT_MS = 450;
 const SIDEBAR_MIN = 180;
 const SIDEBAR_MAX = 440;
 const SIDEBAR_DEFAULT = 230;
@@ -61,21 +63,31 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
   const [showWorkspace, setShowWorkspace] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
 
-  // On phones the sidebar is an overlay drawer instead of a grid track, so it
+  // On phones the sidebar is a full-screen sheet instead of a grid track, so it
   // needs its own state: `collapsed` is persisted and would otherwise launch the
   // drawer already open just because the user left the rail expanded on desktop.
   // Navigating always dismisses it — tracked alongside the path and adjusted
   // during render (same pattern as `lastOpen` above) rather than in an effect,
   // so the drawer never paints one frame over the page it just left.
   const isMobile = useIsMobile();
-  const [drawer, setDrawer] = useState({ open: false, path: pathname });
-  if (drawer.path !== pathname) setDrawer({ open: false, path: pathname });
+  const [drawer, setDrawer] = useState({ open: false, closing: false, path: pathname });
+  if (drawer.path !== pathname) setDrawer({ open: false, closing: false, path: pathname });
   const drawerOpen = drawer.open;
-  const setDrawerOpen = useCallback(
-    (open: boolean | ((prev: boolean) => boolean)) =>
-      setDrawer((d) => ({ ...d, open: typeof open === 'function' ? open(d.open) : open })),
-    [],
-  );
+  const drawerClosing = drawer.closing;
+
+  const setDrawerOpen = useCallback((open: boolean) => {
+    setDrawer((d) => {
+      if (open) return { ...d, open: true, closing: false };
+      if (!d.open) return d;
+      return { ...d, open: false, closing: true };
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!drawerClosing) return;
+    const t = setTimeout(() => setDrawer((d) => ({ ...d, closing: false })), DRAWER_EXIT_MS);
+    return () => clearTimeout(t);
+  }, [drawerClosing]);
 
   useEffect(() => {
     if (!closing) return;
@@ -106,14 +118,30 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
     });
   }, []);
 
-  // Same trigger (`iw:toggle-sidebar`, the header button) means "collapse the
-  // rail" on desktop and "open the drawer" on mobile.
+  // Same trigger (header sidebar button) means "collapse the rail" on desktop
+  // and "open the drawer" on mobile. Read matchMedia live so a stale `isMobile`
+  // false (pre-hydration) can't collapse the rail instead.
   const toggleNav = useCallback(() => {
-    if (isMobile) setDrawerOpen((o) => !o);
-    else toggleCollapsed();
-  }, [isMobile, toggleCollapsed]);
+    if (typeof window !== 'undefined' && window.matchMedia(MOBILE_QUERY).matches) {
+      setDrawer((d) =>
+        d.open ? { ...d, open: false, closing: true } : { ...d, open: true, closing: false },
+      );
+    } else {
+      toggleCollapsed();
+    }
+  }, [toggleCollapsed]);
 
-  // keyboard: ⌘K search, c quick-capture; sidebar toggle from the headers
+  // Expose on window for debug / rare non-React callers. React children use
+  // NavToggleProvider (avoids module-singleton / HMR listener mismatches).
+  useEffect(() => {
+    (window as unknown as { __iwToggleNav?: () => void }).__iwToggleNav = toggleNav;
+    return () => {
+      const w = window as unknown as { __iwToggleNav?: () => void };
+      if (w.__iwToggleNav === toggleNav) delete w.__iwToggleNav;
+    };
+  }, [toggleNav]);
+
+  // keyboard: ⌘K search, c quick-capture; Escape closes the mobile drawer
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.key === 'k' || e.key === 'K') && (e.metaKey || e.ctrlKey)) {
@@ -130,12 +158,8 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
       }
     };
     window.addEventListener('keydown', onKey);
-    window.addEventListener('iw:toggle-sidebar', toggleNav);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      window.removeEventListener('iw:toggle-sidebar', toggleNav);
-    };
-  }, [toggleNav]);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [setDrawerOpen]);
 
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -185,6 +209,7 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
   const detailOpen = Boolean(detailKey);
 
   return (
+    <NavToggleProvider toggle={toggleNav}>
     <div
       className="app"
       data-detail={detailKey ? '' : undefined}
@@ -202,22 +227,20 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
         } as React.CSSProperties
       }
     >
-      <div className="sidebar-slot" aria-hidden={(isMobile ? !drawerOpen : collapsed) || undefined}>
+      <div
+        className="sidebar-slot"
+        data-open={drawerOpen ? '' : undefined}
+        data-closing={drawerClosing ? '' : undefined}
+        aria-hidden={(isMobile ? !(drawerOpen || drawerClosing) : collapsed) || undefined}
+      >
         <Sidebar
           shell={shell}
           onNewProject={() => setShowProject(true)}
           onNewWorkspace={() => setShowWorkspace(true)}
           onOpenSearch={() => setShowSearch(true)}
+          onClose={() => setDrawerOpen(false)}
         />
       </div>
-      {isMobile && drawerOpen && (
-        <button
-          className="drawer-scrim"
-          type="button"
-          onClick={() => setDrawerOpen(false)}
-          aria-label="Close navigation"
-        />
-      )}
       {!collapsed && (
         <div className="col-resizer" onMouseDown={startResize} title="Drag to resize · double-click to reset" />
       )}
@@ -267,5 +290,6 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
       {showSearch && <CommandPalette onClose={() => setShowSearch(false)} />}
       <TipHost />
     </div>
+    </NavToggleProvider>
   );
 }

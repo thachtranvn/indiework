@@ -1,10 +1,9 @@
-import type { Metadata } from 'next';
-import { DesignSystemScreen } from '@/components/app/design-system';
+import { redirect } from 'next/navigation';
+import { DEFAULT_DS_ITEM } from '@/components/app/design-system-nav';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = { title: 'Design System' };
-
-export default function DesignSystemPage() {
-  return <DesignSystemScreen />;
+/** `/app/design-system` → first section so every gallery page has a stable URL. */
+export default function DesignSystemIndexPage() {
+  redirect(`/app/design-system/${DEFAULT_DS_ITEM}`);
 }
