@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Modal } from '@/components/ui/modal';
+import { Button } from '@/components/ui/button';
 import { createWorkspace } from '@/app/_actions/workspace';
 
 export function WorkspaceForm({ onClose }: { onClose: () => void }) {
@@ -36,12 +37,12 @@ export function WorkspaceForm({ onClose }: { onClose: () => void }) {
       onClose={onClose}
       footer={
         <>
-          <button className="btn" type="button" onClick={onClose}>
+          <Button variant="tertiary" size="sm" onClick={onClose}>
             Cancel
-          </button>
-          <button className="btn btn-primary" type="button" onClick={submit} disabled={busy || !name.trim()}>
+          </Button>
+          <Button size="sm" onClick={submit} disabled={busy || !name.trim()}>
             Create
-          </button>
+          </Button>
         </>
       }
     >

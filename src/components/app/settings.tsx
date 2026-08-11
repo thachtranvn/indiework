@@ -9,6 +9,7 @@ import { updateWorkspace } from '@/app/_actions/workspace';
 import { createApiKey, revokeApiKey } from '@/app/_actions/apikeys';
 import { useRun } from '@/components/ui/toast';
 import { Ic } from '@/components/ui/icons';
+import { Button } from '@/components/ui/button';
 import { UI_FONTS } from '@/lib/fonts';
 import { useUiFont } from '@/lib/use-ui-font';
 import { commitOnEnter } from '@/lib/inline-edit';
@@ -215,9 +216,9 @@ function ApiKeysPane({ apiKeys }: { apiKeys: ApiKeyPublic[] }) {
           </p>
         </div>
         {!creating && (
-          <button className="btn btn-primary" type="button" onClick={() => setCreating(true)}>
-            <Ic.plus size={15} /> Create key
-          </button>
+          <Button size="sm" leftIcon={<Ic.plus size={15} />} onClick={() => setCreating(true)}>
+            Create key
+          </Button>
         )}
       </div>
 
@@ -246,12 +247,12 @@ function ApiKeysPane({ apiKeys }: { apiKeys: ApiKeyPublic[] }) {
             </div>
           </div>
           <div className="ak-create-foot">
-            <button className="btn" type="button" onClick={() => setCreating(false)}>
+            <Button variant="tertiary" size="sm" onClick={() => setCreating(false)}>
               Cancel
-            </button>
-            <button className="btn btn-primary" type="button" onClick={submit} disabled={!name.trim() || busy}>
+            </Button>
+            <Button size="sm" onClick={submit} disabled={!name.trim() || busy}>
               Create key
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -285,19 +286,25 @@ function ApiKeysPane({ apiKeys }: { apiKeys: ApiKeyPublic[] }) {
                   </span>
                 </div>
                 <div className="ak-actions">
-                  <button
-                    className="icon-btn"
+                  <Button
                     type="button"
+                    iconOnly
+                    size="xs"
+                    variant="tertiary"
                     title="Copy"
+                    aria-label="Copy"
+                    leftIcon={<Ic.copy size={16} />}
                     onClick={() => navigator.clipboard?.writeText(isNew ? freshSecret!.secret : k.masked)}
-                  >
-                    <Ic.copy size={16} />
-                  </button>
-                  <button
-                    className="icon-btn"
-                    data-danger=""
+                  />
+                  <Button
                     type="button"
+                    iconOnly
+                    size="xs"
+                    variant="tertiary"
+                    negative
                     title="Revoke"
+                    aria-label="Revoke"
+                    leftIcon={<Ic.trash size={16} />}
                     onClick={() =>
                       run(
                         async () => {
@@ -307,9 +314,7 @@ function ApiKeysPane({ apiKeys }: { apiKeys: ApiKeyPublic[] }) {
                         { error: "Couldn't revoke the API key.", retry: false },
                       )
                     }
-                  >
-                    <Ic.trash size={16} />
-                  </button>
+                  />
                 </div>
               </div>
             );

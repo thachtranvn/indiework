@@ -1,0 +1,182 @@
+/* ============================================================
+   Foundations — color primitives
+   Source: Figma Foundations / Colors
+   https://www.figma.com/design/dI13xv1ppDMMTwTAbfuDvU/Foundations?node-id=18-141
+
+   Declared only — not wired to semantic tokens yet.
+   Groups mirror Figma: main · semantic · utility.
+   ============================================================ */
+
+:root {
+  /* --- main / base --- */
+  --white: #ffffff;
+  --black: #000000;
+
+  /* --- main / gray --- */
+  --gray-25: #fcfcfd;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --gray-950: #030712;
+
+  /* --- main / brand --- */
+  --brand-25: #f5faff;
+  --brand-50: #eff8ff;
+  --brand-100: #d1e9ff;
+  --brand-200: #b2ddff;
+  --brand-300: #84caff;
+  --brand-400: #53b1fd;
+  --brand-500: #2e90fa;
+  --brand-600: #1570ef;
+  --brand-700: #175cd3;
+  --brand-800: #1849a9;
+  --brand-900: #133266;
+  --brand-950: #0c1f40;
+
+  /* --- semantic / red --- */
+  --red-25: #fffbfa;
+  --red-50: #fef2f2;
+  --red-100: #fee2e2;
+  --red-200: #fecaca;
+  --red-300: #fca5a5;
+  --red-400: #f87171;
+  --red-500: #ef4444;
+  --red-600: #dc2626;
+  --red-700: #b91c1c;
+  --red-800: #991b1b;
+  --red-900: #661717;
+  --red-950: #401009;
+
+  /* --- semantic / yellow --- */
+  --yellow-25: #fffcf5;
+  --yellow-50: #fefce8;
+  --yellow-100: #fef9c3;
+  --yellow-200: #fef08a; /* swatch label; Figma var binding missing */
+  --yellow-300: #fde047;
+  --yellow-400: #facc15;
+  --yellow-500: #eab308;
+  --yellow-600: #ca8a04;
+  --yellow-700: #a16207;
+  --yellow-800: #854d0e;
+  --yellow-900: #61360f;
+  --yellow-950: #422006;
+
+  /* --- semantic / green --- */
+  --green-25: #f6fef9;
+  --green-50: #f0fdf4;
+  --green-100: #dcfce7;
+  --green-200: #bbf7d0;
+  --green-300: #86efac;
+  --green-400: #4ade80;
+  --green-500: #22c55e;
+  --green-600: #16a34a;
+  --green-700: #15803d;
+  --green-800: #166534;
+  --green-900: #114727;
+  --green-950: #052e16;
+
+  /* --- utility / moss --- */
+  --moss-25: #fafdf7;
+  --moss-50: #f5fbee;
+  --moss-100: #e6f4d7;
+  --moss-200: #ceeab0;
+  --moss-300: #acdc79;
+  --moss-400: #86cb3c;
+  --moss-500: #669f2a;
+  --moss-600: #4f7a21;
+  --moss-700: #3f621a;
+  --moss-800: #335015;
+  --moss-900: #2b4212;
+  --moss-950: #1a280b;
+
+  /* --- utility / teal --- */
+  --teal-25: #f6fefc;
+  --teal-50: #f0fdfa;
+  --teal-100: #ccfbf1;
+  --teal-200: #99f6e4;
+  --teal-300: #5eead4;
+  --teal-400: #2dd4bf;
+  --teal-500: #14b8a6;
+  --teal-600: #0d9488;
+  --teal-700: #0f766e;
+  --teal-800: #115e59;
+  --teal-900: #134e4a;
+  --teal-950: #042f2e;
+
+  /* --- utility / cyan --- */
+  --cyan-25: #f5feff;
+  --cyan-50: #ecfeff;
+  --cyan-100: #cffafe;
+  --cyan-200: #a5f3fc;
+  --cyan-300: #67e8f9;
+  --cyan-400: #22d3ee;
+  --cyan-500: #06b6d4;
+  --cyan-600: #0891b2;
+  --cyan-700: #0e7490;
+  --cyan-800: #155e75;
+  --cyan-900: #164e63;
+  --cyan-950: #0d2d3a;
+
+  /* --- utility / blue --- */
+  --blue-25: #f5faff;
+  --blue-50: #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-200: #bfdbfe;
+  --blue-300: #93c5fd;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --blue-800: #1e40af;
+  --blue-900: #133266;
+  --blue-950: #0c1f40;
+
+  /* --- utility / violet --- */
+  --violet-25: #fbfaff;
+  --violet-50: #f5f3ff;
+  --violet-100: #ede9fe;
+  --violet-200: #ddd6fe;
+  --violet-300: #c4b5fd;
+  --violet-400: #a78bfa;
+  --violet-500: #8b5cf6;
+  --violet-600: #7c3aed;
+  --violet-700: #6d28d9;
+  --violet-800: #5b21b6;
+  --violet-900: #4c1d95;
+  --violet-950: #2e1065;
+
+  /* --- utility / rose --- */
+  --rose-25: #fff5f6;
+  --rose-50: #fff1f3;
+  --rose-100: #ffe4e8;
+  --rose-200: #fecdd6;
+  --rose-300: #fea3b4;
+  --rose-400: #fd6f8e;
+  --rose-500: #f63d68;
+  --rose-600: #e31b54;
+  --rose-700: #c01048;
+  --rose-800: #a11043;
+  --rose-900: #89123e;
+  --rose-950: #510b24;
+
+  /* --- utility / taupe --- */
+  --taupe-25: #fffcfb; /* swatch label; Figma var binds #fff5f6 (likely wrong) */
+  --taupe-50: #fbfaf9;
+  --taupe-100: #f3f1f1;
+  --taupe-200: #e8e4e3;
+  --taupe-300: #d8d2d0;
+  --taupe-400: #aba09c;
+  --taupe-500: #7c6d67;
+  --taupe-600: #5b4f4b;
+  --taupe-700: #473c39;
+  --taupe-800: #2b2422;
+  --taupe-900: #1d1816;
+  --taupe-950: #0c0a09;
+}

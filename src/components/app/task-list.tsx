@@ -618,7 +618,7 @@ function SectionHeadIcon({ section, size = 16 }: { section: Sec; size?: number }
   if (section.icon === 'cube') return <Ic.cube size={size} />;
   if (section.icon === 'target') return <Ic.target size={size} />;
   if (section.icon === 'flag') return <Ic.flag size={size} />;
-  return <span className="section-dot" style={{ background: section.color ?? 'var(--text-faint)' }} />;
+  return <span className="section-dot" style={{ background: section.color ?? 'var(--text-placeholder)' }} />;
 }
 
 function Section({

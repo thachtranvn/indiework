@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import type { AttachmentType } from '@/lib/domain';
 import { previewKind, attachmentDownloadUrl } from '@/lib/attachment-preview';
 import { Modal } from '@/components/ui/modal';
+import { Button } from '@/components/ui/button';
 import { Ic } from '@/components/ui/icons';
 
 export interface PreviewableAttachment {
@@ -37,9 +38,15 @@ export function AttachmentPreview({ att, onClose }: { att: PreviewableAttachment
         </span>
       }
       footer={
-        <a className="btn" href={attachmentDownloadUrl(att.id)} download={att.name}>
-          <Ic.download size={15} /> Download
-        </a>
+        <Button
+          size="sm"
+          variant="secondary"
+          href={attachmentDownloadUrl(att.id)}
+          download={att.name}
+          leftIcon={<Ic.download size={16} />}
+        >
+          Download
+        </Button>
       }
     >
       <div className="att-preview-body" data-kind={kind}>

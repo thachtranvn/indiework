@@ -1,0 +1,77 @@
+/* ============================================================
+   Foundations — semantic colors
+   Source: Figma Foundations / Colors (Test Color)
+   https://www.figma.com/design/dI13xv1ppDMMTwTAbfuDvU/Foundations?node-id=18-141
+
+   Names mirror Figma: text/* · foreground/* · background/* · outline/*
+   Light values = Foundations file. Dark text values keep prior app dark theme.
+   ============================================================ */
+
+:root {
+  /* --- text --- */
+  --text-primary: #111827;
+  --text-secondary: #374151;
+  --text-tertiary: #4b5563;
+  --text-quaternary: #9ca3af;
+  --text-placeholder: #6b7280;
+  --text-inverse: #ffffff;
+  --text-white: #ffffff;
+  --text-brand: #1570ef;
+  --text-error: #dc2626;
+  --text-success: #16a34a;
+  --text-warning: #ca8a04;
+  --text-disabled: #d1d5db;
+
+  /* --- foreground (icons / marks) --- */
+  --fg-primary: #111827;
+  --fg-secondary: #374151;
+  --fg-tertiary: #4b5563;
+  --fg-white: #ffffff;
+  --fg-brand: #1570ef;
+  --fg-negative: #ef4444;
+  --fg-positive: #22c55e;
+  --fg-warning: #eab308;
+
+  /* --- background --- */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --bg-quaternary: #e5e7eb;
+  --bg-disabled: #f3f4f6;
+  --bg-neutral-inverse: #030712;
+  --bg-brand-primary: #eff8ff;
+  --bg-brand-secondary: #d1e9ff;
+  --bg-brand-solid: #1570ef;
+  --bg-negative-primary: #fef2f2;
+  --bg-negative-secondary: #fee2e2;
+  --bg-negative-solid: #ef4444;
+  --bg-positive-primary: #f0fdf4;
+  --bg-positive-secondary: #dcfce7;
+  --bg-positive-solid: #22c55e;
+  --bg-warning-primary: #fefce8;
+  --bg-warning-secondary: #fef9c3;
+  --bg-warning-solid: #eab308;
+
+  /* --- outline --- */
+  --outline-primary: #e5e7eb;
+  --outline-secondary: #e5e7eb;
+  --outline-tertiary: #d1d5db;
+  --outline-disabled: #e5e7eb;
+  --outline-brand-primary: #b2ddff;
+  --outline-brand-secondary: #84caff;
+  --outline-negative-primary: #fecaca;
+  --outline-negative-secondary: #fca5a5;
+  --outline-positive-primary: #86efac;
+  --outline-positive-secondary: #4ade80;
+  --outline-warning-primary: #fde047;
+  --outline-warning-secondary: #facc15;
+}
+
+[data-theme="dark"] {
+  --text-primary: #f0f2f4;
+  --text-secondary: #cfd1d5;
+  --text-tertiary: #8f9297;
+  --text-quaternary: #8f9297;
+  --text-placeholder: #66696e;
+  --text-disabled: #4a4d53;
+}

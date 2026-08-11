@@ -11,6 +11,7 @@ import { ProjectForm } from './project-form';
 import { WorkspaceForm } from './workspace-form';
 import { CommandPalette } from './command-palette';
 import { Ic } from '@/components/ui/icons';
+import { Button } from '@/components/ui/button';
 import { TipHost } from '@/components/ui/tip-host';
 
 /** Slide-out durations of `.detail-panel` — keep in sync with app.css.
@@ -221,9 +222,17 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
         <div className="col-resizer" onMouseDown={startResize} title="Drag to resize · double-click to reset" />
       )}
       {collapsed && (
-        <button className="sb-expand" type="button" onClick={toggleCollapsed} title="Expand sidebar" aria-label="Expand sidebar">
-          <Ic.sidebar size={16} />
-        </button>
+        <Button
+          className="sb-expand"
+          type="button"
+          iconOnly
+          size="xs"
+          variant="tertiary"
+          onClick={toggleCollapsed}
+          title="Expand sidebar"
+          aria-label="Expand sidebar"
+          leftIcon={<Ic.sidebar size={16} />}
+        />
       )}
 
       <div className="main-col">{children}</div>

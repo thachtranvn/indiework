@@ -12,6 +12,7 @@
  */
 import { useEffect } from 'react';
 import { Ic } from '@/components/ui/icons';
+import { Button } from '@/components/ui/button';
 
 export default function AppError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
@@ -26,9 +27,9 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
       </div>
       <h3>Something went wrong loading this view</h3>
       <p>The page hit an error while loading. This is usually temporary — try again.</p>
-      <button className="btn btn-primary" type="button" onClick={() => reset()}>
+      <Button size="sm" onClick={() => reset()}>
         Try again
-      </button>
+      </Button>
     </div>
   );
 }

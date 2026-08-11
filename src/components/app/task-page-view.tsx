@@ -16,6 +16,7 @@ import { taskFullPath, projectPathForRef } from '@/lib/task-nav';
 import { parseRef } from '@/lib/domain';
 import { RefTag } from '@/components/ui/interactive';
 import { Ic } from '@/components/ui/icons';
+import { Button } from '@/components/ui/button';
 import { MarkdownEditor } from '@/components/ui/markdown-editor';
 import { useTaskDetail } from './task-detail/use-task-detail';
 import { TitleEditor, StatusNote, Attachments } from './task-detail/parts';
@@ -59,9 +60,9 @@ export function TaskPageView({ taskRef, initialDetail }: { taskRef: string; init
           // than falsely claiming it was deleted.
           <div className="tp-empty">
             <p>Couldn’t load this task. The app may have updated.</p>
-            <button className="btn btn-primary" type="button" onClick={() => window.location.reload()}>
+            <Button size="sm" onClick={() => window.location.reload()}>
               Refresh
-            </button>
+            </Button>
           </div>
         )}
       </div>

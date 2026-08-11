@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Ic } from './icons';
+import { Button } from './button';
 
 export function Modal({
   title,
@@ -36,9 +37,15 @@ export function Modal({
       <div className={`modal${className ? ` ${className}` : ''}`} onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h2>{title}</h2>
-          <button className="icon-btn" type="button" onClick={onClose} aria-label="Close">
-            <Ic.close size={18} />
-          </button>
+          <Button
+            type="button"
+            iconOnly
+            size="xs"
+            variant="tertiary"
+            onClick={onClose}
+            aria-label="Close"
+            leftIcon={<Ic.close size={16} />}
+          />
         </div>
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-foot">{footer}</div>}

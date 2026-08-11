@@ -4,6 +4,7 @@ import { useState, type MouseEvent } from 'react';
 import type { TaskStatus } from '@/lib/domain';
 import { Ic } from './icons';
 import { StatusIcon } from './status-icon';
+import { Button } from './button';
 
 /**
  * Circular status control. With `onToggle`, acts as a mark-done button; without,
@@ -72,11 +73,14 @@ export function RefTag({ value, big }: { value: string; big?: boolean }) {
 export function CopyLinkButton({ getUrl, label = 'Copy link' }: { getUrl: () => string | null; label?: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <button
+    <Button
       type="button"
-      className="icon-btn"
+      iconOnly
+      size="xs"
+      variant="tertiary"
       title={copied ? 'Link copied' : label}
       aria-label={label}
+      leftIcon={copied ? <Ic.check size={16} /> : <Ic.link size={16} />}
       onClick={async (e) => {
         e.stopPropagation();
         const url = getUrl();
@@ -89,8 +93,6 @@ export function CopyLinkButton({ getUrl, label = 'Copy link' }: { getUrl: () => 
           // Clipboard unavailable (denied permission / insecure context) — skip.
         }
       }}
-    >
-      {copied ? <Ic.check size={16} /> : <Ic.link size={16} />}
-    </button>
+    />
   );
 }

@@ -38,6 +38,7 @@ import { useRun } from '@/components/ui/toast';
 import { Progress } from '@/components/ui/bits';
 import { IconPicker } from '@/components/ui/icon-picker';
 import { Popover, OptionList } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import { Ic } from '@/components/ui/icons';
 
 const DOT_KEY: Record<ProjectStatus, string> = {
@@ -271,13 +272,13 @@ function InfoPanel({ project, workspaces }: { project: Project; workspaces: Work
           </span>
         </div>
         {isArchived ? (
-          <button className="ov-danger-btn" type="button" data-restore="" onClick={restore}>
-            <Ic.restore size={14} /> Restore
-          </button>
+          <Button size="sm" variant="secondary" leftIcon={<Ic.restore size={14} />} onClick={restore}>
+            Restore
+          </Button>
         ) : (
-          <button className="ov-danger-btn" type="button" onClick={archive}>
-            <Ic.archive size={14} /> Archive
-          </button>
+          <Button size="sm" variant="secondary" negative leftIcon={<Ic.archive size={14} />} onClick={archive}>
+            Archive
+          </Button>
         )}
       </div>
     </>
@@ -346,9 +347,13 @@ function MilestonesPanel({
                 onKeyDown={commitOnEnter}
                 onBlur={(e) => e.target.value.trim() && e.target.value !== m.name && saveMile(m.id, { name: e.target.value.trim() })}
               />
-              <button
-                className="icon-btn ov-del"
+              <Button
+                className="ov-del"
                 type="button"
+                iconOnly
+                size="xs"
+                variant="tertiary"
+                negative
                 onClick={() =>
                   run(
                     async () => {
@@ -359,9 +364,8 @@ function MilestonesPanel({
                   )
                 }
                 aria-label="Delete milestone"
-              >
-                <Ic.trash size={14} />
-              </button>
+                leftIcon={<Ic.trash size={14} />}
+              />
             </div>
             <div className="ov-mile-bottom">
               <StatePicker
@@ -497,9 +501,13 @@ function ModulesPanel({
                   {prog.done}/{prog.total}
                 </span>
               </span>
-              <button
-                className="icon-btn ov-del"
+              <Button
+                className="ov-del"
                 type="button"
+                iconOnly
+                size="xs"
+                variant="tertiary"
+                negative
                 onClick={() =>
                   run(
                     async () => {
@@ -510,9 +518,8 @@ function ModulesPanel({
                   )
                 }
                 aria-label="Remove module"
-              >
-                <Ic.trash size={14} />
-              </button>
+                leftIcon={<Ic.trash size={14} />}
+              />
             </div>
             <input
               className="ov-mod-desc"

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import { markdownExtensions, getMarkdown, insertMarkdownFromPaste } from './markdown-core';
+import { Button } from '@/components/ui/button';
 import { Ic } from '@/components/ui/icons';
 
 export interface CommentComposerProps {
@@ -66,16 +67,17 @@ export function CommentComposerImpl({ onSend }: CommentComposerProps) {
     >
       <EditorContent editor={editor} />
       <div className="comment-foot">
-        <button
-          className="comment-send"
+        <Button
+          variant="accent"
+          size="xs"
+          iconOnly
           type="button"
           onClick={() => void send()}
           disabled={empty || busy}
           aria-label="Add comment"
           title="Add comment (⌘+Enter)"
-        >
-          <Ic.arrowUp size={16} />
-        </button>
+          leftIcon={<Ic.arrowUp size={16} />}
+        />
       </div>
     </div>
   );

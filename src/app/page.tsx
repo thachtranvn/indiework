@@ -229,7 +229,7 @@ function AppPreview() {
       <div className="lp-pv-main">
         <div className="lp-pv-title">
           🚀 Landing site{' '}
-          <span style={{ font: '500 10px var(--font-mono)', color: 'var(--text-faint)' }}>SITE</span>
+          <span style={{ font: '500 10px var(--font-mono)', color: 'var(--text-placeholder)' }}>SITE</span>
         </div>
         <div className="lp-pv-sec">
           <span className="lp-pv-dot" style={{ background: '#4C8DFF' }} /> Core UI · 2/3

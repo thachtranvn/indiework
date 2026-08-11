@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import Link from 'next/link';
 import { useTaskNav, taskFullPath, taskCanonicalUrl } from '@/lib/task-nav';
 import { MarkdownEditor } from '@/components/ui/markdown-editor';
 import { CopyLinkButton } from '@/components/ui/interactive';
 import { Ic } from '@/components/ui/icons';
+import { Button } from '@/components/ui/button';
 import { useTaskDetail } from './task-detail/use-task-detail';
 import { TitleEditor, StatusNote, Attachments } from './task-detail/parts';
 import { ParentLink, TaskProperties, TaskSubtasks, TaskActivity, ConvertToTaskControl, DeleteControl } from './task-detail/sections';
@@ -63,9 +63,15 @@ export function DetailPanel({
   }, [detail?.task.id]);
 
   const closeBtn = (
-    <button className="icon-btn" onClick={onClose} aria-label="Close panel">
-      <Ic.chevronRight size={16} />
-    </button>
+    <Button
+      type="button"
+      iconOnly
+      size="xs"
+      variant="tertiary"
+      onClick={onClose}
+      aria-label="Close panel"
+      leftIcon={<Ic.chevronRight size={16} />}
+    />
   );
 
   let body: ReactNode;
@@ -74,7 +80,6 @@ export function DetailPanel({
       <>
         <div className="dp-head">
           {closeBtn}
-          <span className="dp-head-divider" aria-hidden />
           <span className="dp-head-meta" />
         </div>
         <DetailPanelSkeleton />
@@ -85,7 +90,6 @@ export function DetailPanel({
       <>
         <div className="dp-head">
           {closeBtn}
-          <span className="dp-head-divider" aria-hidden />
           <span className="dp-head-meta" data-visible="">
             <span className="dp-head-ref">{taskRef ?? 'Task'}</span>
           </span>
@@ -100,9 +104,9 @@ export function DetailPanel({
             <div className="dp-loaderr">
               <p className="dp-section-label">Couldn’t load this task.</p>
               <p className="dp-loaderr-hint">The app may have updated. Refresh to continue.</p>
-              <button className="btn btn-primary" type="button" onClick={() => window.location.reload()}>
+              <Button size="sm" onClick={() => window.location.reload()}>
                 Refresh
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -116,7 +120,6 @@ export function DetailPanel({
       <>
         <div className="dp-head">
           {closeBtn}
-          <span className="dp-head-divider" aria-hidden />
           <div className="dp-head-meta" data-visible={headMetaVisible ? '' : undefined} aria-hidden={!headMetaVisible}>
             {displayRef ? <span className="dp-head-ref">{displayRef}</span> : <span className="dp-head-ref">Inbox</span>}
             <span className="dp-head-meta-divider" aria-hidden />
@@ -127,9 +130,15 @@ export function DetailPanel({
               <CopyLinkButton getUrl={() => taskCanonicalUrl(window.location.origin, displayRef, task.title)} />
             )}
             {fullPath && (
-              <Link className="icon-btn" href={fullPath} title="Open as full page" aria-label="Open as full page">
-                <Ic.maximize size={16} />
-              </Link>
+              <Button
+                iconOnly
+                size="xs"
+                variant="tertiary"
+                href={fullPath}
+                title="Open as full page"
+                aria-label="Open as full page"
+                leftIcon={<Ic.maximize size={16} />}
+              />
             )}
           </div>
         </div>

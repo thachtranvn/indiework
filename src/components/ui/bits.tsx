@@ -29,7 +29,7 @@ export function EntityIcon({
   color?: string | null;
   size?: number;
 }) {
-  if (!icon) return <span className="dot" style={{ background: color ?? 'var(--text-faint)' }} />;
+  if (!icon) return <span className="dot" style={{ background: color ?? 'var(--text-placeholder)' }} />;
   if (isEmojiValue(icon)) {
     return (
       <span className="ei-emoji" style={{ fontSize: size + 2 }}>
@@ -40,13 +40,13 @@ export function EntityIcon({
   if (icon in Ic) {
     const IconC = iconByName(icon);
     return (
-      <span className="mod-ic" style={{ color: color ?? 'var(--text-faint)' }}>
+      <span className="mod-ic" style={color ? { color } : undefined}>
         <IconC size={size} />
       </span>
     );
   }
   return (
-    <span className="mod-ic" style={{ color: color ?? 'var(--text-faint)' }}>
+    <span className="mod-ic" style={color ? { color } : undefined}>
       <DynamicLucide name={icon} size={size} />
     </span>
   );
@@ -130,7 +130,7 @@ export function ModuleTag({
 }) {
   return (
     <MetaPill
-      icon={<ModuleIcon icon={icon} color={color} size={14} />}
+      icon={<ModuleIcon icon={icon} color={icon ? undefined : color} size={14} />}
       label={name}
       className={`module-pill${faint ? ' meta-pill-faint' : ''}`}
     />

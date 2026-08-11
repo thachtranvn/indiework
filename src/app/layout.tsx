@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { Inter, Be_Vietnam_Pro, Plus_Jakarta_Sans, Hanken_Grotesk, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
+import '@/styles/color-primitives.css';
+import '@/styles/color-semantic.css';
 import '@/styles/tokens.css';
 import '@/styles/app.css';
 import '@/styles/screens.css';

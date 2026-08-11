@@ -5,6 +5,7 @@ import { Popover } from '@/components/ui/popover';
 import { PriorityBars, ModuleIcon } from '@/components/ui/bits';
 import { StatusIcon } from '@/components/ui/status-icon';
 import { Ic } from '@/components/ui/icons';
+import { Button } from '@/components/ui/button';
 import {
   TASK_STATUS,
   TASK_STATUS_LABEL,
@@ -88,10 +89,18 @@ export function DisplayPopover(props: DisplayProps) {
       align="right"
       width={300}
       trigger={
-        <button className="icon-tool" data-on={dirty ? '' : undefined} type="button" aria-label="Display options">
-          <Ic.sliders size={16} />
-          {dirty && <span className="tool-dot" />}
-        </button>
+        <Button
+          className="icon-tool"
+          type="button"
+          iconOnly
+          size="xs"
+          variant="tertiary"
+          data-on={dirty ? '' : undefined}
+          aria-label="Display options"
+          leftIcon={<Ic.sliders size={16} />}
+        >
+          {dirty ? <span className="tool-dot" /> : null}
+        </Button>
       }
     >
       <DisplayBody {...props} />
@@ -301,10 +310,18 @@ export function BoardDisplayPopover({
       align="right"
       width={300}
       trigger={
-        <button className="icon-tool" data-on={dirty ? '' : undefined} type="button" aria-label="Board display options">
-          <Ic.sliders size={16} />
-          {dirty && <span className="tool-dot" />}
-        </button>
+        <Button
+          className="icon-tool"
+          type="button"
+          iconOnly
+          size="xs"
+          variant="tertiary"
+          data-on={dirty ? '' : undefined}
+          aria-label="Board display options"
+          leftIcon={<Ic.sliders size={16} />}
+        >
+          {dirty ? <span className="tool-dot" /> : null}
+        </Button>
       }
     >
       <div className="display-pop">
@@ -421,10 +438,18 @@ export function FilterPopover({
       align="right"
       width={260}
       trigger={
-        <button className="icon-tool" data-on={activeCount > 0 ? '' : undefined} type="button" aria-label="Filter">
-          <Ic.filterFunnel size={16} />
-          {activeCount > 0 && <span className="tool-dot" />}
-        </button>
+        <Button
+          className="icon-tool"
+          type="button"
+          iconOnly
+          size="xs"
+          variant="tertiary"
+          data-on={activeCount > 0 ? '' : undefined}
+          aria-label="Filter"
+          leftIcon={<Ic.filterFunnel size={16} />}
+        >
+          {activeCount > 0 ? <span className="tool-dot" /> : null}
+        </Button>
       }
     >
       <div className="display-pop">
@@ -466,7 +491,7 @@ export function FilterPopover({
                   </button>
                 ))}
                 <button className="opt" data-active={moduleSel.includes('') ? '' : undefined} onClick={() => toggleModule('')} type="button">
-                  <span className="dot" style={{ background: 'var(--text-faint)' }} />
+                  <span className="dot" style={{ background: 'var(--text-placeholder)' }} />
                   <span className="dp-acc-name">No module</span>
                   {moduleSel.includes('') && <Ic.check size={15} strokeWidth={2.4} style={{ marginLeft: 'auto', color: 'var(--accent-ink)' }} />}
                 </button>
@@ -491,7 +516,7 @@ export function FilterPopover({
                   </button>
                 ))}
                 <button className="opt" data-active={milestoneSel.includes('') ? '' : undefined} onClick={() => toggleMilestone('')} type="button">
-                  <span className="dot" style={{ background: 'var(--text-faint)' }} />
+                  <span className="dot" style={{ background: 'var(--text-placeholder)' }} />
                   <span className="dp-acc-name">No milestone</span>
                   {milestoneSel.includes('') && <Ic.check size={15} strokeWidth={2.4} style={{ marginLeft: 'auto', color: 'var(--accent-ink)' }} />}
                 </button>

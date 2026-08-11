@@ -17,6 +17,7 @@ import { ModuleIcon, PhaseIcon, CalendarIcon, Progress, NoneMark } from '@/compo
 import { PriorityPicker } from '@/components/ui/priority-picker';
 import { StatusPicker } from '@/components/ui/status-picker';
 import { Ic } from '@/components/ui/icons';
+import { Button } from '@/components/ui/button';
 import { MarkdownView } from '@/components/ui/markdown-view';
 import { CommentComposer } from '@/components/ui/comment-composer';
 import { CommentEditor } from '@/components/ui/comment-editor';
@@ -340,24 +341,26 @@ export function ConvertToTaskControl({ onConvert }: { onConvert: () => Promise<v
     return (
       <span className="convert-confirm">
         Make this a standalone task?
-        <button className="yes" onClick={onConvert}>
+        <Button size="xs" onClick={onConvert}>
           Convert
-        </button>
-        <button className="no" onClick={() => setConfirm(false)}>
+        </Button>
+        <Button size="xs" variant="secondary" onClick={() => setConfirm(false)}>
           Cancel
-        </button>
+        </Button>
       </span>
     );
   }
   return (
-    <button
-      className="convert-btn"
-      type="button"
+    <Button
+      className="iw-btn-lead"
+      variant="tertiary"
+      size="sm"
+      leftIcon={<Ic.arrowUp size={15} />}
       onClick={() => setConfirm(true)}
       title="Detach this sub-task into a standalone task — keeps its ref, attributes, and comments"
     >
-      <Ic.arrowUp size={15} /> Convert to task
-    </button>
+      Convert to task
+    </Button>
   );
 }
 
@@ -368,18 +371,24 @@ export function DeleteControl({ onDelete }: { onDelete: () => Promise<void> }) {
     return (
       <span className="del-confirm">
         Delete this task?
-        <button className="yes" onClick={onDelete}>
+        <Button size="xs" negative onClick={onDelete}>
           Delete
-        </button>
-        <button className="no" onClick={() => setConfirmDel(false)}>
+        </Button>
+        <Button size="xs" variant="secondary" onClick={() => setConfirmDel(false)}>
           Cancel
-        </button>
+        </Button>
       </span>
     );
   }
   return (
-    <button className="del-btn" type="button" onClick={() => setConfirmDel(true)}>
-      <Ic.trash size={15} /> Delete task
-    </button>
+    <Button
+      variant="tertiary"
+      size="sm"
+      negative
+      leftIcon={<Ic.trash size={15} />}
+      onClick={() => setConfirmDel(true)}
+    >
+      Delete task
+    </Button>
   );
 }

@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { IconPicker } from '@/components/ui/icon-picker';
 import { Ic } from '@/components/ui/icons';
+import { Button } from '@/components/ui/button';
 import { updateProject } from '@/app/_actions/projects';
 import { useRun } from '@/components/ui/toast';
 import { commitOnEnter } from '@/lib/inline-edit';
@@ -69,17 +70,17 @@ export function ProjectTabs({
   return (
     <div className="tabs">
       <div className="tabs-sticky">
-        <button
+        <Button
           className="tabs-sb-toggle"
           type="button"
+          iconOnly
+          size="xs"
+          variant="tertiary"
           onClick={toggleSidebar}
           title="Toggle sidebar"
           aria-label="Toggle sidebar"
-        >
-          <Ic.sidebar size={16} />
-        </button>
-
-        <span className="tabs-sep" aria-hidden />
+          leftIcon={<Ic.sidebar size={16} />}
+        />
       </div>
 
       <div className="tabs-main">
@@ -108,7 +109,6 @@ export function ProjectTabs({
             aria-label="Project name"
           />
         </div>
-        <span className="tabs-sep" aria-hidden />
         <div className="tabs-nav">
           <button className="tab" data-active={activeView === 'overview' ? '' : undefined} onClick={() => router.push(`${base}/overview`)} type="button">
             Overview

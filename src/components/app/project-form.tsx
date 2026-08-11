@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Modal } from '@/components/ui/modal';
 import { IconPicker } from '@/components/ui/icon-picker';
+import { Button } from '@/components/ui/button';
 import { createProject } from '@/app/_actions/projects';
 import { PROJECT_COLORS, suggestKey } from '@/lib/colors';
 import { isValidProjectKey } from '@/lib/domain';
@@ -63,12 +64,12 @@ export function ProjectForm({
       onClose={onClose}
       footer={
         <>
-          <button className="btn" type="button" onClick={onClose}>
+          <Button variant="tertiary" size="sm" onClick={onClose}>
             Cancel
-          </button>
-          <button className="btn btn-primary" type="button" onClick={submit} disabled={!canSubmit || busy}>
+          </Button>
+          <Button size="sm" onClick={submit} disabled={!canSubmit || busy}>
             Create project
-          </button>
+          </Button>
         </>
       }
     >

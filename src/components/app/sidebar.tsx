@@ -218,6 +218,13 @@ export function Sidebar({
       <div className="sb-foot">
         <Link
           className="sb-footbtn"
+          href="/app/design-system"
+          data-active={pathname === '/app/design-system' ? '' : undefined}
+        >
+          <Ic.layers size={16} /> Design System
+        </Link>
+        <Link
+          className="sb-footbtn"
           href="/app/settings"
           data-active={pathname === '/app/settings' ? '' : undefined}
         >

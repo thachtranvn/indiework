@@ -101,7 +101,7 @@ export function BoardView({
           ) : col.patch.status ? (
             <StatusIcon status={col.patch.status} size={14} />
           ) : (
-            <span className="dot" style={{ background: col.color ?? 'var(--text-faint)' }} />
+            <span className="dot" style={{ background: col.color ?? 'var(--text-placeholder)' }} />
           )}
           <span className="board-col-name">{col.name}</span>
           <span className="board-col-count">{list.length}</span>
@@ -155,7 +155,7 @@ export function BoardView({
             ) : row.patch.status ? (
               <StatusIcon status={row.patch.status} size={14} />
             ) : (
-              <span className="dot" style={{ background: row.color ?? 'var(--text-faint)' }} />
+              <span className="dot" style={{ background: row.color ?? 'var(--text-placeholder)' }} />
             )}
             <span className="board-swim-name">{row.name}</span>
             <span className="board-col-count">{laneTasks.length}</span>
@@ -234,7 +234,7 @@ function BoardAdd({ onAdd }: { onAdd: (title: string) => Promise<unknown> | void
         value={v}
         onChange={(e) => setV(e.target.value)}
         placeholder="Card title…"
-        style={{ border: 'none', background: 'none', outline: 'none', flex: 1, fontSize: 13, color: 'var(--text-strong)' }}
+        style={{ border: 'none', background: 'none', outline: 'none', flex: 1, fontSize: 13, color: 'var(--text-primary)' }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') submit();
           if (e.key === 'Escape') setEditing(false);

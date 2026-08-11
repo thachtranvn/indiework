@@ -1,6 +1,7 @@
 'use client';
 
 import { Ic } from '@/components/ui/icons';
+import { Button } from '@/components/ui/button';
 
 /** Dispatches the shell toggle — AppShell listens for `iw:toggle-sidebar`. */
 export function toggleSidebar() {
@@ -14,8 +15,15 @@ export function toggleSidebar() {
  */
 export function NavToggle() {
   return (
-    <button className="nav-toggle" type="button" onClick={toggleSidebar} aria-label="Open navigation">
-      <Ic.sidebar size={18} />
-    </button>
+    <Button
+      className="nav-toggle"
+      type="button"
+      iconOnly
+      size="sm"
+      variant="tertiary"
+      onClick={toggleSidebar}
+      aria-label="Open navigation"
+      leftIcon={<Ic.sidebar size={18} />}
+    />
   );
 }

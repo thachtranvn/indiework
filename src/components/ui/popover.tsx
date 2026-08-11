@@ -131,7 +131,7 @@ export function OptionList<T extends Option>({ options, value, onPick, renderOpt
         >
           {renderOpt ? renderOpt(o) : o.label}
           {o.id === value && (
-            <Ic.check size={16} strokeWidth={2.4} style={{ marginLeft: 'auto', color: 'var(--text-strong)' }} />
+            <Ic.check size={16} strokeWidth={2.4} style={{ marginLeft: 'auto', color: 'var(--text-primary)' }} />
           )}
         </button>
       ))}

@@ -20,6 +20,7 @@ import { filesFromClipboard, withPasteName } from '@/lib/clipboard-files';
 import { AttachmentPreview } from './attachment-preview';
 import { commitOnEnter } from '@/lib/inline-edit';
 import { CircleCheck } from '@/components/ui/interactive';
+import { Button } from '@/components/ui/button';
 import { useRun } from '@/components/ui/toast';
 import { Ic } from '@/components/ui/icons';
 
@@ -197,9 +198,16 @@ export function Attachments({ taskId, items, onChanged }: { taskId: string; item
           <Ic.paperclip size={13} /> Attachments
         </span>
         {items.length > 0 && <span className="dp-attach-count">{items.length}</span>}
-        <button className="dp-attach-add" type="button" onClick={() => inputRef.current?.click()}>
-          <Ic.plus size={13} /> Add
-        </button>
+        <Button
+          className="dp-attach-add"
+          type="button"
+          size="xs"
+          variant="tertiary"
+          leftIcon={<Ic.plus />}
+          onClick={() => inputRef.current?.click()}
+        >
+          Add
+        </Button>
       </div>
 
       {items.map((a) => {
