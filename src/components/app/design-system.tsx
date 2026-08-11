@@ -35,6 +35,7 @@ import { Ic } from '@/components/ui/icons';
 import { Modal } from '@/components/ui/modal';
 import { useFeedback } from '@/components/ui/toast';
 import { Button, type ButtonSize, type ButtonVariant } from '@/components/ui/button';
+import { Kbd } from '@/components/ui/kbd';
 import { NavToggle } from './nav-toggle';
 
 type Viewport = 'desktop' | 'mobile';
@@ -49,6 +50,7 @@ type DsItemId =
   | 'buttons'
   | 'segmented'
   | 'chips'
+  | 'kbd'
   | 'inputs'
   | 'status'
   | 'priority'
@@ -81,6 +83,7 @@ const NAV: DsNavGroup[] = [
       { id: 'buttons', label: 'Buttons' },
       { id: 'segmented', label: 'Segmented' },
       { id: 'chips', label: 'Chips' },
+      { id: 'kbd', label: 'Kbd' },
       { id: 'inputs', label: 'Inputs' },
       { id: 'status', label: 'Status' },
       { id: 'priority', label: 'Priority' },
@@ -117,6 +120,7 @@ const ITEM_META: Record<DsItemId, { title: string; note: string }> = {
   },
   segmented: { title: 'Segmented', note: 'Exclusive choice controls — list/board, band/rule.' },
   chips: { title: 'Chips', note: 'Filter chips, status chips, and meta pills.' },
+  kbd: { title: 'Kbd', note: 'Keyboard shortcut badges — always uppercase.' },
   inputs: { title: 'Inputs', note: 'Default, filled, read-only.' },
   status: { title: 'Status', note: 'Chips, icons, and circle checks in every state.' },
   priority: { title: 'Priority', note: 'Bars, labels, and NoneMark.' },
@@ -380,6 +384,8 @@ function ItemDemo({
       return <SegmentedDemo />;
     case 'chips':
       return <ChipsDemo />;
+    case 'kbd':
+      return <KbdDemo />;
     case 'inputs':
       return <InputsDemo />;
     case 'status':
@@ -1001,6 +1007,41 @@ function SwitchDemo({
         On
         <span className="dp-switch" data-on="" />
       </button>
+    </div>
+  );
+}
+
+function KbdDemo() {
+  return (
+    <div className="ds-stack">
+      <Section title="Keys" note="<Kbd /> — letter, chord, and special keys">
+        <div className="ds-row wrap">
+          <Kbd>c</Kbd>
+          <Kbd>⌘K</Kbd>
+          <Kbd>esc</Kbd>
+          <Kbd>↵</Kbd>
+          <Kbd>↑</Kbd>
+          <Kbd>↓</Kbd>
+        </div>
+      </Section>
+      <Section title="In context" note="Sidebar search + quick capture">
+        <div className="ds-stack">
+          <button className="sb-search" type="button" style={{ maxWidth: 230 }}>
+            <Ic.search size={15} />
+            <span>Search</span>
+            <Kbd>⌘K</Kbd>
+          </button>
+          <div className="qcap" style={{ margin: 0, maxWidth: 320 }}>
+            <div className="qcap-inner">
+              <span className="qcap-plus">
+                <Ic.plus size={16} />
+              </span>
+              <input readOnly placeholder="Add task..." />
+              <Kbd className="qcap-hint">c</Kbd>
+            </div>
+          </div>
+        </div>
+      </Section>
     </div>
   );
 }

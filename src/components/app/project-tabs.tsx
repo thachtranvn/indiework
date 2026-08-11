@@ -135,17 +135,19 @@ export function ProjectTabs({
             />
           ))}
 
-          <button
-            className="tab tab-add"
+          <Button
+            className="tab-add"
             type="button"
+            iconOnly
+            size="xs"
+            variant="tertiary"
             aria-label="Add view"
+            leftIcon={<Ic.plus />}
             onClick={() => {
               const id = onAddView();
               goView(id);
             }}
-          >
-            <Ic.plus size={16} />
-          </button>
+          />
         </div>
       </div>
 

@@ -241,8 +241,6 @@
 .sb-search:hover { border-color: var(--border-strong); color: var(--text-quaternary); }
 .sb-search svg { flex: none; }
 .sb-search span { flex: 1; text-align: left; }
-.sb-search kbd { font: 500 10px/1 var(--font-ui); color: var(--text-placeholder); background: var(--bg-surface);
-  border: none; border-radius: var(--r-xs); padding: 1px 5px; }
 
 .sb-section { font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase;
   color: var(--text-placeholder); padding: 12px 8px 8px; display: flex; align-items: center; justify-content: space-between; }
@@ -364,8 +362,7 @@ span.nav-toggle { width: 36px; height: 36px; border-radius: var(--r-sm); }
 .qcap input { border: none; background: none; outline: none; flex: 1; min-width: 0;
   font-size: 13px; line-height: 1; color: var(--text-primary); }
 .qcap input::placeholder { color: var(--text-placeholder); }
-.qcap-hint { font: 500 11px/1 var(--font-ui); color: var(--text-placeholder); background: var(--bg-sunken);
-  border: 1px solid var(--border); border-radius: var(--r-xs); padding: 3px 5px; }
+.qcap-hint { /* size/layout only — colors from .iw-kbd */ padding: 3px 5px; font-size: 11px; }
 .qcap-tools { display: flex; align-items: center; gap: 6px; flex: none; }
 .qcap-add { height: 32px; padding: 0 14px; border: 1px solid var(--accent); background: var(--accent);
   color: #fff; font-size: 13px; font-weight: 600; border-radius: var(--r-sm); flex: none;

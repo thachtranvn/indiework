@@ -2,6 +2,7 @@
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Ic } from '@/components/ui/icons';
+import { Kbd } from '@/components/ui/kbd';
 
 export type QuickCaptureHandle = { submit: () => void };
 
@@ -70,7 +71,7 @@ export const QuickCapture = forwardRef<
             }
           }}
         />
-        <span className="qcap-hint">c</span>
+        <Kbd className="qcap-hint">c</Kbd>
       </div>
     </div>
   );

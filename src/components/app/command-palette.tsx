@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { loadSearchIndex, type SearchIndex } from '@/app/_actions/queries';
 import { taskPath } from '@/lib/task-nav';
 import { Ic } from '@/components/ui/icons';
+import { Kbd } from '@/components/ui/kbd';
 
 type Result =
   | { kind: 'project'; id: string; key: string; title: string; sub: string; tag: string }
@@ -137,14 +138,14 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         </div>
         <div className="search-foot">
           <span>
-            <kbd>↑</kbd>
-            <kbd>↓</kbd> navigate
+            <Kbd>↑</Kbd>
+            <Kbd>↓</Kbd> navigate
           </span>
           <span>
-            <kbd>↵</kbd> open
+            <Kbd>↵</Kbd> open
           </span>
           <span>
-            <kbd>esc</kbd> close
+            <Kbd>esc</Kbd> close
           </span>
         </div>
       </div>

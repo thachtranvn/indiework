@@ -12,6 +12,7 @@ import { useRun } from '@/components/ui/toast';
 import { BrandMark } from '@/components/ui/brand';
 import { Popover } from '@/components/ui/popover';
 import { Ic } from '@/components/ui/icons';
+import { Kbd } from '@/components/ui/kbd';
 import { EntityIcon } from '@/components/ui/bits';
 
 type Projects = ShellData['projects'];
@@ -130,7 +131,7 @@ export function Sidebar({
       <button className="sb-search" type="button" onClick={onOpenSearch}>
         <Ic.search size={15} />
         <span>Search</span>
-        <kbd>⌘K</kbd>
+        <Kbd>⌘K</Kbd>
       </button>
 
       {/* inbox */}
