@@ -100,7 +100,7 @@ const BORDER_COLORS: ColorToken[] = [
 ];
 
 const ACCENT_COLORS: ColorToken[] = [
-  { name: '--accent', description: 'Brand green — primary buttons, marks' },
+  { name: '--accent', description: 'Brand blue — primary buttons, marks, links' },
   { name: '--accent-strong', description: 'Primary hover / pressed' },
   { name: '--accent-soft', description: 'Soft accent wash (neutral in light)' },
   { name: '--accent-softer', description: 'Quiet accent tint' },
@@ -250,6 +250,11 @@ const ICON_SAMPLES = [
   'dotsHorizontal',
   'pin',
   'pinSolid',
+  'filter',
+  'sliders',
+  'link',
+  'expand',
+  'trash',
   'key',
   'bolt',
 ] as const satisfies ReadonlyArray<keyof typeof Ic>;
@@ -619,7 +624,7 @@ function ButtonsDemo() {
             size="xs"
             variant="tertiary"
             aria-label="Filter"
-            leftIcon={<Ic.filterFunnel size={16} />}
+            leftIcon={<Ic.filter size={16} />}
           />
           <Button
             className="icon-tool"
@@ -1045,7 +1050,7 @@ function TooltipsDemo() {
             size="sm"
             variant="tertiary"
             iconOnly
-            leftIcon={<Ic.filterFunnel />}
+            leftIcon={<Ic.filter />}
             aria-label="Filter"
             data-tip="Filter"
           />
@@ -1053,9 +1058,9 @@ function TooltipsDemo() {
             size="sm"
             variant="tertiary"
             iconOnly
-            leftIcon={<Ic.settings />}
-            aria-label="Settings"
-            data-tip="Settings"
+            leftIcon={<Ic.sliders />}
+            aria-label="Display"
+            data-tip="Display"
           />
           <button className="task-pri-btn" type="button" data-tip="Priority: High" aria-label="Priority: High">
             <PriorityBars priority="high" />

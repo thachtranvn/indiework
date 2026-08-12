@@ -266,6 +266,12 @@ export function buildSections(
   };
   const ptasks = tasks.filter(pass);
   const cmp = taskComparator(opts.sort ?? DEFAULT_TASK_ORDERING);
+  /** Done group when grouped by status: most recently completed first. */
+  const doneRecentCmp = (a: TaskDto, b: TaskDto) => {
+    const at = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+    const bt = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+    return bt - at || new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+  };
 
   const primGroups = groupSpec(primary, modules, milestones, opts);
   if (!primGroups) {
@@ -275,7 +281,8 @@ export function buildSections(
   const subDim = secondary !== 'none' && secondary !== primary ? secondary : null;
 
   return primGroups.map((g) => {
-    const groupTasks = ptasks.filter(g.match).sort(cmp);
+    const sortCmp = primary === 'status' && g.key === 'done' ? doneRecentCmp : cmp;
+    const groupTasks = ptasks.filter(g.match).sort(sortCmp);
     const sec: Section = {
       id: g.key,
       name: g.name,

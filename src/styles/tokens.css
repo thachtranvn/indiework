@@ -9,7 +9,7 @@
   /* --font-ui is owned by globals.css (the next/font mapping layer) and
      overridden live on <html> by the Appearance picker — see src/lib/fonts.ts. */
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
-  --accent: #3FB984;            /* solo-dev green — kept for focus rings / primary buttons */
+  --accent: var(--blue-500);    /* brand accent — buttons, marks, tool-dot, links */
   --control: #29292a;           /* dark control fill (checked checkbox) */
   --radius-scale: 1;            /* tweak: 0.5 .. 1.6 */
   --shadow-strength: 1;         /* tweak: 0 .. 1.6 */
@@ -48,12 +48,12 @@
   --r-xl: calc(20px * var(--radius-scale));
   --r-pill: 999px;
 
-  /* --- accent derivations (neutral selection for light theme; see light block) --- */
-  --accent-strong: #2e8d64;
-  --accent-soft: #e5e8eb;
-  --accent-softer: #f3f4f7;
-  --accent-ink: #111828;
-  --accent-ring: #c3e7d3;
+  /* --- accent derivations --- */
+  --accent-strong: var(--blue-600);
+  --accent-soft: var(--blue-100);
+  --accent-softer: var(--blue-50);
+  --accent-ink: var(--blue-700);
+  --accent-ring: var(--blue-200);
 }
 
 /* ===================== LIGHT (default) — Figma redesign neutrals ===================== */
@@ -98,9 +98,9 @@
   --badge-bg: #4a4d53;
   --control: #e3e5e7;
 
-  --accent-soft: #2a3e4c;
-  --accent-softer: #27313b;
-  --accent-ink: #9fd9ba;
+  --accent-soft: color-mix(in oklch, var(--blue-500) 22%, var(--bg-surface));
+  --accent-softer: color-mix(in oklch, var(--blue-500) 12%, var(--bg-canvas));
+  --accent-ink: var(--blue-300);
 
   --shadow-sm: 0 1px 2px rgb(0 0 0 / calc(0.25 * var(--shadow-strength)));
   --shadow-md: 0 2px 6px rgb(0 0 0 / calc(0.3 * var(--shadow-strength))),

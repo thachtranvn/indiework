@@ -34,3 +34,11 @@ export function useMediaQuery(query: string): boolean {
 export function useIsMobile(): boolean {
   return useMediaQuery(MOBILE_QUERY);
 }
+
+/**
+ * Shared chrome control size (sidebar / tabs / detail header icon buttons).
+ * Touch-friendly `sm` on phone; compact `xs` on desktop.
+ */
+export function useChromeBtnSize(): 'sm' | 'xs' {
+  return useIsMobile() ? 'sm' : 'xs';
+}

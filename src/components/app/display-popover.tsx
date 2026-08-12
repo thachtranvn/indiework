@@ -6,6 +6,7 @@ import { PriorityBars, ModuleIcon } from '@/components/ui/bits';
 import { StatusIcon } from '@/components/ui/status-icon';
 import { Ic } from '@/components/ui/icons';
 import { Button } from '@/components/ui/button';
+import { useChromeBtnSize } from '@/lib/use-media-query';
 import {
   TASK_STATUS,
   TASK_STATUS_LABEL,
@@ -72,8 +73,9 @@ export interface DisplayProps {
 
 export function DisplayPopover(props: DisplayProps) {
   const { groupBy, subGroupBy, groupStyle, sort, availDims, filters, statusHidden } = props;
+  const btnSize = useChromeBtnSize();
   const dirty =
-    groupBy !== (availDims[0] ?? 'status') ||
+    groupBy !== 'status' ||
     subGroupBy !== 'none' ||
     groupStyle !== 'band' ||
     sort !== 'priority' ||
@@ -93,7 +95,7 @@ export function DisplayPopover(props: DisplayProps) {
           className="icon-tool"
           type="button"
           iconOnly
-          size="xs"
+          size={btnSize}
           variant="tertiary"
           data-on={dirty ? '' : undefined}
           aria-label="Display options"
@@ -304,6 +306,7 @@ export function BoardDisplayPopover({
     !cfg.showEmpty;
   const colDims = availDims; // columns can't be 'none'
   const setField = (key: FieldKey) => setCfg({ fields: { ...cfg.fields, [key]: !cfg.fields[key] } });
+  const btnSize = useChromeBtnSize();
 
   return (
     <Popover
@@ -314,7 +317,7 @@ export function BoardDisplayPopover({
           className="icon-tool"
           type="button"
           iconOnly
-          size="xs"
+          size={btnSize}
           variant="tertiary"
           data-on={dirty ? '' : undefined}
           aria-label="Board display options"
@@ -412,6 +415,7 @@ export function FilterPopover({
   // Module/milestone names run long, so they live in collapsible dropdowns
   // (full-width rows) rather than wrapping chips. One open at a time.
   const [openSec, setOpenSec] = useState<'module' | 'milestone' | null>(null);
+  const btnSize = useChromeBtnSize();
   const toggleStatus = (s: TaskStatus) =>
     setFilters({
       ...filters,
@@ -442,11 +446,11 @@ export function FilterPopover({
           className="icon-tool"
           type="button"
           iconOnly
-          size="xs"
+          size={btnSize}
           variant="tertiary"
           data-on={activeCount > 0 ? '' : undefined}
           aria-label="Filter"
-          leftIcon={<Ic.filterFunnel size={16} />}
+          leftIcon={<Ic.filter size={16} />}
         >
           {activeCount > 0 ? <span className="tool-dot" /> : null}
         </Button>

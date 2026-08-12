@@ -19,6 +19,9 @@ export const TASK_STATUS = [
   'cancelled', // dropped
 ] as const;
 
+/** Statuses assignable inside a project — excludes triage-only `inbox`. */
+export const PROJECT_TASK_STATUS = TASK_STATUS.filter((s) => s !== 'inbox');
+
 export const TASK_PRIORITY = ['none', 'low', 'medium', 'high', 'urgent'] as const;
 
 export const MILESTONE_STATUS = ['planned', 'active', 'done'] as const;

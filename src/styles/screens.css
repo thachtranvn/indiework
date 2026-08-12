@@ -13,7 +13,6 @@
 .dp-head { display: flex; align-items: center; gap: 8px; padding: 8px 16px 8px 8px;
   border-bottom: 1px solid var(--border); flex: none; }
 .dp-head .iw-btn { flex: none; }
-.dp-head .iw-btn[data-icon-only][data-size="xs"] { width: 32px; height: 32px; }
 .dp-head-meta { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px;
   font: 500 12px/1.2 var(--font-ui); color: var(--text-placeholder); overflow: hidden;
   opacity: 0; pointer-events: none; transition: opacity .15s ease; }
@@ -536,9 +535,6 @@ a.iw-btn[aria-disabled] { pointer-events: none; cursor: not-allowed; }
 .tabs { display: flex; align-items: center; gap: 8px; padding: 8px 16px 8px 8px; margin-top: 0; flex: none;
   border-bottom: 1px solid var(--border); overflow: hidden; }
 .tabs-sb-toggle { flex: none; }
-.tabs-sb-toggle.iw-btn[data-icon-only] {
-  width: 32px; height: 32px;
-}
 .tabs-sticky { display: flex; align-items: center; gap: 8px; flex: none; }
 /* merged header: project identity lives at the start of the tab strip (v3) */
 .tabs-lead { display: flex; align-items: center; gap: 0; height: 32px; padding-right: 4px; margin-right: 8px; flex: none; }
@@ -563,23 +559,21 @@ a.iw-btn[aria-disabled] { pointer-events: none; cursor: not-allowed; }
   color: var(--text-primary); font-size: 12px; font-weight: 500; border-radius: var(--r-sm);
   position: relative; transition: .12s; }
 .tab svg { color: var(--text-placeholder); }
-.tab:hover { color: var(--text-primary); background: var(--accent-softer); }
-.tab[data-active] { color: var(--text-primary); font-weight: 500; background: var(--accent-softer); }
+.tab:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+.tab[data-active] { color: var(--text-primary); font-weight: 500; background: var(--bg-tertiary); }
 .tab[data-active] svg { color: var(--text-primary); }
 .tab[data-active]::after { display: none; }
 .tab-name-input { border: none; background: none; outline: none; color: inherit; font: inherit; width: 84px; }
 .tab-add { flex: none; }
-.tab-add.iw-btn[data-icon-only] { width: 32px; height: 32px; }
 .tab-x { display: inline-grid; place-items: center; width: 16px; height: 16px; margin: -2px -4px -2px 1px;
   border-radius: 4px; color: var(--text-placeholder); opacity: 0; pointer-events: none; transition: .12s; cursor: pointer; }
 .tab:hover .tab-x, .tab[data-active] .tab-x { opacity: 1; pointer-events: auto; }
 .tab-x:hover { background: var(--bg-hover); color: var(--text-primary); }
-/* icon-tool — Filter / Display: size + indicator only; colors from Button */
+/* icon-tool — Filter / Display: indicator only; size/colors from Button */
 .icon-tool.iw-btn {
   position: relative; overflow: visible;
-  width: 32px; height: 32px;
 }
-.icon-tool .tool-dot { position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 999px; background: var(--control); }
+.icon-tool .tool-dot { position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 999px; background: var(--accent); }
 
 /* ============================================================
    Display popover (group + filter consolidated)
@@ -884,7 +878,7 @@ a.iw-btn[aria-disabled] { pointer-events: none; cursor: not-allowed; }
 .md-render p { margin: 0 0 0.8em; }
 .md-render strong { color: var(--text-primary); font-weight: 650; }
 .md-render em { font-style: italic; }
-.md-render a { color: var(--accent-ink); text-decoration: none; }
+.md-render a { color: var(--accent); text-decoration: none; }
 .md-render a:hover { text-decoration: underline; }
 
 /* Lists — GitHub indent + tight nesting */

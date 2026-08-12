@@ -42,9 +42,6 @@
 .app[data-sb-collapsed] .main-col { margin-left: 0; }
 .app[data-sb-collapsed] .sidebar-slot { pointer-events: none; }
 .sb-expand { position: absolute; top: 16px; left: 16px; z-index: 70; }
-.sb-expand.iw-btn[data-icon-only] {
-  width: 32px; height: 32px;
-}
 /* Project tabs already host the toggle — hide the floating expand on those pages. */
 .app:has(.tabs) .sb-expand { display: none; }
 .main-col {
@@ -163,11 +160,13 @@
     pointer-events: auto;
   }
   .sidebar-slot .sidebar {
+    --sb-pad-l: max(16px, var(--safe-l));
+    --sb-pad-r: max(16px, var(--safe-r));
     width: 100%;
     height: 100%;
     max-height: 100dvh;
     background: var(--bg-secondary);
-    padding: var(--safe-t) max(16px, var(--safe-r)) var(--safe-b) max(16px, var(--safe-l));
+    padding: var(--safe-t) 0 var(--safe-b);
     box-sizing: border-box;
     transform: translate3d(-100%, 0, 0);
     pointer-events: none;
@@ -220,16 +219,24 @@
 }
 
 /* ---------- Sidebar (light, inherits theme tokens) ---------- */
-.sidebar { display: flex; flex-direction: column; width: var(--sidebar-panel-w, 230px); flex: none;
-  padding: 0 8px 12px 12px; min-height: 0; height: 100%; gap: 0;
-  overflow: hidden; position: relative; background: transparent; box-sizing: border-box; }
+.sidebar {
+  --sb-pad-l: 12px;
+  --sb-pad-r: 8px;
+  display: flex; flex-direction: column; width: var(--sidebar-panel-w, 230px); flex: none;
+  padding: 0; min-height: 0; height: 100%; gap: 0;
+  overflow: hidden; position: relative; background: transparent; box-sizing: border-box;
+}
 .ws-row, .sb-search, .sb-foot { flex: none; }
-.sb-scroll { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+.sb-scroll { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior: contain; }
+@media (max-width: 760px) {
+  /* Overlay / classic mobile scrollbars — don't reserve gutter (avoids empty gap). */
+  .sb-scroll { scrollbar-gutter: auto; }
+}
 
 /* workspace switcher */
-.ws-switch { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 0; border: none;
+.ws-switch { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 6px; border: none;
   background: none; border-radius: var(--r-sm); color: var(--text-primary); text-align: left;
-  cursor: pointer; transition: background .12s; }
+  cursor: pointer; transition: background .12s; box-sizing: border-box; }
 .ws-switch:hover { background: var(--bg-active); }
 .ws-brand { width: 28px; height: 28px; border-radius: 7px; display: grid; place-items: center;
   background: #505052; color: #fff; flex: none; }
@@ -240,25 +247,22 @@
 .ws-meta b { display: block; font-size: 12px; color: var(--text-primary); font-weight: 500;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ws-meta small { display: block; font-size: 10px; color: var(--text-secondary); font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* 32px icon hit-target matching Figma sidebar-button (desktop rail); mobile uses
-   the Button size axis (sm → 36) so drop the override below --bp-mobile. */
-.sb-icon-btn.iw-btn[data-icon-only] { width: 32px; height: 32px; }
-@media (max-width: 760px) {
-  .sb-icon-btn.iw-btn[data-icon-only] {
-    width: var(--iw-btn-h);
-    min-width: var(--iw-btn-h);
-    height: var(--iw-btn-h);
-  }
-}
 .ws-switch .iw-btn { pointer-events: none; flex: none; }
 /* Hide close control on desktop — beats later .iw-btn { display } in screens.css */
 button.sb-drawer-close.iw-btn { display: none; }
 @media (max-width: 760px) {
   button.sb-drawer-close.iw-btn { display: inline-flex; flex: none; }
 }
-.ws-row { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; }
+.ws-row {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0;
+  padding: 0 var(--sb-pad-r) 0 var(--sb-pad-l); box-sizing: border-box;
+}
 .ws-row > .pop-trigger { flex: 1; min-width: 0; display: flex; width: 100%; }
-.ws-row > .pop-trigger .ws-switch { width: 100%; }
+.ws-row > .pop-trigger .ws-switch {
+  width: calc(100% + 12px);
+  margin-left: -6px;
+  margin-right: -6px;
+}
 
 /* workspace popover (portaled → light surface) */
 .ws-pop { display: flex; flex-direction: column; gap: 1px; }
@@ -277,8 +281,9 @@ button.sb-drawer-close.iw-btn { display: none; }
 
 /* search trigger — visual chrome from `.qcap-inner` (Add task); layout-only here */
 .sb-search {
-  width: 100%;
-  margin: 12px 0;
+  width: auto;
+  align-self: stretch;
+  margin: 12px var(--sb-pad-r) 12px var(--sb-pad-l);
   cursor: pointer;
   font: inherit;
   text-align: left;
@@ -336,33 +341,41 @@ button.sb-drawer-close.iw-btn { display: none; }
   .sb-collapse, .sb-collapse .nav-item, .sb-section-caret { transition: none; }
 }
 
-.sb-divider { height: 0; border: none; border-top: 1px solid var(--border); margin: 0; width: 100%; }
-.sb-block { padding-bottom: 12px; }
+.sb-divider {
+  height: 0; border: none; border-top: 1px solid var(--border);
+  margin: 0 var(--sb-pad-r) 0 var(--sb-pad-l);
+}
+.sb-block {
+  padding: 0 var(--sb-pad-r) 12px var(--sb-pad-l);
+  box-sizing: border-box;
+}
 /* Collapsed: drop block footer padding so the section head sits evenly
    between the dividers (matches the 8px vertical padding on `.sb-section`). */
 .sb-block:has(> .sb-collapse:not([data-open])) { padding-bottom: 0; }
 
-/* footer — user row + account menu */
-.sb-foot { margin-top: auto; }
-.sb-user { display: flex; align-items: center; gap: 6px; width: 100%; padding: 7px 0 7px 8px; border-radius: var(--r-sm);
-  min-width: 0; }
+/* footer — user row + account menu; horizontal pad on row so border stays full-bleed */
+.sb-foot { margin-top: auto; padding-bottom: 12px; border-top: 1px solid transparent; transition: border-color .12s; }
+.sb-foot[data-scrolled] { border-top-color: var(--outline-primary); }
+.sb-user {
+  display: flex; align-items: center; gap: 6px; width: 100%; box-sizing: border-box;
+  padding: 7px var(--sb-pad-r) 7px calc(var(--sb-pad-l) + 8px); border-radius: var(--r-sm);
+  min-width: 0;
+}
 @media (max-width: 760px) {
   .sb-foot { padding-bottom: 8px; }
-  .sb-user { padding-left: 0; padding-right: 0; }
+  .sb-user { padding-left: var(--sb-pad-l); padding-right: var(--sb-pad-r); }
 }
-.sb-avatar { width: 24px; height: 24px; border-radius: 9999px; flex: none; display: grid; place-items: center;
-  background: var(--bg-active); color: var(--text-primary); font-size: 10px; font-weight: 600; }
 .sb-user-email { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 12px; font-weight: 500; color: var(--text-primary); }
+  font-size: 14px; font-weight: 500; color: var(--text-primary); }
 .sb-menuform { display: contents; }
 
-.nav-item { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 8px;
+.nav-item { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px;
   border-radius: var(--r-sm); border: 1px solid transparent; background: transparent;
   color: var(--text-primary); width: 100%; text-align: left; font-size: 12px; font-weight: 500;
   cursor: pointer; box-sizing: border-box; transition: background .12s, border-color .12s; position: relative; }
-/* Hover — bg-tertiary + outline-primary (skip when selected); data-hover forces the state in demos */
+/* Hover — bg-tertiary (skip when selected); data-hover forces the state in demos */
 .nav-item[data-hover],
-.nav-item:hover:not([data-active]) { background: var(--bg-tertiary); border-color: var(--outline-primary); }
+.nav-item:hover:not([data-active]) { background: var(--bg-tertiary); }
 /* Selected — bg-quaternary */
 .nav-item[data-active] { background: var(--bg-quaternary); border-color: transparent; }
 .nav-item[data-active]::before { display: none; }
@@ -378,7 +391,8 @@ button.sb-drawer-close.iw-btn { display: none; }
   overflow: hidden;
 }
 .nav-icon svg { width: 16px; height: 16px; }
-.nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 14px; }
 /* Idle / hover badge — bg-quaternary + text-primary */
 .nav-badge { font-size: 12px; font-weight: 500; line-height: 12px; background: var(--bg-quaternary);
   color: var(--text-primary); border-radius: 999px; min-width: 16px; min-height: 16px;
@@ -387,7 +401,6 @@ button.sb-drawer-close.iw-btn { display: none; }
 .nav-item[data-active] .nav-badge { background: var(--bg-neutral-inverse); color: var(--text-inverse); }
 @media (max-width: 760px) {
   .nav-item { height: 44px; gap: 12px; }
-  .nav-label { font-size: 14px; }
   .nav-badge { font-size: 14px; line-height: 14px; }
   .nav-icon {
     --ei-size: 16px;
@@ -405,7 +418,6 @@ button.sb-drawer-close.iw-btn { display: none; }
    Settings). Desktop keeps the sidebar on screen, so it only exists on phones —
    see the --bp-mobile block in the shell section above. */
 .nav-toggle { display: none; flex: none; }
-.nav-toggle.iw-btn[data-icon-only] { width: 36px; height: 36px; }
 @media (max-width: 760px) { .nav-toggle { display: inline-flex; } }
 /* Skeleton placeholder keeps the layout class without being a Button. */
 span.nav-toggle { width: 36px; height: 36px; border-radius: var(--r-sm); }
@@ -501,14 +513,14 @@ span.nav-toggle { width: 36px; height: 36px; border-radius: var(--r-sm); }
 /* ---------- Section ---------- */
 .section { margin-bottom: 16px; display: flex; flex-direction: column; gap: 1px; }
 .section-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; height: 42px; cursor: pointer;
-  border-radius: var(--r-sm); position: sticky; top: 0; background: var(--accent-softer); z-index: 2; }
+  border-radius: var(--r-sm); position: sticky; top: 0; background: var(--bg-tertiary); z-index: 2; }
 .section-head:hover { background: var(--bg-active); }
 
 /* ----- Group-header style (Display ▸ Group header) ----- */
 /* A — Band: rounded gray shelf (redesign default) */
 [data-group-style="band"] .section { margin-bottom: 16px; }
 [data-group-style="band"] .section-head { margin: 0; padding: 10px 14px;
-  background: var(--accent-softer); border-radius: var(--r-sm); box-shadow: none; }
+  background: var(--bg-tertiary); border-radius: var(--r-sm); box-shadow: none; }
 [data-group-style="band"] .section-head:hover { background: var(--bg-active); }
 /* B — Rule: white sticky fill, a hairline divider + breathing room above each group */
 [data-group-style="rule"] .section { margin-top: 22px; margin-bottom: 6px; }
@@ -869,10 +881,9 @@ span.nav-toggle { width: 36px; height: 36px; border-radius: var(--r-sm); }
   /* A keyboard shortcut badge on a device with no keyboard. */
   .qcap-hint { display: none; }
   .qcap-inner { height: 40px; }
-  .qcap-tools .icon-tool { width: 40px; height: 40px; }
   .qcap-add { height: 40px; }
 
-  .task-row { padding: 9px 0; gap: 6px; }
+  .task-row { padding: 9px 0 9px 4px; gap: 6px; }
   /* The ref, the phase/module chips, the duplicate status chip and the
      inline rename pencil are all one tap away in the detail sheet; the
      title is not. */

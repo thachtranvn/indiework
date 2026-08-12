@@ -1,6 +1,6 @@
 'use client';
 
-import { TASK_STATUS, TASK_STATUS_LABEL, type TaskStatus } from '@/lib/domain';
+import { PROJECT_TASK_STATUS, TASK_STATUS_LABEL, type TaskStatus } from '@/lib/domain';
 import { Popover, OptionList } from './popover';
 import { StatusIcon } from './status-icon';
 
@@ -48,7 +48,7 @@ export function StatusPicker({
     >
       {(close) => (
         <OptionList
-          options={TASK_STATUS.map((s) => ({ id: s, label: TASK_STATUS_LABEL[s] }))}
+          options={PROJECT_TASK_STATUS.map((s) => ({ id: s, label: TASK_STATUS_LABEL[s] }))}
           value={status}
           onPick={(id) => {
             onChange(id as TaskStatus);

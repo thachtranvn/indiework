@@ -10,6 +10,7 @@ import { useTaskDetail } from './task-detail/use-task-detail';
 import { TitleEditor, StatusNote, Attachments } from './task-detail/parts';
 import { ParentLink, TaskProperties, TaskSubtasks, TaskActivity, ConvertToTaskControl, DeleteControl } from './task-detail/sections';
 import { DetailPanelSkeleton } from './skeletons';
+import { useChromeBtnSize } from '@/lib/use-media-query';
 
 /**
  * Slide-in inspector (1-column overlay). Shares its fetch/mutations (the hook)
@@ -37,6 +38,7 @@ export function DetailPanel({
   const ticketElRef = useRef<HTMLDivElement>(null);
   const [headMetaVisible, setHeadMetaVisible] = useState(false);
   const settled = Boolean(detail || missing || loadError);
+  const btnSize = useChromeBtnSize();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -66,7 +68,7 @@ export function DetailPanel({
     <Button
       type="button"
       iconOnly
-      size="xs"
+      size={btnSize}
       variant="tertiary"
       onClick={onClose}
       aria-label="Close panel"
@@ -132,12 +134,12 @@ export function DetailPanel({
             {fullPath && (
               <Button
                 iconOnly
-                size="xs"
+                size={btnSize}
                 variant="tertiary"
                 href={fullPath}
                 title="Open as full page"
                 aria-label="Open as full page"
-                leftIcon={<Ic.maximize size={16} />}
+                leftIcon={<Ic.expand size={16} />}
               />
             )}
           </div>

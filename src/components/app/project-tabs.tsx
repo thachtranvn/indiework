@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { updateProject } from '@/app/_actions/projects';
 import { useRun } from '@/components/ui/toast';
 import { commitOnEnter } from '@/lib/inline-edit';
+import { useChromeBtnSize } from '@/lib/use-media-query';
 import { useToggleSidebar } from './nav-toggle';
 import {
   BUILTIN_VIEWS,
@@ -67,6 +68,7 @@ export function ProjectTabs({
 
   const goView = (id: ViewId) => router.push(`${base}?view=${id}`, { scroll: false });
   const modeIcon = (id: ViewId) => (modeFor(id) === 'board' ? <Ic.board size={15} /> : <Ic.list size={15} />);
+  const btnSize = useChromeBtnSize();
 
   return (
     <div className="tabs">
@@ -75,7 +77,7 @@ export function ProjectTabs({
           className="tabs-sb-toggle"
           type="button"
           iconOnly
-          size="xs"
+          size={btnSize}
           variant="tertiary"
           onClick={toggleSidebar}
           title="Toggle sidebar"
@@ -140,10 +142,10 @@ export function ProjectTabs({
             className="tab-add"
             type="button"
             iconOnly
-            size="xs"
+            size={btnSize}
             variant="tertiary"
             aria-label="Add view"
-            leftIcon={<Ic.plus />}
+            leftIcon={<Ic.plus size={16} />}
             onClick={() => {
               const id = onAddView();
               goView(id);

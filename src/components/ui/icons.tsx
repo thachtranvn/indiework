@@ -13,10 +13,8 @@ import {
   Flag,
   Calendar,
   Search,
-  SlidersHorizontal,
-  Copy,
-  Trash2,
   Settings,
+  Copy,
   Sun,
   Moon,
   ArrowRight,
@@ -28,7 +26,6 @@ import {
   Lock,
   Sparkles,
   Globe,
-  Link,
   Zap,
   GripVertical,
   Tag,
@@ -38,7 +35,6 @@ import {
   Folder,
   Eye,
   ArrowLeft,
-  ListFilter,
   ListChecks,
   ListTree,
   Paperclip,
@@ -49,7 +45,6 @@ import {
   Baseline,
   Archive,
   ArchiveRestore,
-  Maximize2,
   LogOut,
   CircleAlert,
   LoaderCircle,
@@ -214,6 +209,101 @@ function ChevronSelectorVerticalIcon({ size = 18, className }: FigmaIconProps) {
   );
 }
 
+/** Figma Icons · filter-lines (59:2705). Leaf 20×14 inset (2,5) in 24 grid. */
+function FilterLinesIcon({ size = 18, className }: FigmaIconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      className={className}
+    >
+      <g transform="translate(2 5)">
+        <path d="M13 12C13.5523 12 14 12.4477 14 13C14 13.5523 13.5523 14 13 14H7C6.44772 14 6 13.5523 6 13C6 12.4477 6.44772 12 7 12H13ZM16 6C16.5523 6 17 6.44772 17 7C17 7.55228 16.5523 8 16 8H4C3.44772 8 3 7.55228 3 7C3 6.44772 3.44772 6 4 6H16ZM19 0C19.5523 0 20 0.447715 20 1C20 1.55228 19.5523 2 19 2H1C0.447715 2 0 1.55228 0 1C0 0.447715 0.447715 0 1 0H19Z" />
+      </g>
+    </svg>
+  );
+}
+
+/** Figma Icons · settings / sliders (60:2709). Leaf 20×16 inset (2,4) in 24 grid. */
+function SettingsSlidersIcon({ size = 18, className }: FigmaIconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      className={className}
+    >
+      <g transform="translate(2 4)">
+        <path d="M4 8C5.86384 8 7.42998 9.27477 7.87402 11H19C19.5523 11 20 11.4477 20 12C20 12.5523 19.5523 13 19 13H7.87402C7.42998 14.7252 5.86384 16 4 16C1.79086 16 0 14.2091 0 12C0 9.79086 1.79086 8 4 8ZM18 4C18 2.89543 17.1046 2 16 2C14.8954 2 14 2.89543 14 4C14 5.10457 14.8954 6 16 6C17.1046 6 18 5.10457 18 4ZM2 12C2 13.1046 2.89543 14 4 14C5.10457 14 6 13.1046 6 12C6 10.8954 5.10457 10 4 10C2.89543 10 2 10.8954 2 12ZM20 4C20 6.20914 18.2091 8 16 8C14.1362 8 12.57 6.72523 12.126 5H1C0.447715 5 0 4.55228 0 4C5.96046e-08 3.44772 0.447715 3 1 3H12.126C12.57 1.27477 14.1362 0 16 0C18.2091 0 20 1.79086 20 4Z" />
+      </g>
+    </svg>
+  );
+}
+
+/** Figma Icons · link (27:946). Leaf ~20.48 inset (~7.32%) in 24 grid. */
+function LinkIcon({ size = 18, className }: FigmaIconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      className={className}
+    >
+      <g transform="translate(1.7578 1.7578)">
+        <path d="M3.17142 8.82767C3.56195 8.43748 4.19505 8.43732 4.58548 8.82767C4.97591 9.2181 4.97571 9.85119 4.58548 10.2417L3.17142 11.6568C1.60936 13.2189 1.60934 15.7509 3.17142 17.313C4.73351 18.8751 7.26558 18.8751 8.82767 17.313L10.2417 15.899C10.6323 15.5084 11.2662 15.5084 11.6568 15.899C12.0471 16.2894 12.0469 16.9225 11.6568 17.313L10.2417 18.7271C7.8986 21.0702 4.1005 21.0702 1.75736 18.7271C-0.585787 16.3839 -0.585786 12.5849 1.75736 10.2417L3.17142 8.82767ZM13.0347 6.0347C13.4252 5.64418 14.0592 5.64418 14.4497 6.0347C14.8402 6.42523 14.8403 7.05923 14.4497 7.44974L7.44974 14.4497C7.05923 14.8402 6.42523 14.8402 6.0347 14.4497C5.64418 14.0592 5.64419 13.4252 6.0347 13.0347L13.0347 6.0347ZM10.2417 1.75736C12.5849 -0.585786 16.3839 -0.585787 18.7271 1.75736C21.0702 4.1005 21.0702 7.8986 18.7271 10.2417L17.313 11.6568C16.9225 12.0469 16.2894 12.0471 15.899 11.6568C15.5084 11.2662 15.5084 10.6323 15.899 10.2417L17.313 8.82767C18.8751 7.26558 18.8751 4.73351 17.313 3.17142C15.7509 1.60934 13.2189 1.60936 11.6568 3.17142L10.2417 4.58548C9.85119 4.97571 9.2181 4.97591 8.82767 4.58548C8.43732 4.19505 8.43748 3.56195 8.82767 3.17142L10.2417 1.75736Z" />
+      </g>
+    </svg>
+  );
+}
+
+/** Figma Icons · expand (27:951). Leaf 20×20 inset (2,2) in 24 grid. */
+function ExpandIcon({ size = 18, className }: FigmaIconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      className={className}
+    >
+      <g transform="translate(2 2)">
+        <path d="M7.29297 11.293C7.68349 10.9024 8.31651 10.9024 8.70703 11.293C9.09756 11.6835 9.09756 12.3165 8.70703 12.707L3.41406 18H7C7.55228 18 8 18.4477 8 19C8 19.5523 7.55228 20 7 20H1C0.734784 20 0.480505 19.8946 0.292969 19.707C0.105433 19.5195 0 19.2652 0 19V13C0 12.4477 0.447715 12 1 12C1.55228 12 2 12.4477 2 13V16.5859L7.29297 11.293ZM20 7C20 7.55228 19.5523 8 19 8C18.4477 8 18 7.55228 18 7V3.41406L12.707 8.70703C12.3165 9.09756 11.6835 9.09756 11.293 8.70703C10.9024 8.31651 10.9024 7.68349 11.293 7.29297L16.5859 2H13C12.4477 2 12 1.55228 12 1C12 0.447715 12.4477 0 13 0H19C19.5523 0 20 0.447715 20 1V7Z" />
+      </g>
+    </svg>
+  );
+}
+
+/** Figma Icons · trash (60:2717). Leaf 20×20 inset (2,2) in 24 grid. */
+function TrashIcon({ size = 18, className }: FigmaIconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+      className={className}
+    >
+      <g transform="translate(2 2)">
+        <path d="M19 3C19.5523 3 20 3.44772 20 4C20 4.55228 19.5523 5 19 5H17.9355L17.2969 14.5859C17.2453 15.359 17.2029 15.997 17.127 16.5146C17.0492 17.0444 16.926 17.5293 16.6689 17.9805C16.2688 18.6827 15.6648 19.2471 14.9375 19.5996C14.4703 19.826 13.979 19.9166 13.4453 19.959C12.9238 20.0004 12.2845 20 11.5098 20H8.49023C7.71551 20 7.07621 20.0004 6.55469 19.959C6.02098 19.9166 5.52973 19.826 5.0625 19.5996C4.33518 19.2471 3.7312 18.6827 3.33105 17.9805C3.07401 17.5293 2.95083 17.0444 2.87305 16.5146C2.79705 15.997 2.75466 15.359 2.70312 14.5859L2.06445 5H1C0.447715 5 0 4.55228 0 4C0 3.44772 0.447715 3 1 3H19ZM4.69922 14.4531C4.75287 15.2579 4.78976 15.8037 4.85156 16.2246C4.91159 16.6334 4.98552 16.8431 5.06934 16.9902C5.26941 17.3413 5.57098 17.6236 5.93457 17.7998C6.08696 17.8736 6.30099 17.9331 6.71289 17.9658C7.13698 17.9995 7.6837 18 8.49023 18H11.5098C12.3163 18 12.863 17.9995 13.2871 17.9658C13.699 17.9331 13.913 17.8736 14.0654 17.7998C14.429 17.6236 14.7306 17.3413 14.9307 16.9902C15.0145 16.8431 15.0884 16.6334 15.1484 16.2246C15.2102 15.8037 15.2471 15.2579 15.3008 14.4531L15.9307 5H4.06934L4.69922 14.4531ZM13 0C13.5523 0 14 0.447715 14 1C14 1.55228 13.5523 2 13 2H7C6.44772 2 6 1.55228 6 1C6 0.447715 6.44772 0 7 0H13Z" />
+      </g>
+    </svg>
+  );
+}
+
 export const Ic = {
   list: make(List),
   board: make(Columns3),
@@ -229,12 +319,15 @@ export const Ic = {
   flag: make(Flag),
   calendar: make(Calendar),
   search: make(Search),
-  filter: make(SlidersHorizontal),
-  sliders: make(SlidersHorizontal),
-  filterFunnel: make(ListFilter),
+  /** Figma filter-lines — toolbar Filter. */
+  filter: FilterLinesIcon,
+  filterLines: FilterLinesIcon,
+  filterFunnel: FilterLinesIcon,
+  /** Figma settings (sliders) — toolbar Display. */
+  sliders: SettingsSlidersIcon,
   listChecks: make(ListChecks),
   copy: make(Copy),
-  trash: make(Trash2),
+  trash: TrashIcon,
   dots: DotsHorizontalIcon,
   dotsHorizontal: DotsHorizontalIcon,
   eye: make(Eye),
@@ -251,7 +344,7 @@ export const Ic = {
   lock: make(Lock),
   sparkle: make(Sparkles),
   globe: make(Globe),
-  link: make(Link),
+  link: LinkIcon,
   bolt: make(Zap),
   grip: make(GripVertical),
   pin: PinIcon,
@@ -270,7 +363,8 @@ export const Ic = {
   type: make(Baseline),
   archive: make(Archive),
   restore: make(ArchiveRestore),
-  maximize: make(Maximize2),
+  expand: ExpandIcon,
+  maximize: ExpandIcon,
   logout: make(LogOut),
   alert: make(CircleAlert),
   loader: make(LoaderCircle),

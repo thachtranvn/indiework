@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { ShellData } from '@/server/load';
@@ -13,7 +13,7 @@ import { Popover } from '@/components/ui/popover';
 import { Ic } from '@/components/ui/icons';
 import { Kbd } from '@/components/ui/kbd';
 import { EntityIcon } from '@/components/ui/bits';
-import { useIsMobile } from '@/lib/use-media-query';
+import { useChromeBtnSize } from '@/lib/use-media-query';
 
 type Projects = ShellData['projects'];
 
@@ -34,12 +34,27 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const run = useRun();
-  const isMobile = useIsMobile();
   // Touch targets on the phone drawer — compact sizes stay for the desktop rail.
-  const chromeBtn = isMobile ? 'md' : 'xs';
-  const railBtn = isMobile ? 'md' : 'sm';
+  const btnSize = useChromeBtnSize();
   const { user, workspaces, activeWorkspace, projects, inboxCount } = shell;
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [footScrolled, setFootScrolled] = useState(false);
+
+  /** Footer top border when the nav list can scroll (content overflows). */
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const sync = () => setFootScrolled(el.scrollHeight > el.clientHeight + 1);
+    sync();
+    el.addEventListener('scroll', sync, { passive: true });
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', sync);
+      ro.disconnect();
+    };
+  }, [projects.length, collapsed]);
 
   const switchWorkspace = async (id: string) => {
     if (id === activeWorkspace?.id) return;
@@ -66,7 +81,6 @@ export function Sidebar({
 
   const { pinned, others } = useMemo(() => splitProjects(projects), [projects]);
   const userLabel = user.email ?? user.name;
-  const userInitial = (user.name?.[0] ?? user.email?.[0] ?? '?').toUpperCase();
 
   return (
     <aside className="sidebar">
@@ -85,7 +99,7 @@ export function Sidebar({
               <Button
                 type="button"
                 iconOnly
-                size={railBtn}
+                size={btnSize}
                 variant="tertiary"
                 tabIndex={-1}
                 aria-hidden
@@ -135,7 +149,7 @@ export function Sidebar({
             className="sb-drawer-close"
             type="button"
             iconOnly
-            size={railBtn}
+            size={btnSize}
             variant="tertiary"
             onClick={onClose}
             aria-label="Close navigation"
@@ -153,7 +167,7 @@ export function Sidebar({
         <Kbd className="qcap-hint">⌘K</Kbd>
       </button>
 
-      <div className="sb-scroll">
+      <div className="sb-scroll" ref={scrollRef}>
         {/* inbox */}
         <div className="sb-block">
           <Link className="nav-item" href="/app/inbox" data-active={pathname === '/app/inbox' ? '' : undefined}>
@@ -202,7 +216,7 @@ export function Sidebar({
                 className="sb-section-action"
                 type="button"
                 iconOnly
-                size={chromeBtn}
+                size={btnSize}
                 variant="tertiary"
                 aria-label="New project"
                 title="New project"
@@ -255,11 +269,8 @@ export function Sidebar({
       </div>
 
       {/* user footer + account menu */}
-      <div className="sb-foot">
+      <div className="sb-foot" data-scrolled={footScrolled ? '' : undefined}>
         <div className="sb-user">
-          <span className="sb-avatar" aria-hidden>
-            {userInitial}
-          </span>
           <span className="sb-user-email">{userLabel}</span>
           <Popover
             align="right"
@@ -269,7 +280,7 @@ export function Sidebar({
                 className="sb-icon-btn"
                 type="button"
                 iconOnly
-                size={chromeBtn}
+                size={btnSize}
                 variant="tertiary"
                 aria-label="Account menu"
                 leftIcon={<Ic.dotsHorizontal />}

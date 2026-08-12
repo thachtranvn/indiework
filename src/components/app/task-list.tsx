@@ -20,7 +20,7 @@ import {
 } from '@/lib/grouping';
 import { fmtDate } from '@/lib/dates';
 import {
-  TASK_STATUS,
+  PROJECT_TASK_STATUS,
   TASK_STATUS_LABEL,
   TASK_PRIORITY,
   TASK_PRIORITY_LABEL,
@@ -161,7 +161,7 @@ export function ProjectView({
 
   const availDims = useMemo(() => computeAvailDims(modules, milestones), [modules, milestones]);
   const defaultDisplay: DisplayState = {
-    groupBy: availDims[0] ?? 'status',
+    groupBy: 'status',
     subGroupBy: 'none',
     groupStyle: 'band',
     sort: 'priority',
@@ -218,7 +218,7 @@ export function ProjectView({
     return m;
   }, [optimisticTasks]);
 
-  const effPrimary = availDims.includes(disp.groupBy) || disp.groupBy === 'none' ? disp.groupBy : availDims[0] ?? 'status';
+  const effPrimary = availDims.includes(disp.groupBy) || disp.groupBy === 'none' ? disp.groupBy : 'status';
   const effSecondary =
     disp.subGroupBy !== 'none' && disp.subGroupBy !== effPrimary && availDims.includes(disp.subGroupBy) ? disp.subGroupBy : 'none';
 
@@ -863,7 +863,7 @@ function BulkBar({
       >
         {(close) => (
           <OptionList
-            options={TASK_STATUS.map((s) => ({ id: s, label: TASK_STATUS_LABEL[s] }))}
+            options={PROJECT_TASK_STATUS.map((s) => ({ id: s, label: TASK_STATUS_LABEL[s] }))}
             onPick={(id) => {
               onSetStatus(id as TaskStatus);
               close();

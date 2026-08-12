@@ -2,6 +2,7 @@
 
 import { useState, type MouseEvent } from 'react';
 import type { TaskStatus } from '@/lib/domain';
+import { useChromeBtnSize } from '@/lib/use-media-query';
 import { Ic } from './icons';
 import { StatusIcon } from './status-icon';
 import { Button } from './button';
@@ -72,11 +73,12 @@ export function RefTag({ value, big }: { value: string; big?: boolean }) {
  */
 export function CopyLinkButton({ getUrl, label = 'Copy link' }: { getUrl: () => string | null; label?: string }) {
   const [copied, setCopied] = useState(false);
+  const btnSize = useChromeBtnSize();
   return (
     <Button
       type="button"
       iconOnly
-      size="xs"
+      size={btnSize}
       variant="tertiary"
       title={copied ? 'Link copied' : label}
       aria-label={label}
