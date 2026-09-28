@@ -11,6 +11,9 @@ on:
 
 jobs:
   ping:
+    # DATABASE_URL lives under the Production environment secrets
+    # (Settings → Environments → Production), not repository secrets.
+    environment: Production
     runs-on: ubuntu-latest
     timeout-minutes: 5
     concurrency:
