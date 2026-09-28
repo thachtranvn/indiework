@@ -104,6 +104,19 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
     if (d >= DETAIL_MIN && d <= DETAIL_MAX) setDetailWidth(d);
     setCollapsed(localStorage.getItem('iw-sb-collapsed') === '1');
   }, []);
+
+  // iOS 27 standalone: mark <html> so CSS can target navigator.standalone
+  // installs that don't match (display-mode: standalone).
+  useLayoutEffect(() => {
+    const nav = navigator as Navigator & { standalone?: boolean };
+    const standalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches ||
+      nav.standalone === true;
+    if (!standalone) return;
+    document.documentElement.setAttribute('data-standalone', '');
+    return () => document.documentElement.removeAttribute('data-standalone');
+  }, []);
   useEffect(() => {
     localStorage.setItem('iw-sidebar-w', String(width));
   }, [width]);
@@ -289,6 +302,8 @@ export function AppShell({ shell, children }: { shell: ShellData; children: Reac
       {showWorkspace && <WorkspaceForm onClose={() => setShowWorkspace(false)} />}
       {showSearch && <CommandPalette onClose={() => setShowSearch(false)} />}
       <TipHost />
+      {/* iOS 27 standalone status-bar blur workaround — see app.css. */}
+      <div className="standalone-status-fill" aria-hidden="true" />
     </div>
     </NavToggleProvider>
   );

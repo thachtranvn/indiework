@@ -37,6 +37,31 @@
   --detail-w: calc(var(--shell-gap) + var(--detail-panel-w));
 }
 .app[data-resizing] { transition: none; user-select: none; cursor: col-resize; }
+
+/* iOS 27 standalone regression: the OS draws a progressive blur over the top
+   of home-screen web apps (even into content below the status bar). A fixed
+   painted layer at y=0 switches WebKit to opaque status-bar compositing —
+   same outcome as opening the mobile drawer. Safari tabs are unaffected. */
+.standalone-status-fill {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* Prefer the real inset; 12px floor covers the rare case where
+     env(safe-area-inset-top) reports 0 while the status bar still overlays. */
+  height: max(var(--safe-t), 12px);
+  background: var(--bg-app);
+  pointer-events: none;
+  z-index: 80; /* above main chrome, below drawer (900) / detail (920) */
+}
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  .standalone-status-fill { display: block; }
+}
+html[data-standalone] .standalone-status-fill { display: block; }
+/* Drawer paints --bg-secondary under the status bar — match while open so a
+   peek of the strip during the slide doesn't flash the canvas color. */
+.app[data-drawer] .standalone-status-fill { background: var(--bg-secondary); }
 /* collapsed sidebar: track width → 0 (via --sidebar-w); slot clips the slide */
 .app[data-sb-collapsed] { padding-left: var(--shell-gap); }
 .app[data-sb-collapsed] .main-col { margin-left: 0; }
