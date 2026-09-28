@@ -11,9 +11,6 @@ on:
 
 jobs:
   ping:
-    # DATABASE_URL lives under the Production environment secrets
-    # (Settings → Environments → Production), not repository secrets.
-    environment: Production
     runs-on: ubuntu-latest
     timeout-minutes: 5
     concurrency:
@@ -25,9 +22,8 @@ jobs:
 
       - name: Ping Supabase Postgres
         env:
-          # Session or transaction pooler URL, with ?sslmode=no-verify
-          # (same form as deploy-vercel-supabase.md). Add one secret per
-          # Free-tier project if you have several — see the loop below.
+          # Repository secret DATABASE_URL: pooler URL (sslmode=no-verify OK —
+          # mapped to require for psql below). Optional EXTRA for more Free projects.
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           # Optional: newline-separated URLs for extra Free projects (e.g. staging).
           EXTRA_DATABASE_URLS: ${{ secrets.SUPABASE_KEEPALIVE_EXTRA_URLS }}
