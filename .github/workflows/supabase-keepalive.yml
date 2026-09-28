@@ -1,0 +1,68 @@
+name: supabase-keepalive
+
+# Keep Free-tier Supabase Postgres awake. Supabase pauses projects with
+# insufficient DB activity over ~7 days; /auth health checks do not count —
+# only real Postgres queries do. See docs/infra/deploy-vercel-supabase.md.
+on:
+  schedule:
+    # Mon / Wed / Fri at 01:00 UTC (= 08:00 ICT)
+    - cron: '0 1 * * 1,3,5'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: supabase-keepalive
+      cancel-in-progress: false
+    steps:
+      - name: Install psql
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      - name: Ping Supabase Postgres
+        env:
+          # Session or transaction pooler URL, with ?sslmode=no-verify
+          # (same form as deploy-vercel-supabase.md). Add one secret per
+          # Free-tier project if you have several — see the loop below.
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # Optional: newline-separated URLs for extra Free projects (e.g. staging).
+          EXTRA_DATABASE_URLS: ${{ secrets.SUPABASE_KEEPALIVE_EXTRA_URLS }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::Secret DATABASE_URL is not set"
+            exit 1
+          fi
+
+          urls="$DATABASE_URL"
+          if [ -n "${EXTRA_DATABASE_URLS:-}" ]; then
+            urls="$urls"$'\n'"$EXTRA_DATABASE_URLS"
+          fi
+
+          failed=0
+          i=0
+          while IFS= read -r url; do
+            [ -z "$url" ] && continue
+            i=$((i + 1))
+            echo "::group::Ping database #$i"
+            if psql "$url" -v ON_ERROR_STOP=1 -c 'SELECT 1 AS keepalive;' -c 'SELECT now() AS pinged_at;'; then
+              echo "✅ Database #$i awake"
+            else
+              echo "::error::Database #$i ping failed"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done <<< "$urls"
+
+          if [ "$i" -eq 0 ]; then
+            echo "::error::No database URLs to ping"
+            exit 1
+          fi
+
+          if [ "$failed" -ne 0 ]; then
+            exit 1
+          fi
+
+          echo "All $i database(s) pinged successfully."
