@@ -44,32 +44,23 @@
    same outcome as opening the mobile drawer. Safari tabs are unaffected.
 
    The strip must stack ABOVE page content (z-index) or the blur returns; keep
-   it white so it matches .main-col. --standalone-pad-extra pushes the page
-   (and this strip) down a few px past the safe-area so header chrome is not
-   cropped under the strip. */
+   it white so it matches .main-col. Height matches --safe-t (same as .app's
+   top padding) so it fills the status gutter without a leftover canvas band. */
 .standalone-status-fill {
   display: none;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: calc(var(--safe-t) + var(--standalone-pad-extra, 0px));
+  height: var(--safe-t);
   background: var(--bg-surface);
   pointer-events: none;
   z-index: 80; /* above main chrome, below drawer (900) / detail (920) */
 }
 @media (display-mode: standalone), (display-mode: fullscreen) {
   .standalone-status-fill { display: block; }
-  .app {
-    --standalone-pad-extra: 8px;
-    padding-top: calc(max(var(--shell-gap), var(--safe-t)) + var(--standalone-pad-extra));
-  }
 }
 html[data-standalone] .standalone-status-fill { display: block; }
-html[data-standalone] .app {
-  --standalone-pad-extra: 8px;
-  padding-top: calc(max(var(--shell-gap), var(--safe-t)) + var(--standalone-pad-extra));
-}
 /* Drawer paints --bg-secondary under the status bar — match while open so a
    peek of the strip during the slide doesn't flash the page surface. */
 .app[data-drawer] .standalone-status-fill { background: var(--bg-secondary); }
@@ -157,9 +148,7 @@ html[data-standalone] .app {
        overflow:hidden on .app pushed .main-col below the fold and ate all taps. */
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
-    /* --standalone-pad-extra is 0 in browser tabs; 8px in installed PWAs so
-       content clears the status-fill strip (see .standalone-status-fill). */
-    padding: calc(var(--safe-t) + var(--standalone-pad-extra, 0px)) 0 0;
+    padding: var(--safe-t) 0 0;
   }
   .sidebar-slot,
   .detail-slot,
@@ -204,7 +193,7 @@ html[data-standalone] .app {
     height: 100%;
     max-height: 100dvh;
     background: var(--bg-secondary);
-    padding: calc(var(--safe-t) + var(--standalone-pad-extra, 0px)) 0 var(--safe-b);
+    padding: var(--safe-t) 0 var(--safe-b);
     box-sizing: border-box;
     transform: translate3d(-100%, 0, 0);
     pointer-events: none;
@@ -247,7 +236,7 @@ html[data-standalone] .app {
   }
   .detail-slot .detail-panel {
     width: 100%; height: 100%; border: none; border-radius: 0;
-    padding: calc(var(--safe-t) + var(--standalone-pad-extra, 0px)) var(--safe-r) var(--safe-b) var(--safe-l);
+    padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
     pointer-events: auto;
     animation: detailIn .4s cubic-bezier(.32, .72, 0, 1) both;
   }
