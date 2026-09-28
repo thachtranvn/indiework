@@ -48,19 +48,21 @@
   top: 0;
   left: 0;
   right: 0;
-  /* Prefer the real inset; 12px floor covers the rare case where
-     env(safe-area-inset-top) reports 0 while the status bar still overlays. */
-  height: max(var(--safe-t), 12px);
-  background: var(--bg-app);
+  height: var(--safe-t);
+  /* Match main-col / page surface — not --bg-app (canvas gray). */
+  background: var(--bg-surface);
   pointer-events: none;
-  z-index: 80; /* above main chrome, below drawer (900) / detail (920) */
+  /* Behind main/drawer content so any sub-pixel bleed never covers the header. */
+  z-index: 0;
 }
 @media (display-mode: standalone), (display-mode: fullscreen) {
   .standalone-status-fill { display: block; }
+  .main-col { position: relative; z-index: 1; }
 }
 html[data-standalone] .standalone-status-fill { display: block; }
+html[data-standalone] .main-col { position: relative; z-index: 1; }
 /* Drawer paints --bg-secondary under the status bar — match while open so a
-   peek of the strip during the slide doesn't flash the canvas color. */
+   peek of the strip during the slide doesn't flash the page surface. */
 .app[data-drawer] .standalone-status-fill { background: var(--bg-secondary); }
 /* collapsed sidebar: track width → 0 (via --sidebar-w); slot clips the slide */
 .app[data-sb-collapsed] { padding-left: var(--shell-gap); }
