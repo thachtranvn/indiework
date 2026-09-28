@@ -41,7 +41,11 @@
 /* iOS 27 standalone regression: the OS draws a progressive blur over the top
    of home-screen web apps (even into content below the status bar). A fixed
    painted layer at y=0 switches WebKit to opaque status-bar compositing —
-   same outcome as opening the mobile drawer. Safari tabs are unaffected. */
+   same outcome as opening the mobile drawer. Safari tabs are unaffected.
+
+   The strip must stack ABOVE page content (z-index) or the blur returns; keep
+   it white so any sub-pixel bleed into the header is invisible against
+   .main-col. Height matches --safe-t exactly (same as .app's top padding). */
 .standalone-status-fill {
   display: none;
   position: fixed;
@@ -49,18 +53,14 @@
   left: 0;
   right: 0;
   height: var(--safe-t);
-  /* Match main-col / page surface — not --bg-app (canvas gray). */
   background: var(--bg-surface);
   pointer-events: none;
-  /* Behind main/drawer content so any sub-pixel bleed never covers the header. */
-  z-index: 0;
+  z-index: 80; /* above main chrome, below drawer (900) / detail (920) */
 }
 @media (display-mode: standalone), (display-mode: fullscreen) {
   .standalone-status-fill { display: block; }
-  .main-col { position: relative; z-index: 1; }
 }
 html[data-standalone] .standalone-status-fill { display: block; }
-html[data-standalone] .main-col { position: relative; z-index: 1; }
 /* Drawer paints --bg-secondary under the status bar — match while open so a
    peek of the strip during the slide doesn't flash the page surface. */
 .app[data-drawer] .standalone-status-fill { background: var(--bg-secondary); }
