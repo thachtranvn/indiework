@@ -44,9 +44,8 @@
    same outcome as opening the mobile drawer. Safari tabs are unaffected.
 
    The strip must stack ABOVE page content (z-index) or the blur returns.
-   --standalone-pad-extra (1px) clears a hairline crop under the strip; fill
-   height includes that same 1px so the gutter stays --bg-surface (white),
-   not --bg-app gray. */
+   --standalone-pad-extra (8px) clears crop under the strip; fill height uses
+   the same value so the gutter stays --bg-surface (white), not --bg-app gray. */
 .app { --standalone-pad-extra: 0px; }
 .standalone-status-fill {
   display: none;
@@ -62,13 +61,13 @@
 @media (display-mode: standalone), (display-mode: fullscreen) {
   .standalone-status-fill { display: block; }
   .app {
-    --standalone-pad-extra: 1px;
+    --standalone-pad-extra: 8px;
     padding-top: calc(max(var(--shell-gap), var(--safe-t)) + var(--standalone-pad-extra));
   }
 }
 html[data-standalone] .standalone-status-fill { display: block; }
 html[data-standalone] .app {
-  --standalone-pad-extra: 1px;
+  --standalone-pad-extra: 8px;
   padding-top: calc(max(var(--shell-gap), var(--safe-t)) + var(--standalone-pad-extra));
 }
 /* Drawer paints --bg-secondary under the status bar — match while open so a
@@ -158,7 +157,7 @@ html[data-standalone] .app {
        overflow:hidden on .app pushed .main-col below the fold and ate all taps. */
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
-    /* Includes --standalone-pad-extra (1px in installed PWAs) so content clears
+    /* Includes --standalone-pad-extra (8px in installed PWAs) so content clears
        the status-fill; fill height uses the same calc so no gray --bg-app line. */
     padding: calc(var(--safe-t) + var(--standalone-pad-extra)) 0 0;
   }
@@ -257,7 +256,7 @@ html[data-standalone] .app {
   }
 }
 
-/* Phone + standalone: paint the shell canvas white so the 1px status gutter
+/* Phone + standalone: paint the shell canvas white so the status gutter
    cannot flash --bg-app even if fill/padding disagree by a sub-pixel. Desktop
    keeps --bg-app so the sidebar↔main gutter stays the canvas gray. */
 @media (display-mode: standalone), (display-mode: fullscreen) {
