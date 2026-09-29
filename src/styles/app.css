@@ -43,24 +43,34 @@
    painted layer at y=0 switches WebKit to opaque status-bar compositing —
    same outcome as opening the mobile drawer. Safari tabs are unaffected.
 
-   The strip must stack ABOVE page content (z-index) or the blur returns; keep
-   it white so it matches .main-col. Height matches --safe-t (same as .app's
-   top padding) so it fills the status gutter without a leftover canvas band. */
+   The strip must stack ABOVE page content (z-index) or the blur returns.
+   --standalone-pad-extra (1px) clears a hairline crop under the strip; fill
+   height includes that same 1px so the gutter stays --bg-surface (white),
+   not --bg-app gray. */
+.app { --standalone-pad-extra: 0px; }
 .standalone-status-fill {
   display: none;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: var(--safe-t);
+  height: calc(var(--safe-t) + var(--standalone-pad-extra));
   background: var(--bg-surface);
   pointer-events: none;
   z-index: 80; /* above main chrome, below drawer (900) / detail (920) */
 }
 @media (display-mode: standalone), (display-mode: fullscreen) {
   .standalone-status-fill { display: block; }
+  .app {
+    --standalone-pad-extra: 1px;
+    padding-top: calc(max(var(--shell-gap), var(--safe-t)) + var(--standalone-pad-extra));
+  }
 }
 html[data-standalone] .standalone-status-fill { display: block; }
+html[data-standalone] .app {
+  --standalone-pad-extra: 1px;
+  padding-top: calc(max(var(--shell-gap), var(--safe-t)) + var(--standalone-pad-extra));
+}
 /* Drawer paints --bg-secondary under the status bar — match while open so a
    peek of the strip during the slide doesn't flash the page surface. */
 .app[data-drawer] .standalone-status-fill { background: var(--bg-secondary); }
@@ -148,7 +158,9 @@ html[data-standalone] .standalone-status-fill { display: block; }
        overflow:hidden on .app pushed .main-col below the fold and ate all taps. */
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
-    padding: var(--safe-t) 0 0;
+    /* Includes --standalone-pad-extra (1px in installed PWAs) so content clears
+       the status-fill; fill height uses the same calc so no gray --bg-app line. */
+    padding: calc(var(--safe-t) + var(--standalone-pad-extra)) 0 0;
   }
   .sidebar-slot,
   .detail-slot,
@@ -193,7 +205,7 @@ html[data-standalone] .standalone-status-fill { display: block; }
     height: 100%;
     max-height: 100dvh;
     background: var(--bg-secondary);
-    padding: var(--safe-t) 0 var(--safe-b);
+    padding: calc(var(--safe-t) + var(--standalone-pad-extra)) 0 var(--safe-b);
     box-sizing: border-box;
     transform: translate3d(-100%, 0, 0);
     pointer-events: none;
@@ -236,13 +248,25 @@ html[data-standalone] .standalone-status-fill { display: block; }
   }
   .detail-slot .detail-panel {
     width: 100%; height: 100%; border: none; border-radius: 0;
-    padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
+    padding: calc(var(--safe-t) + var(--standalone-pad-extra)) var(--safe-r) var(--safe-b) var(--safe-l);
     pointer-events: auto;
     animation: detailIn .4s cubic-bezier(.32, .72, 0, 1) both;
   }
   .detail-slot[data-closing] .detail-panel {
     animation: detailOut .4s cubic-bezier(.32, .72, 0, 1) forwards;
   }
+}
+
+/* Phone + standalone: paint the shell canvas white so the 1px status gutter
+   cannot flash --bg-app even if fill/padding disagree by a sub-pixel. Desktop
+   keeps --bg-app so the sidebar↔main gutter stays the canvas gray. */
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  @media (max-width: 760px) {
+    .app { background: var(--bg-surface); }
+  }
+}
+@media (max-width: 760px) {
+  html[data-standalone] .app { background: var(--bg-surface); }
 }
 
 /* ---------- Sidebar (light, inherits theme tokens) ---------- */
