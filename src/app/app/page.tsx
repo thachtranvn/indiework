@@ -17,7 +17,6 @@ export default async function AppHome() {
     // Empty workspace (e.g. a freshly created one): land on the Inbox rather
     // than a project that belongs to a different workspace.
     if (projects.length === 0) redirect('/app/inbox');
-    const target = projects.find((p) => p.pinned) ?? projects[0];
-    redirect(`/app/p/${target.key}`);
+    redirect(`/app/p/${projects[0].key}`);
   });
 }

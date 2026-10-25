@@ -44,7 +44,7 @@ Credentials are not recorded here.
 
 | ID | Probe | Result |
 |----|-------|--------|
-| MB-T1 | Coarse-pointer reveal rules | Multi-select, pin, section add, etc. visible; rename pencil + status chip stay hidden |
+| MB-T1 | Coarse-pointer reveal rules | Multi-select, section add, etc. visible; rename pencil + status chip stay hidden |
 | MB-T2 | Drag grips + Overview reorder | Grips `display: none`; move up/down changes order **and persists across reload** |
 | MB-T4 | Viewport meta | `maximumScale: 5` |
 

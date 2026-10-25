@@ -162,7 +162,7 @@ read **directly** from services at render time (no action/API hop for reads), an
 
 | Page | Reads |
 |---|---|
-| `/app` | `projectService.list()` → redirect to first pinned/active project or `/inbox` |
+| `/app` | `projectService.list()` → redirect to first project or `/inbox` |
 | `/app/inbox` | `taskService.listInbox()` + `projectService.list()` |
 | `/app/all` | tasks across the active workspace |
 | `/app/p/[projectKey]` | project + its modules / milestones / tasks |

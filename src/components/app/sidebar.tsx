@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { ShellData } from '@/server/load';
@@ -79,7 +79,6 @@ export function Sidebar({
       return next;
     });
 
-  const { pinned, others } = useMemo(() => splitProjects(projects), [projects]);
   const userLabel = user.email ?? user.name;
 
   return (
@@ -179,32 +178,6 @@ export function Sidebar({
           </Link>
         </div>
 
-        {pinned.length > 0 && (
-          <>
-            <div className="sb-divider" />
-            <div className="sb-block">
-              <SectionHead
-                label="Pinned"
-                collapsed={collapsed.has('pinned')}
-                onToggle={() => toggleSection('pinned')}
-              />
-              <div
-                className="sb-collapse"
-                data-open={collapsed.has('pinned') ? undefined : ''}
-                inert={collapsed.has('pinned') ? true : undefined}
-              >
-                <div className="sb-collapse-inner">
-                  <div className="sb-grouprows">
-                    {pinned.map((p) => (
-                      <ProjectNavItem key={p.id} project={p} pathname={pathname} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
         <div className="sb-divider" />
         <div className="sb-block">
           <SectionHead
@@ -232,7 +205,7 @@ export function Sidebar({
           >
             <div className="sb-collapse-inner">
               <div className="sb-grouprows">
-                {others.map((p) => (
+                {projects.map((p) => (
                   <ProjectNavItem key={p.id} project={p} pathname={pathname} />
                 ))}
               </div>
@@ -365,10 +338,3 @@ function ProjectNavItem({
   );
 }
 
-/** Splits projects into pinned and everything else (unpinned). */
-function splitProjects(projects: Projects): { pinned: Projects; others: Projects } {
-  return {
-    pinned: projects.filter((p) => p.pinned),
-    others: projects.filter((p) => !p.pinned),
-  };
-}

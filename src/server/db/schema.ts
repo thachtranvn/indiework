@@ -14,7 +14,6 @@ import {
   uuid,
   text,
   integer,
-  boolean,
   timestamp,
   index,
   uniqueIndex,
@@ -115,7 +114,6 @@ export const projects = pgTable(
     status: text('status', { enum: PROJECT_STATUS })
       .notNull()
       .default(DEFAULT_PROJECT_STATUS),
-    pinned: boolean('pinned').notNull().default(false),
     tags: text('tags').array().notNull().default([]),
     shortDesc: text('short_desc'),
     statusNote: text('status_note'), // "where the project is at" (overwrite)

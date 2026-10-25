@@ -43,7 +43,7 @@ not on physical hardware, which is the main gap below.
 
 ## MB-T — Touch input
 
-- [x] **MB-T1** — No hover-only actions. Multi-select, pin, section add, attachment actions,
+- [x] **MB-T1** — No hover-only actions. Multi-select, section add, attachment actions,
   sub-task chevron, tab close and milestone/module delete are unhidden on `(pointer: coarse)`;
   the rename pencil and the duplicate status chip stay hidden on purpose.
   → design: [solution.md §4](solution.md).

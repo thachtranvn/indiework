@@ -63,7 +63,6 @@ interface Project {
   name: string;
   emoji: string | null;
   color: string | null;
-  pinned: boolean;
 }
 
 interface DisplayState {

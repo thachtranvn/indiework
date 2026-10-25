@@ -81,7 +81,7 @@ injected during soft navigation *without a nonce*, which the app's `strict-dynam
 
 The design hides ~11 controls behind `:hover` with `opacity: 0`. Unhiding all of them on touch
 would clutter a phone, so the coarse-pointer blocks unhide only the ones with **no other route**:
-multi-select, the project pin, the sidebar section's add button, attachment actions, the sub-task
+multi-select, the sidebar section's add button, attachment actions, the sub-task
 chevron, the tab close, and milestone/module delete.
 
 Two are deliberately left hidden: the row's rename pencil (tapping the row opens the task, where
@@ -108,7 +108,7 @@ and withhold the click whenever hover restyles the target — especially when it
 wraps author `:hover` rules in `@media (hover: hover) and (pointer: fine)` so phones (and iPad
 finger taps) never match them. Mixed selectors are split first, so `[data-open]` /
 `:focus-visible` / `[data-selected]` still apply. Hidden hover-reveals also use
-`pointer-events: none` until they are shown, so an invisible pencil or pin cannot steal the tap.
+`pointer-events: none` until they are shown, so an invisible pencil cannot steal the tap.
 
 ### Ordering matters more than specificity here
 

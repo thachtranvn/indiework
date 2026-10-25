@@ -173,7 +173,7 @@ edits the shell/other surfaces don't depend on — board drag, list checkbox, li
 status/priority/module/milestone. `ProjectView` owns the single mirror and feeds the board
 (now presentational) through it, so a drag stays consistent across board↔list. Everything that
 moves shell-coupled state **keeps `revalidatePath`**: inbox **assign-to-project** (sidebar
-inbox-count badge), all **creates**, **deletes**, **rename** (cross-surface), and pin/config.
+inbox-count badge), all **creates**, **deletes**, **rename** (cross-surface), and config.
 Blanket-dropping the revalidate would have staled the sidebar — a real in-session regression, not a
 cross-surface non-goal.
 

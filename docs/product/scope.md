@@ -24,7 +24,7 @@ Public identity is always the ref `KEY-seq` (e.g. `DISK-14`); the internal uuid 
 | Entity | Fields |
 |---|---|
 | **workspaces** | `id` · `name` · `emoji` · `tagline` · timestamps — top-level container above projects; multiple supported, switched from the sidebar. |
-| **projects** | `id` · `workspace_id` FK · `key` (unique, `^[A-Z][A-Z0-9]{1,9}$`) · `name` · `emoji` · `color` · `status` (`active·planned·paused·done·backlog·cancelled`) · `pinned` bool · `tags` text[] · `short_desc` · `status_note` · `description` (md) · `archived_at` · timestamps |
+| **projects** | `id` · `workspace_id` FK · `key` (unique, `^[A-Z][A-Z0-9]{1,9}$`) · `name` · `emoji` · `color` · `status` (`active·planned·paused·done·backlog·cancelled`) · `tags` text[] · `short_desc` · `status_note` · `description` (md) · `archived_at` · timestamps |
 | **project_counters** | `project_id` PK · `next_seq` — atomic per-project sequence allocation |
 | **milestones** | `id` · `project_id` FK cascade · `name` · `description?` · `status` (`planned·active·done`) · `target_date` · `position` · timestamps |
 | **modules** | `id` · `project_id` FK cascade · `name` · `color` · `position` · `archived_at` · timestamps |

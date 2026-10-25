@@ -131,7 +131,6 @@ export const projects = sqliteTable(
     status: text('status', { enum: PROJECT_STATUS })
       .notNull()
       .default(DEFAULT_PROJECT_STATUS),
-    pinned: integer('pinned', { mode: 'boolean' }).notNull().default(false),
     tags: text('tags', { mode: 'json' }).$type<string[]>().notNull().default([]),
     shortDesc: text('short_desc'),
     statusNote: text('status_note'), // "where the project is at" (overwrite)
