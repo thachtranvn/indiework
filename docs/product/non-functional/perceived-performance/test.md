@@ -92,13 +92,13 @@ Session is an `httpOnly` signed cookie; the public-demo login page prints its ow
   prod-build measurement (bucket with B1). Not a clean pass.**
 
 ### A6 · PP-B4 — Return-row reconcile vs full-subtree revalidate ✅ **(centerpiece)**
-- **Probe:** compare the action response of a reconcile edit (checkbox) vs a revalidate edit (pin).
+- **Probe:** compare the action response of a reconcile edit (checkbox) vs a revalidate edit (project rename).
 - **Result — the win solution.md §4 said it couldn't measure locally:**
 
   | Action | Path | Response payload | Subtree re-read? |
   |---|---|---|---|
   | Checkbox toggle | **reconcile** (`toggleTaskDoneScoped`) | **602 B** (one task row) | **No** — no `x-action-revalidated`, no refetch |
-  | Project pin POST | revalidate | **25,483 B** | Yes — header `x-action-revalidated: 1` |
+  | Project rename POST | revalidate | **25,483 B** | Yes — header `x-action-revalidated: 1` |
   | → follow-on `GET …?_rsc=` | revalidate | **25,157 B** | full subtree (sidebar projects + task rows) |
 
   Reconcile = **602 B, no follow-on request**; revalidate ≈ **50 KB across two requests** + the server

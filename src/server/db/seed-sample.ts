@@ -5,7 +5,7 @@
  * and the demo Inbox ideas, then rebuilds a rich data set that exercises:
  *   - all task statuses          (inbox, backlog, todo, in_progress, in_review, pending, done, cancelled)
  *   - all priorities             (none, low, medium, high, urgent)
- *   - 4 projects w/ varied status (active + pinned, active, paused)
+ *   - 4 projects w/ varied status (active, paused)
  *   - DISK — a real product roadmap (Disk Advisor) mapped 1:1 from
  *     disk-cleanup/docs/product/ROADMAP.md: 9 phases → milestones, Swift
  *     packages → modules, every checklist item → a task at its true status
@@ -95,7 +95,6 @@ async function seedDisk(workspaceId: string): Promise<void> {
     emoji: '💽',
     color: '#5B8DEF',
     status: 'active',
-    pinned: true,
     tags: ['Swift', 'SwiftUI', 'macOS'],
     shortDesc: 'Local-only Mac disk cleanup that explains what is safe to delete.',
     statusNote: 'Phase 4 (UI MVP) in flight — onboarding/FDA + Notes UI left.',
@@ -227,7 +226,7 @@ async function seedDisk(workspaceId: string): Promise<void> {
   await commentService.add({ taskId: rustCore.id, body: 'Không kích hoạt — Spike 1 đạt ngưỡng T0001, chốt Swift-only (ADR-0002).', source: 'web' });
 }
 
-// ---- project 1: SITE — a marketing site, active + pinned ----
+// ---- project 1: SITE — a marketing site ----
 
 async function seedSite(workspaceId: string): Promise<void> {
   const { id: pid } = await projectService.create({
@@ -237,7 +236,6 @@ async function seedSite(workspaceId: string): Promise<void> {
     emoji: '🚀',
     color: '#3FB984',
     status: 'active',
-    pinned: true,
     tags: ['Next.js', 'Tailwind'],
     shortDesc: 'Marketing site + build-log for the launch.',
     statusNote: 'Hero + pricing left before we can ship v1.',

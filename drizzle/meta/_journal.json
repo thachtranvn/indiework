@@ -43,6 +43,13 @@
       "when": 1782000000001,
       "tag": "0005_handy_swarm",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792920247560,
+      "tag": "0006_familiar_wallop",
+      "breakpoints": true
     }
   ]
 }

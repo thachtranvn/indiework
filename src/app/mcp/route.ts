@@ -436,7 +436,6 @@ const TOOLS = (agentUserId: string): Tool[] => [
         emoji: { ...str(), description: 'An emoji glyph (e.g. "🚀") or a Lucide icon name (e.g. "rocket").' },
         color: str(),
         status: { type: 'string', enum: [...PROJECT_STATUS] },
-        pinned: { type: 'boolean' },
         tags: { type: 'array', items: str() },
         short_desc: str(),
         status_note: str(),
@@ -452,7 +451,6 @@ const TOOLS = (agentUserId: string): Tool[] => [
           emoji: a.emoji,
           color: a.color,
           status: a.status,
-          pinned: a.pinned,
           tags: a.tags,
           shortDesc: a.short_desc,
           statusNote: a.status_note,
@@ -466,7 +464,7 @@ const TOOLS = (agentUserId: string): Tool[] => [
   {
     name: 'update_project',
     description:
-      'Patch a project by KEY. `patch` may set name, status, pinned, tags, emoji, color, shortDesc, statusNote, description (markdown). Keys are camelCase.',
+      'Patch a project by KEY. `patch` may set name, status, tags, emoji, color, shortDesc, statusNote, description (markdown). Keys are camelCase.',
     inputSchema: {
       type: 'object',
       properties: { project: str(), patch: { type: 'object' } },

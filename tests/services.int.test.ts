@@ -37,7 +37,6 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('service slice (real Postgres)',
     projectId = p.id;
     expect(p.key).toBe(KEY);
     expect(p.status).toBe('active');
-    expect(p.pinned).toBe(false);
     expect(p.tags).toEqual([]);
   });
 

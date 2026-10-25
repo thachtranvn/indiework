@@ -102,8 +102,8 @@ curl -s -X POST http://localhost:3000/mcp \
 |---|---|---|---|
 | `list_projects` | — | — | All projects (with open-issue counts). |
 | `get_project` | `project` | — | Project **with its milestones + modules embedded** — use it to discover milestone/module ids. |
-| `create_project` | `key`, `name` | `emoji`, `color`, `status`, `pinned`, `tags`, `short_desc`, `status_note`, `description` | `key` = uppercase ref prefix (2–10 chars). |
-| `update_project` | `project`, `patch` | — | `patch` may set `name`, `status`, `pinned`, `tags`, `emoji`, `color`, `shortDesc`, `statusNote`, `description`. |
+| `create_project` | `key`, `name` | `emoji`, `color`, `status`, `tags`, `short_desc`, `status_note`, `description` | `key` = uppercase ref prefix (2–10 chars). |
+| `update_project` | `project`, `patch` | — | `patch` may set `name`, `status`, `tags`, `emoji`, `color`, `shortDesc`, `statusNote`, `description`. |
 | `archive_project` | `project` | — | **Soft-delete (reversible).** There is no hard project delete. |
 
 ### Milestones

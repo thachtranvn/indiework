@@ -24,7 +24,6 @@ interface ProjectLite {
   name: string;
   emoji: string | null;
   color: string | null;
-  pinned: boolean;
 }
 
 /**

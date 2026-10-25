@@ -933,7 +933,7 @@ function NavigationDemo() {
           <div className="sb-section">
             <div className="sb-section-inner">
               <button className="sb-section-toggle" type="button" data-collapsed="">
-                <span className="sb-section-label">Pinned</span>
+                <span className="sb-section-label">Admin</span>
                 <span className="sb-section-caret" aria-hidden>
                   <Ic.chevronDown size={14} />
                 </span>
